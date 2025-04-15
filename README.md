@@ -47,7 +47,7 @@ sudo apt-get install jags
 
 Make sure to restart R after installing.
 
-## 🧑‍💻 Example Usage
+## 🧑‍💻 Example
 
 Here’s an example workflow for using phybaseR:
 
