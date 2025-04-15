@@ -66,6 +66,7 @@ phybase_run <- function(data, tree, equations,
   # Write model to temp file
   model_file <- tempfile(fileext = ".jg")
   writeLines(jags_model_string, model_file)
+  attr(model_file, "file") <- model_file
 
   # Determine parameters to monitor
   if (is.null(monitor)) {
@@ -125,5 +126,6 @@ phybase_run <- function(data, tree, equations,
     parameters.to.save = monitor
   )
 
+  jags_model$modfile <- model_file  # Save model file path
   return(jags_model)
 }
