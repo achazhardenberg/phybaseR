@@ -34,12 +34,12 @@ You can install JAGS via Homebrew:
 brew install jags
 ```
 Or download the installer from the official website:
-[http://mcmc-jags.sourceforge.net]
+[http://mcmc-jags.sourceforge.net](http://mcmc-jags.sourceforge.net)
 
 ### Windows
 
 Download and run the installer from:
-[http://mcmc-jags.sourceforge.net]
+[http://mcmc-jags.sourceforge.net](http://mcmc-jags.sourceforge.net)
 
 ### Linux (Debian/Ubuntu)
 
@@ -121,4 +121,4 @@ von Hardenberg, A. and Gonzalez-Voyer, A. (2025).
 PhyBaSE: A Bayesian approach to Phylogenetic Structural Equation Models.
 *Methods in Ecology and Evolution*, in press.
 
-Code for all models described in the paper is available at: [https://github.com/achazhardenberg/phybase]
+Code for all models described in the paper is available at:[https://github.com/achazhardenberg/phybase](https://github.com/achazhardenberg/phybase)
