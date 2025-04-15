@@ -1,4 +1,27 @@
-phybase_model <- function(equations) {
+#' Generate a JAGS model string for Phylogenetic Bayesian SEM (PhyBaSE)
+#'
+#' This function builds the model code to be passed to JAGS based on a set of structural equations.
+#' It supports both single and multiple phylogenetic trees (to account for phylogenetic uncertainty).
+#'
+#' @param equations A list of model formulas (one per structural equation), e.g., \code{list(Y ~ X1 + X2, Z ~ Y)}.
+#' @param multi.tree Logical. If \code{TRUE}, generates a model that samples from a set of phylogenetic variance-covariance matrices (\code{multiVCV}) to account for phylogenetic uncertainty. Defaults to \code{FALSE}.
+#'
+#' @return A character string containing the JAGS model code.
+#'
+#' @details
+#' The generated model includes:
+#' \itemize{
+#'   \item Linear predictors and multivariate normal likelihoods for each response variable.
+#'   \item Priors for intercepts (\code{alpha}), slopes (\code{beta}), lambda parameters (\code{lambda}), and residual precisions (\code{tau}).
+#'   \item Phylogenetic covariance modeled via a single \code{VCV} matrix (when \code{multi.tree = FALSE}) or a 3D array \code{multiVCV[,,K]} with categorical sampling across trees (when \code{multi.tree = TRUE}).
+#' }
+#'
+#' @examples
+#' eqs <- list(BR ~ BM, S ~ BR, G ~ BR, L ~ BR)
+#' cat(phybase_model(eqs, multi.tree = TRUE))
+#'
+#' @export
+phybase_model <- function(equations, multi.tree = FALSE) {
 
   # Track beta names to ensure uniqueness
   beta_counter <- list()
@@ -78,20 +101,37 @@ phybase_model <- function(equations) {
   for (beta in unique_betas) {
     model_lines <- c(model_lines, paste0("  ", beta, " ~ dnorm(0, 1.0E-6)"))
   }
+  if (multi.tree) {
+    model_lines <- c(model_lines,
+                     "",
+                     "  for (k in 1:Ntree) {",
+                     "    p[k] <- 1 / Ntree",
+                     "  }",
+                     "  K ~ dcat(p[])")
+  }
 
   # Covariance structure
   model_lines <- c(model_lines, "  # Covariance structure")
+
   for (response in names(response_counter)) {
     for (k in 1:response_counter[[response]]) {
       suffix <- if (k == 1) "" else as.character(k)
-      model_lines <- c(
-        model_lines,
-        paste0("  Mlam", response, suffix, " <- lambda", response, suffix, "*VCV + (1-lambda", response, suffix, ")*ID"),
-        paste0("  TAU", tolower(response), suffix, " <- tau", response, suffix, "*inverse(Mlam", response, suffix, ")")
-      )
+      if (multi.tree) {
+        model_lines <- c(
+          model_lines,
+          paste0("  Mlam", response, suffix, " <- lambda", response, suffix, "*multiVCV[,,K] + (1-lambda", response, suffix, ")*ID"),
+          paste0("  TAU", tolower(response), suffix, " <- tau", response, suffix, "*inverse(Mlam", response, suffix, ")")
+        )
+      }
+      else {
+        model_lines <- c(
+          model_lines,
+          paste0("  Mlam", response, suffix, " <- lambda", response, suffix, "*VCV + (1-lambda", response, suffix, ")*ID"),
+          paste0("  TAU", tolower(response), suffix, " <- tau", response, suffix, "*inverse(Mlam", response, suffix, ")")
+        )
+      }
     }
   }
-
   model_lines <- c(model_lines, "}")
   jags_model_string <- paste(model_lines, collapse = "\n")
   return(jags_model_string)
