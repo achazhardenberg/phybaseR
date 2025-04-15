@@ -119,4 +119,4 @@ von Hardenberg, A. and Gonzalez-Voyer, A. (2025).
 PhyBaSE: A Bayesian approach to Phylogenetic Structural Equation Models.
 *Methods in Ecology and Evolution*, in press.
 
-Code for all models described in the paper is available at:[https://github.com/achazhardenberg/phybase](https://github.com/achazhardenberg/phybase)
+Code for all models described in the paper is available at: [https://github.com/achazhardenberg/phybase](https://github.com/achazhardenberg/phybase)
