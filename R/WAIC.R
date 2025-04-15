@@ -22,9 +22,9 @@ WAIC <- function(model, n.iter = 2000, n.burnin = 500, n.thin = 10) {
 
   # Recompile the JAGS model
   recompiled_model <- rjags::jags.model(
-    file = model$modfile,
-    data = model$BUGSsetup$data,
-    n.chains = model$n.chains,
+    file = model$model,
+    data = model$model$data,
+    n.chains = model$nchain,
     n.adapt = 0,
     quiet = TRUE
   )
