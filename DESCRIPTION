@@ -1,0 +1,24 @@
+Package: phybaseR
+Type: Package
+Title: R functions to easily create and run PhyBaSE models
+Version: 0.1.0
+Authors@R: c(
+    person(
+      "Achaz", "von Hardenberg",
+      email = "achaz.hardenberg@unipv.it",
+      role = c("aut", "cre")
+    )
+  )
+Description: More about what it does (maybe more than one line).
+    Continuation lines should be indented.
+License: AGPL-3
+Encoding: UTF-8
+LazyData: true
+Imports:
+    R2jags,
+    ape,
+    dagitty,
+    stats,
+Depends: 
+    R (>= 3.5)
+RoxygenNote: 7.3.2
