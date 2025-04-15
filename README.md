@@ -25,7 +25,7 @@ Before using phybaseR, you need to have JAGS (Just Another Gibbs Sampler) instal
 
 ## 📥 Install JAGS
 
-# macOS
+### macOS
 
 You can install JAGS via Homebrew:
 ```bash
@@ -34,12 +34,12 @@ brew install jags
 Or download the installer from the official website:
 [http://mcmc-jags.sourceforge.net]
 
-# Windows
+### Windows
 
 Download and run the installer from:
 [http://mcmc-jags.sourceforge.net]
 
-# Linux (Debian/Ubuntu)
+### Linux (Debian/Ubuntu)
 
 ```bash
 sudo apt-get install jags
