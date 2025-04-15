@@ -53,12 +53,11 @@ phybase_run <- function(data, tree, equations,
     })
     parameters.to.save <- unique(na.omit(first_betas))
   } else {
-    # Monitor all relevant parameters
+    # Monitor only beta, alpha, lambda, and tau parameters
     beta_params   <- grep("^\\s*beta\\w+", parameter_lines, value = TRUE)
     alpha_params  <- grep("^\\s*alpha\\w+", parameter_lines, value = TRUE)
     lambda_params <- grep("^\\s*lambda\\w+", parameter_lines, value = TRUE)
     tau_params    <- grep("^\\s*tau\\w+", parameter_lines, value = TRUE)
-    sigma_params  <- grep("^\\s*sigma\\w+", parameter_lines, value = TRUE)
 
     extract_param_names <- function(lines) {
       lines <- grep("(<-|~)", lines, value = TRUE)
@@ -69,8 +68,7 @@ phybase_run <- function(data, tree, equations,
       extract_param_names(beta_params),
       extract_param_names(alpha_params),
       extract_param_names(lambda_params),
-      extract_param_names(tau_params),
-      extract_param_names(sigma_params)
+      extract_param_names(tau_params)
     ))
   }
 
