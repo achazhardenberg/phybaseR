@@ -15,6 +15,7 @@ To install the package from GitHub, run the following command:
 ```r
 # Install from GitHub (if using devtools or remotes)
 remotes::install_github("achazhardenberg/phybaser")
+```
 
 ## 🧑‍💻 Example Usage
 
@@ -79,3 +80,4 @@ mod8.ind.mcmc <- phybase_run(
 
 # Print the summary of the MCMC object for testing conditional independencies
 mod8.ind.mcmc
+```
