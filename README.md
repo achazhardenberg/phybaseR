@@ -1,6 +1,9 @@
 # phybaseR
 
-**phybaseR** provides tools for specifying and fitting Phylogenetic Bayesian structural equation models (PhyBaSE) using [JAGS](http://mcmc-jags.sourceforge.net) via the `R2jags` package.
+**phybaseR** provides tools for specifying and fitting Phylogenetic Bayesian structural equation models (PhyBaSE) using [JAGS](http://mcmc-jags.sourceforge.net) via the `R2jags` package. 
+
+> ⚠️ **Please beware that this package and its functions are still in beta.**  
+> Functionality may change, and bugs may occur — feedback is very welcome!
 
 ## ✨ Functions
 
@@ -16,6 +19,33 @@ To install the package from GitHub, run the following command:
 # Install from GitHub (if using devtools or remotes)
 remotes::install_github("achazhardenberg/phybaser")
 ```
+## 🛠 Prerequisites
+
+Before using phybaseR, you need to have JAGS (Just Another Gibbs Sampler) installed on your machine, as the package relies on it for Bayesian model fitting.
+
+## 📥 Install JAGS
+
+# macOS
+
+You can install JAGS via Homebrew:
+```bash
+brew install jags
+```
+Or download the installer from the official website:
+[http://mcmc-jags.sourceforge.net]
+
+# Windows
+
+Download and run the installer from:
+[http://mcmc-jags.sourceforge.net]
+
+# Linux (Debian/Ubuntu)
+
+```bash
+sudo apt-get install jags
+```
+
+Make sure to restart R after installing.
 
 ## 🧑‍💻 Example Usage
 
