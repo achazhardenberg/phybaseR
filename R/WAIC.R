@@ -1,5 +1,5 @@
 WAIC<-function(model,n.iter = 2000,n.burnin = 500,n.thin = 10){
-  samples <- jags.samples(model$model,
+  samples <- rjags::jags.samples(model$model,
                               c("WAIC","deviance"),
                               type = "mean",
                               n.iter = n.iter,
