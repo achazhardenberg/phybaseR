@@ -29,7 +29,7 @@ library(phybase)
 data("rhino.tree")  # Example phylogenetic tree
 data("rhino.dat")   # Example life-history data on Rhinograds
 
-# Define the structural equations for the causal model
+# Define the structural equations for the causal model (this is for model 8 in Gonzalez-Voyer & von Hardenberg (2013)
 equations <- list(LS ~ BM, NL ~ BM + RS, DD ~ NL)
 
 # Create the JAGS model string
