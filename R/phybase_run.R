@@ -13,6 +13,7 @@
 #' @param n.adapt Number of adaptation iterations
 #' @param quiet Suppress JAGS output
 #' @param dsep If TRUE, monitor only the first beta in each structural equation (for d-separation testing)
+#' @param monitor Optional character vector of parameters to monitor (overrides automatic selection)
 #'
 #' @return JAGS model output as returned by \code{R2jags}
 #' @export
@@ -25,7 +26,8 @@ phybase_run <- function(data, tree, equations,
                         DIC = TRUE, pD = FALSE, n.iter.pd = NULL,
                         n.adapt = 100,
                         quiet = FALSE,
-                        dsep = FALSE) {
+                        dsep = FALSE,
+                        monitor = NULL) {
 
   # Standardize tree height and build VCV and ID
   tree$edge.length <- tree$edge.length / max(ape::branching.times(tree))
@@ -44,7 +46,9 @@ phybase_run <- function(data, tree, equations,
   parameter_lines <- unlist(strsplit(jags_model_string, "\n"))
 
   # ---- Choose parameters to monitor ----
-  if (dsep) {
+  if (!is.null(monitor)) {
+    parameters.to.save <- monitor
+  } else if (dsep) {
     # Only the first beta in each muX[i] <- ... line
     struct_lines <- grep("^\\s*mu\\w+\\[i\\] <-", parameter_lines, value = TRUE)
     first_betas <- sapply(struct_lines, function(line) {
@@ -53,7 +57,7 @@ phybase_run <- function(data, tree, equations,
     })
     parameters.to.save <- unique(na.omit(first_betas))
   } else {
-    # Monitor only beta, alpha, lambda, and tau parameters
+    # Monitor beta, alpha, lambda, and tau (no sigma)
     beta_params   <- grep("^\\s*beta\\w+", parameter_lines, value = TRUE)
     alpha_params  <- grep("^\\s*alpha\\w+", parameter_lines, value = TRUE)
     lambda_params <- grep("^\\s*lambda\\w+", parameter_lines, value = TRUE)
