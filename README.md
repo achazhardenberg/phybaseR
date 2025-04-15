@@ -53,7 +53,7 @@ Here’s an example workflow for using phybaseR:
 
 ```r
 # Load required libraries
-library(phybase)
+library(phybaser)
 
 # Load example data
 data("rhino.tree")  # Example phylogenetic tree
