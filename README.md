@@ -32,11 +32,11 @@ data("rhino.dat")   # Example life-history data on Rhinograds
 # Define the structural equations for the causal model (this is for model 8 in Gonzalez-Voyer & von Hardenberg (2013)
 equations <- list(LS ~ BM, NL ~ BM + RS, DD ~ NL)
 
-# Create the JAGS model string
+# Create a PhyBaSE model in the JAGS language
 mod8.jg <- phybase_model(equations)  # Create a JAGS model for inspection or modification
 cat(mod8.jg)  # Print the JAGS model for inspection
 
-# Prepare data for JAGS
+# Prepare data 
 mod8.dat <- list(
   BM = rhino.dat$BM,
   LS = rhino.dat$LS,
