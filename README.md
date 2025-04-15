@@ -2,8 +2,6 @@
 
 **phybaseR** provides tools for specifying and fitting Phylogenetic Bayesian structural equation models (PhyBaSE) using [JAGS](http://mcmc-jags.sourceforge.net) via the `R2jags` package. 
 
-The implemented models are described in von Hardenberg A. and Gonzalez-Voyer A. (2025) PhyBaSE: A Bayesian approach to Phylogenetic Structural Equation Models Methods in Ecology and Evolution. in press
-
 > ⚠️ **Please beware that this package and its functions are still in beta.**  
 > Functionality may change, and bugs may occur — feedback is very welcome!
 
