@@ -61,7 +61,8 @@ phybase_run <- function(data, tree, equations,
     sigma_params  <- grep("^\\s*sigma\\w+", parameter_lines, value = TRUE)
 
     extract_param_names <- function(lines) {
-      gsub("^\\s*(\\w+)\\s*~.*", "\\1", lines)
+      lines <- grep("(<-|~)", lines, value = TRUE)
+      gsub("^\\s*(\\w+)\\s*(<-|~).*", "\\1", lines)
     }
 
     parameters.to.save <- unique(c(
