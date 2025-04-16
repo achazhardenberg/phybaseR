@@ -98,7 +98,7 @@ phybase_run <- function(data, tree, equations,
   update(model, n.iter = n.burnin)
 
   # Sample posterior
-  samples <- coda::coda.samples(model, variable.names = monitor, n.iter = n.iter - n.burnin, thin = n.thin)
+  samples <- rjags::coda.samples(model, variable.names = monitor, n.iter = n.iter - n.burnin, thin = n.thin)
 
   # Initialize result object
   result <- list(
