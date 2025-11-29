@@ -1,0 +1,226 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin20
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "phybaseR"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('phybaseR')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("phybase_dsep")
+> ### * phybase_dsep
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: phybase_dsep
+> ### Title: Extract d-separation statements from a structural equation model
+> ### Aliases: phybase_dsep
+> 
+> ### ** Examples
+> 
+> # Define a simple path model
+> equations <- list(LS ~ BM, NL ~ BM + RS, DD ~ NL)
+> 
+> # Get conditional independence tests
+> ind_tests <- phybase_dsep(equations)
+> 
+> # Each test is a formula
+> print(ind_tests)
+[[1]]
+LS ~ NL + BM + RS
+<environment: 0x13dc61818>
+
+[[2]]
+LS ~ DD + BM + NL
+<environment: 0x13dc61818>
+
+[[3]]
+LS ~ RS + BM
+<environment: 0x13dc61818>
+
+[[4]]
+DD ~ BM + NL
+<environment: 0x13dc61818>
+
+[[5]]
+DD ~ RS + NL
+<environment: 0x13dc61818>
+
+[[6]]
+BM ~ RS
+<environment: 0x13dc61818>
+
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("phybase_model")
+> ### * phybase_model
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: phybase_model
+> ### Title: Generate a JAGS model string for Phylogenetic Bayesian SEM
+> ###   (PhyBaSE)
+> ### Aliases: phybase_model
+> 
+> ### ** Examples
+> 
+> eqs <- list(BR ~ BM, S ~ BR, G ~ BR, L ~ BR)
+> cat(phybase_model(eqs, multi.tree = TRUE))
+model {
+  # Structural equations
+  for (i in 1:N) {
+    muBR[i] <- alphaBR + betaBM*BM[i]
+    muS[i] <- alphaS + betaBR*BR[i]
+    muG[i] <- alphaG + betaBR2*BR[i]
+    muL[i] <- alphaL + betaBR3*BR[i]
+  }
+  # Multivariate normal likelihoods
+  BR[1:N] ~ dmnorm(muBR[], TAUbr)
+  S[1:N] ~ dmnorm(muS[], TAUs)
+  G[1:N] ~ dmnorm(muG[], TAUg)
+  L[1:N] ~ dmnorm(muL[], TAUl)
+  # Priors for structural parameters
+  alphaBR ~ dnorm(0, 1.0E-6)
+  lambdaBR ~ dunif(0, 1)
+  tauBR ~ dgamma(1, 1)
+  sigmaBR <- 1/sqrt(tauBR)
+  alphaS ~ dnorm(0, 1.0E-6)
+  lambdaS ~ dunif(0, 1)
+  tauS ~ dgamma(1, 1)
+  sigmaS <- 1/sqrt(tauS)
+  alphaG ~ dnorm(0, 1.0E-6)
+  lambdaG ~ dunif(0, 1)
+  tauG ~ dgamma(1, 1)
+  sigmaG <- 1/sqrt(tauG)
+  alphaL ~ dnorm(0, 1.0E-6)
+  lambdaL ~ dunif(0, 1)
+  tauL ~ dgamma(1, 1)
+  sigmaL <- 1/sqrt(tauL)
+  betaBM ~ dnorm(0, 1.0E-6)
+  betaBR ~ dnorm(0, 1.0E-6)
+  betaBR2 ~ dnorm(0, 1.0E-6)
+  betaBR3 ~ dnorm(0, 1.0E-6)
+
+  for (k in 1:Ntree) {
+    p[k] <- 1 / Ntree
+  }
+  K ~ dcat(p[])
+  # Covariance structure for responses
+  MlamBR <- lambdaBR*multiVCV[,,K] + (1-lambdaBR)*ID
+  TAUbr <- tauBR*inverse(MlamBR)
+  MlamS <- lambdaS*multiVCV[,,K] + (1-lambdaS)*ID
+  TAUs <- tauS*inverse(MlamS)
+  MlamG <- lambdaG*multiVCV[,,K] + (1-lambdaG)*ID
+  TAUg <- tauG*inverse(MlamG)
+  MlamL <- lambdaL*multiVCV[,,K] + (1-lambdaL)*ID
+  TAUl <- tauL*inverse(MlamL)
+  # Predictor priors for imputation
+  for (i in 1:N) {
+    muBM[i] <- 0
+  }
+  BM[1:N] ~ dmnorm(muBM[], TAUbm)
+  lambdaBM ~ dunif(0, 1)
+  tauBM ~ dgamma(1, 1)
+  sigmaBM <- 1/sqrt(tauBM)
+  MlamBM <- lambdaBM*multiVCV[,,K] + (1 - lambdaBM)*ID
+  TAUbm <- tauBM*inverse(MlamBM)
+}> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("rhino.dat")
+> ### * rhino.dat
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: rhino.dat
+> ### Title: Rhinograd life-history data
+> ### Aliases: rhino.dat
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> data(rhino.dat)
+> head(rhino.dat)
+  SP         BM        NL          LS         DD         RS
+1 s1 -0.7669046 -2.017574 -0.09476713 -0.7922619 -3.3926965
+2 s2 -1.0097044 -1.742466 -2.14633494  1.7643208 -1.0467189
+3 s3 -1.2252812 -2.468553 -0.63206843 -1.8061550 -2.8596606
+4 s4  1.3305352  0.340559 -0.13426489  0.9488741 -0.2786894
+5 s5  2.4923437  1.224005  0.60823620  1.6241513  0.2208142
+6 s6  1.4251486  2.969227  3.08553399  2.2524221  2.4268047
+> summary(rhino.dat)
+      SP                  BM                NL                 LS          
+ Length:100         Min.   :-2.3373   Min.   :-2.66773   Min.   :-2.14633  
+ Class :character   1st Qu.: 0.4526   1st Qu.: 0.01542   1st Qu.:-0.09736  
+ Mode  :character   Median : 1.5854   Median : 1.10201   Median : 1.20535  
+                    Mean   : 1.6824   Mean   : 1.05258   Mean   : 1.23445  
+                    3rd Qu.: 2.7206   3rd Qu.: 2.14295   3rd Qu.: 2.26928  
+                    Max.   : 5.4368   Max.   : 5.02897   Max.   : 5.69822  
+       DD                RS           
+ Min.   :-2.9747   Min.   :-3.392697  
+ 1st Qu.: 0.1442   1st Qu.:-0.001407  
+ Median : 1.0129   Median : 0.879031  
+ Mean   : 1.0841   Mean   : 0.965484  
+ 3rd Qu.: 2.1425   3rd Qu.: 2.057613  
+ Max.   : 4.4773   Max.   : 4.942733  
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("rhino.tree")
+> ### * rhino.tree
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: rhino.tree
+> ### Title: Rhinograd phylogenetic tree
+> ### Aliases: rhino.tree
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> data(rhino.tree)
+> plot(rhino.tree)
+> 
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.133 0.01 0.145 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')
