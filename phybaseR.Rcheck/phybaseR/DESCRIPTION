@@ -17,10 +17,11 @@ Description: Provides tools for specifying and fitting Phylogenetic Bayesian
 License: AGPL-3
 Encoding: UTF-8
 LazyData: true
-Imports:
-    rjags,
-    ape,
-    stats
-Depends: 
-    R (>= 3.5)
+Imports: rjags, ape, stats
+Depends: R (>= 3.5)
 RoxygenNote: 7.3.2
+NeedsCompilation: no
+Packaged: 2025-11-29 15:08:25 UTC; achazhardenberg
+Author: Achaz von Hardenberg [aut, cre]
+Maintainer: Achaz von Hardenberg <achaz.hardenberg@unipv.it>
+Built: R 4.5.2; ; 2025-11-29 15:08:28 UTC; unix
