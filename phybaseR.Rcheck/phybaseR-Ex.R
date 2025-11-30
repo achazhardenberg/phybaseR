@@ -49,6 +49,27 @@ cat(phybase_model(eqs, multi.tree = TRUE))
 
 
 cleanEx()
+nameEx("phybase_waic")
+### * phybase_waic
+
+flush(stderr()); flush(stdout())
+
+### Name: phybase_waic
+### Title: Calculate WAIC for a PhyBaSE Model
+### Aliases: phybase_waic
+
+### ** Examples
+
+## Not run: 
+##D   fit <- phybase_run(data, tree, equations)
+##D   waic_res <- phybase_waic(fit, n.iter = 1000)
+##D   print(waic_res)
+## End(Not run)
+
+
+
+
+cleanEx()
 nameEx("rhino.dat")
 ### * rhino.dat
 

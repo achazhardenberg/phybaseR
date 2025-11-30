@@ -1,0 +1,319 @@
+---
+title: "PhyBaSE: Phylogenetic Bayesian Structural Equation Models"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{PhyBaSE: Phylogenetic Bayesian Structural Equation Models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+    collapse = TRUE,
+    comment = "#>"
+)
+```
+
+## Introduction
+
+**PhyBaSE** (Phylogenetic Bayesian Structural Equation Models) is an R package designed to perform causal inference in phylogenetic comparative analyses. It allows you to fit Structural Equation Models (SEMs) that account for:
+
+*   **Phylogenetic Non-independence**: Using the phylogenetic covariance matrix.
+*   **Measurement Error**: Incorporating standard errors or repeated measures.
+*   **Missing Data**: Automatically handling missing values in both predictors and responses.
+*   **Phylogenetic Uncertainty**: integrating over a posterior sample of trees.
+*   **Non-Gaussian Data**: Supporting binomial (binary) response variables.
+
+This tutorial will guide you through the main features of the package.
+
+## Setup
+
+First, load the package and the necessary dependencies.
+
+```{r setup}
+library(phybaseR)
+library(ape)
+```
+
+## Basic Usage: Phylogenetic Regression (PGLS)
+
+Let's start with a simple example: a phylogenetic regression of `Y` on `X`. We'll simulate some data for demonstration.
+
+```{r basic_sim}
+set.seed(123)
+N <- 50
+tree <- rtree(N)
+
+# Simulate traits
+X <- rTraitCont(tree, model = "BM", sigma = 1)
+Y <- 0.5 + 0.8 * X + rTraitCont(tree, model = "BM", sigma = 0.5)
+
+data_list <- list(X = X, Y = Y)
+```
+
+To run the model, we define the structural equations and pass them to `phybase_run()`.
+
+```{r basic_run, eval=FALSE}
+# Define equations
+equations <- list(Y ~ X)
+
+# Run model
+fit <- phybase_run(
+    data = data_list,
+    tree = tree,
+    equations = equations,
+    n.iter = 5000,
+    n.burnin = 1000,
+    n.chains = 3
+)
+
+# View summary
+summary(fit$samples)
+```
+
+## Mediation Analysis
+
+PhyBaSE shines at testing causal paths, such as mediation: `X -> M -> Y`.
+
+```{r mediation_sim}
+# Simulate mediator M
+M <- 0.3 + 0.6 * X + rTraitCont(tree, model = "BM", sigma = 0.5)
+# Simulate Y affected by both X and M
+Y_med <- 0.5 + 0.4 * X + 0.5 * M + rTraitCont(tree, model = "BM", sigma = 0.5)
+
+data_med <- list(X = X, M = M, Y = Y_med)
+```
+
+```{r mediation_run, eval=FALSE}
+# Define DAG equations
+equations_med <- list(
+    M ~ X,
+    Y ~ X + M
+)
+
+fit_med <- phybase_run(
+    data = data_med,
+    tree = tree,
+    equations = equations_med
+)
+```
+
+## Measurement Error
+
+PhyBaSE can account for measurement error in your variables, which avoids attenuation bias (regression dilution).
+
+### Option 1: Using Standard Errors (SE)
+
+If you have known standard errors for your species means:
+
+```{r me_se, eval=FALSE}
+# Assume we have SEs for X
+X_se <- rep(0.1, N)
+data_se <- list(X = X, Y = Y, X_se = X_se)
+
+fit_se <- phybase_run(
+    data = data_se,
+    tree = tree,
+    equations = list(Y ~ X),
+    variability = c(X = "se") # Tell PhyBaSE that X has SEs
+)
+```
+
+### Option 2: Using Repeated Measures
+
+If you have raw data (multiple observations per species), PhyBaSE can estimate the observation error directly.
+
+```{r me_reps, eval=FALSE}
+# Simulate unequal repeated measures (ragged array)
+# Some species have 2 reps, some have 3
+max_reps <- 3
+X_obs <- matrix(NA, nrow = N, ncol = max_reps)
+
+for (i in 1:N) {
+    # Randomly decide if species has 2 or 3 reps
+    n_i <- sample(2:3, 1)
+
+    # Simulate data
+    vals <- rnorm(n_i, mean = X[i], sd = 0.2)
+
+    # Fill matrix (padding with NA for missing reps)
+    X_obs[i, 1:n_i] <- vals
+}
+
+fit_reps <- phybase_run(
+    data = list(X = X_obs, Y = Y),
+    tree = tree,
+    equations = list(Y ~ X),
+    variability = c(X = "reps")
+)
+# PhyBaSE automatically handles the NAs and counts valid replicates per species.
+```
+
+## Binomial Variables
+
+You can model binary traits (0/1) using a phylogenetic logistic regression framework.
+
+```{r binomial, eval=FALSE}
+# Simulate binary trait
+prob <- 1 / (1 + exp(-(0.5 + 0.8 * X)))
+BinaryTrait <- rbinom(N, 1, prob)
+
+data_bin <- list(X = X, Bin = BinaryTrait)
+
+fit_bin <- phybase_run(
+    data = data_bin,
+    tree = tree,
+    equations = list(Bin ~ X),
+    distribution = c(Bin = "binomial") # Specify distribution
+)
+```
+
+**Note**: Binomial variables should generally be child nodes (responses) in your DAG.
+
+## Missing Data
+
+PhyBaSE fully supports missing data (`NA`) in both response and predictor variables. It uses a **Latent Variable (GLMM)** approach to impute missing values while preserving phylogenetic signal.
+
+```{r missing, eval=FALSE}
+# Introduce missing values
+X_miss <- X
+X_miss[c(1, 5, 10)] <- NA # Missing in predictor
+Y_miss <- Y
+Y_miss[c(2, 6, 12)] <- NA # Missing in response
+
+data_miss <- list(X = X_miss, Y = Y_miss)
+
+# Just run it! No extra setup needed.
+fit_miss <- phybase_run(
+    data = data_miss,
+    tree = tree,
+    equations = list(Y ~ X)
+)
+# PhyBaSE automatically detects NAs and handles them.
+```
+
+## Phylogenetic Uncertainty
+
+To account for uncertainty in the phylogeny itself, simply pass a list of trees (e.g., a `multiPhylo` object) instead of a single tree.
+
+```{r multitree, eval=FALSE}
+# trees <- read.nexus("posterior_trees.nex")
+
+fit_multi <- phybase_run(
+    data = data_list,
+    tree = trees, # Pass list of trees
+    equations = equations
+)
+```
+
+## Model Comparison (WAIC)
+
+You can compare models using the Widely Applicable Information Criterion (WAIC).
+
+```{r waic, eval=FALSE}
+waic_res <- phybase_waic(fit, n.iter = 2000)
+print(waic_res)
+```
+
+## Model Validation (d-separation)
+
+You can validate your model structure by testing the conditional independence statements implied by your DAG. This is done using the d-separation (basis set) method.
+
+```{r dsep_example, eval=FALSE}
+# Define a path model: A -> B -> C
+# This implies: A is independent of C, conditional on B
+A <- rTraitCont(tree)
+B <- 0.5 + 0.8 * A + rTraitCont(tree)
+C <- 0.5 + 0.8 * B + rTraitCont(tree)
+
+data_dsep <- list(A = A, B = B, C = C)
+
+equations_dsep <- list(
+    B ~ A,
+    C ~ B
+)
+
+# Run d-separation tests by setting dsep = TRUE
+fit_dsep <- phybase_run(
+    data = data_dsep,
+    tree = tree,
+    equations = equations_dsep,
+    dsep = TRUE # <--- This triggers d-sep testing
+)
+
+# The summary will show the conditional independence tests
+summary(fit_dsep)
+```
+
+**Output:**
+```
+PhyBaSE d-separation Tests
+==========================
+
+           Test Parameter Estimate LowerCI UpperCI Indep P_approx_0
+ C _||_ A | {B}     betaA   -0.090  -0.724   0.518   Yes      0.776
+
+Joint P(all tests ≈ 0) = 0.776
+
+Legend:
+  Indep: 'Yes' = Conditionally Independent, 'No' = Dependent (based on 95% CI)
+  P(≈0): Bayesian probability that effect crosses zero (0-1 scale)
+  Joint: Probability that ALL tests simultaneously support independence
+
+Note: For d-separation, we expect high P(≈0) and Joint values (close to 1).
+```
+
+The `P(≈0)` gives you a Bayesian measure of how plausible independence is for each individual test, while the `Joint` probability tells you how often ALL tests simultaneously support the model structure.
+
+## Latent Variables (Experimental)
+
+> **Warning**: This is an experimental feature. Use with caution and verify results carefully.
+
+PhyBaSE can handle **unobserved (latent) variables** that act as common causes. Rather than modeling latents explicitly, the package models the **correlations they induce** between observed variables.
+
+### Example: Latent Common Cause
+
+```{r latent_example, eval=FALSE}
+# Suppose we have a latent variable L that affects both X and Y
+# L -> X, L -> Y (L is unmeasured)
+
+equations <- list(
+    X ~ L,
+    Y ~ L
+)
+
+fit_latent <- phybase_run(
+    data = data_list,
+    tree = tree,
+    equations = equations,
+    latent = "L", # Specify latent variable(s)
+    dsep = TRUE, # Optional: test m-separation
+    n.iter = 10000
+)
+
+# Check induced correlations
+fit_latent$induced_correlations
+# [[1]]
+# [1] "X" "Y"
+
+# The correlation parameter rho_X_Y is estimated
+summary(fit_latent)
+```
+
+### How It Works
+
+1. **MAG Conversion**: Converts your DAG to a Maximal Ancestral Graph (MAG)
+2. **Induced Correlations**: Identifies bidirected edges `X <-> Y` 
+3. **Correlated Residuals**: Models correlations using multivariate normal in JAGS
+
+The model decomposes each variable's error into independent phylogenetic and correlated residual components.
+
+### Limitations
+
+- Currently supports **pairwise correlations** only
+- Latent variables are **not estimated** (only their induced effects)
+- Requires `ggm` package
+
+## Conclusion
+
+PhyBaSE provides a flexible and powerful framework for phylogenetic path analysis. By handling measurement error, missing data, and phylogenetic uncertainty in a single Bayesian model, it allows for more robust evolutionary inferences.

@@ -20,7 +20,9 @@ LazyData: true
 Imports: rjags, ape, stats
 Depends: R (>= 3.5)
 RoxygenNote: 7.3.2
+Suggests: knitr, rmarkdown
+VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2025-11-29 15:08:25 UTC; achazhardenberg
+Packaged: 2025-11-30 08:57:45 UTC; achazhardenberg
 Author: Achaz von Hardenberg [aut, cre]
 Maintainer: Achaz von Hardenberg <achaz.hardenberg@unipv.it>

@@ -4,12 +4,33 @@
 \alias{phybase_model}
 \title{Generate a JAGS model string for Phylogenetic Bayesian SEM (PhyBaSE)}
 \usage{
-phybase_model(equations, multi.tree = FALSE)
+phybase_model(
+  equations,
+  multi.tree = FALSE,
+  variability = NULL,
+  distribution = NULL,
+  vars_with_na = NULL
+)
 }
 \arguments{
-\item{equations}{A list of model formulas (one per structural equation), e.g., \code{list(Y ~ X1 + X2, Z ~ Y)}.}
+\item{equations}{A list of model formulas.}
 
-\item{multi.tree}{Logical. If \code{TRUE}, generates a model that samples from a set of phylogenetic variance-covariance matrices (\code{multiVCV}) to account for phylogenetic uncertainty. Defaults to \code{FALSE}.}
+\item{multi.tree}{Logical; if \code{TRUE}, incorporates phylogenetic uncertainty by sampling across a set of trees.}
+
+\item{variability}{Optional character vector or named character vector of variable names that have measurement error or within-species variability.
+If named, the names should be the variable names and the values should be the type of variability: "se" (for mean and standard error) or "reps" (for repeated measures).
+If unnamed, it defaults to "se" for all specified variables.
+\itemize{
+  \item "se": Expects \code{Var_mean} and \code{Var_se} in the data. The model fixes observation error: \code{Var_mean ~ dnorm(Var, 1/Var_se^2)}.
+  \item "reps": Expects \code{Var_obs} (matrix) and \code{N_reps_Var} (vector) in the data. The model estimates observation error: \code{Var_obs[i,j] ~ dnorm(Var[i], Var_tau)}.
+}}
+
+\item{distribution}{Optional named character vector specifying the distribution for response variables.
+Default is "gaussian" for all variables. Supported values: "gaussian", "binomial".
+For "binomial" variables, the model uses a logit link and a Bernoulli likelihood, with phylogenetic correlation modeled on the latent scale.}
+
+\item{vars_with_na}{Optional character vector of response variable names that have missing data.
+These variables will use element-wise likelihoods instead of multivariate normal.}
 }
 \value{
 A character string containing the JAGS model code.
@@ -25,6 +46,13 @@ The generated model includes:
   \item Linear predictors and multivariate normal likelihoods for each response variable.
   \item Priors for intercepts (\code{alpha}), slopes (\code{beta}), lambda parameters (\code{lambda}), and residual precisions (\code{tau}).
   \item Phylogenetic covariance modeled via a single \code{VCV} matrix (when \code{multi.tree = FALSE}) or a 3D array \code{multiVCV[,,K]} with categorical sampling across trees (when \code{multi.tree = TRUE}).
+  \item (Optional) Observation models for variables with measurement error:
+    \itemize{
+      \item Type "se": \code{Var_mean ~ dnorm(Var, 1/Var_se^2)}
+      \item Type "reps": \code{Var_obs[i,j] ~ dnorm(Var[i], Var_tau)}
+    }
+  \item (Optional) Generalized linear mixed models for non-Gaussian responses (e.g., binomial).
+  \item (Optional) Element-wise likelihoods for response variables with missing data.
 }
 }
 \examples{
