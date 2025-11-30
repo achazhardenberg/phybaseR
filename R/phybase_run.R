@@ -52,6 +52,16 @@ phybase_run <- function(
   distribution = NULL,
   latent = NULL
 ) {
+  # Input validation
+  if (is.null(data)) {
+    stop("Argument 'data' must be provided.")
+  }
+  if (is.null(tree)) {
+    stop("Argument 'tree' must be provided.")
+  }
+  if (is.null(equations)) {
+    stop("Argument 'equations' must be provided.")
+  }
   # Handle tree(s)
   is_multiple <- inherits(tree, "multiPhylo") ||
     (is.list(tree) && all(sapply(tree, inherits, "phylo")))
