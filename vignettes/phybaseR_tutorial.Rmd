@@ -344,9 +344,36 @@ summary(fit_explicit)
 
 **Disadvantages**: Requires careful consideration of identification and scaling.
 
+### Understanding Identification Issues
+
+When using the **explicit approach**, latent variables have no inherent scale, leading to **identification problems** where multiple parameter combinations fit the data equally well.
+
+**Example**: Consider `L -> X` and `L -> Y`:
+- You could double the scale of `L` and halve both path coefficients → **same predictions**
+- JAGS may struggle to converge or produce unreliable estimates
+
+**Why MAG avoids this**: The MAG approach only estimates the **correlation** `rho_X_Y` induced by `L`, which is scale-invariant. You don't need to worry about the scale of `L` or its individual paths.
+
+**When to use explicit**: If you have:
+- Strong theoretical priors on latent variable scales
+- Additional constraints (e.g., fixing one path to 1, "marker variable" approach)
+- Need to report specific latent -> observed effects (acknowledging identification constraints)
+
+### Recommendations
+
+- **Default to MAG (correlations)**: Safer, more interpretable, consistent with d-separation testing
+- **Use explicit sparingly**: Only when you have good reasons and understand the identification constraints
+
+### References
+
+- **Bollen, K. A. (1989).** *Structural Equations with Latent Variables*. Wiley. (Classic treatment of identification in SEM)
+- **Pearl, J. (2009).** *Causality: Models, Reasoning, and Inference* (2nd ed.). Cambridge University Press. (Chapter on MAGs and latent variables)
+- **Richardson, T., & Spirtes, P. (2002).** Ancestral graph Markov models. *Annals of Statistics*, 30(4), 962-1030. (Formal theory of MAGs)
+- **Shipley, B. (2016).** *Cause and Correlation in Biology* (2nd ed.). Cambridge University Press. (d-separation and causal inference in phylogenetics)
+
 ### Limitations
 
 - MAG approach currently supports **pairwise correlations** only
-- Explicit approach may have identification issues with complex latent structures
+- Explicit approach requires constraints for identification with complex latent structures
 
 

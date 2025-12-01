@@ -552,6 +552,9 @@ phybase_run <- function(
       extract_names("^\\s*tau"),
       extract_names("^\\s*rho")
     ))
+
+    # Remove tau_obs_* (deterministic constants, not stochastic parameters)
+    monitor <- monitor[!grepl("^tau_obs", monitor)]
   }
 
   # Add response variables
