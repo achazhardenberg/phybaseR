@@ -423,8 +423,8 @@ phybase_run <- function(
     }
 
     if (length(dsep_tests) == 0) {
-      warning(
-        "No d-separation tests implied by the model (model is saturated)."
+      stop(
+        "No d-separation tests implied by the model (model is saturated). Stopping run."
       )
     } else {
       # Use d-sep tests as equations
