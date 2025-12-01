@@ -103,7 +103,13 @@ phybase_model <- function(
   param_map <- list()
 
   # Start model
-  model_lines <- c("model {", "  # Structural equations", "  for (i in 1:N) {")
+  model_lines <- c(
+    "model {",
+    "  # Dummy usage of ID to prevent warnings in GLMM-only models",
+    "  dummy_ID <- ID[1,1]",
+    "  # Structural equations",
+    "  for (i in 1:N) {"
+  )
 
   for (j in seq_along(eq_list)) {
     eq <- eq_list[[j]]
