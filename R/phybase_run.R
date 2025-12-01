@@ -13,12 +13,16 @@
 #' @param n.adapt Number of adaptation iterations (default = 100).
 #' @param quiet Logical; suppress JAGS output (default = FALSE).
 #' @param dsep Logical; if \code{TRUE}, monitor only the first beta in each structural equation (used for d-separation testing).
-#' @param variability Optional character vector or named character vector of variable names that have measurement error or within-species variability.
-#'   If named, the names should be the variable names and the values should be the type of variability: "se" (for mean and standard error) or "reps" (for repeated measures).
-#'   If unnamed, the function attempts to infer the type from the data:
+#' @param variability Optional specification for variables with measurement error or within-species variability.
+#'   **AUTO-DETECTION**: If a variable \code{X} has a corresponding column \code{X_se} (standard errors),
+#'   \code{X_obs} (repeated measures), or is provided as a matrix, variability is automatically detected.
+#'
+#'   **Manual specification** (for non-standard column names):
 #'   \itemize{
-#'     \item If \code{Var_se} exists in data, type is "se".
-#'     \item If \code{Var} is a matrix or \code{Var_obs} exists, type is "reps".
+#'     \item Simple: \code{list(X = "se", Y = "reps")} - uses standard \code{X_se}/\code{Y_obs} naming
+#'     \item Custom columns: \code{list(X = list(type = "se", se_col = "X_SD"))} - specify custom column names
+#'     \item For SE: \code{se_col} (SE column), \code{mean_col} (mean column, optional)
+#'     \item For reps: \code{obs_col} (observations matrix column)
 #'   }
 #' @param distribution Optional named character vector specifying the distribution for response variables.
 #'   Default is "gaussian" for all variables. Supported values: "gaussian", "binomial".
@@ -194,102 +198,174 @@ phybase_run <- function(
     )
   }
 
+  # Auto-detect variability from data column names (user-friendly)
+  # Look for patterns: X_se, X_obs or matrix columns
+  auto_variability <- list()
+
+  for (var in all_vars) {
+    # Skip if already in manual variability specification
+    if (!is.null(variability) && var %in% c(names(variability), variability)) {
+      next
+    }
+
+    # Check for SE pattern (X_se)
+    se_name <- paste0(var, "_se")
+    if (se_name %in% names(data)) {
+      auto_variability[[var]] <- "se"
+      if (!quiet) {
+        message(sprintf(
+          "Auto-detected: '%s' has standard errors in '%s'",
+          var,
+          se_name
+        ))
+      }
+    }
+
+    # Check for repeated measures pattern (X_obs or matrix)
+    obs_name <- paste0(var, "_obs")
+    if (var %in% names(data) && is.matrix(data[[var]])) {
+      auto_variability[[var]] <- "reps"
+      if (!quiet) {
+        message(sprintf(
+          "Auto-detected: '%s' has repeated measures (matrix format)",
+          var
+        ))
+      }
+    } else if (obs_name %in% names(data)) {
+      auto_variability[[var]] <- "reps"
+      if (!quiet) {
+        message(sprintf(
+          "Auto-detected: '%s' has repeated measures in '%s'",
+          var,
+          obs_name
+        ))
+      }
+    }
+  }
+
+  # Merge auto-detected with manual specification (manual takes precedence)
+  if (length(auto_variability) > 0) {
+    if (is.null(variability)) {
+      variability <- auto_variability
+    } else {
+      # Convert variability to named list if needed
+      if (is.null(names(variability))) {
+        variability <- setNames(rep(NA, length(variability)), variability)
+      }
+      # Merge: manual overrides auto
+      for (var in names(auto_variability)) {
+        if (!var %in% names(variability)) {
+          variability[[var]] <- auto_variability[[var]]
+        }
+      }
+    }
+  }
+
   # Handle variability data
   variability_list <- list()
   if (!is.null(variability)) {
-    # If unnamed, infer types
-    if (is.null(names(variability))) {
-      vars <- variability
-      types <- rep(NA, length(vars))
-      names(types) <- vars
-    } else {
-      vars <- names(variability)
-      types <- variability
-    }
+    for (var_name in names(variability)) {
+      var_spec <- variability[[var_name]]
 
-    for (var in vars) {
-      type <- types[[var]]
-
-      # Infer type if missing
-      if (is.na(type)) {
-        if (paste0(var, "_se") %in% names(data)) {
-          type <- "se"
-        } else if (
-          is.matrix(data[[var]]) || paste0(var, "_obs") %in% names(data)
-        ) {
-          type <- "reps"
-        } else {
-          stop(paste(
-            "Could not infer variability type for",
-            var,
-            "- provide '_se' for summary stats or matrix for repeated measures."
-          ))
-        }
-        types[[var]] <- type
+      # Parse specification: can be "se"/"reps" or list(type="se", se_col="X_SD")
+      if (is.list(var_spec)) {
+        # Extended format with custom column names
+        type <- var_spec$type
+        custom_se_col <- var_spec$se_col
+        custom_obs_col <- var_spec$obs_col
+        custom_mean_col <- var_spec$mean_col
+      } else {
+        # Simple format: just the type
+        type <- as.character(var_spec)
+        custom_se_col <- NULL
+        custom_obs_col <- NULL
+        custom_mean_col <- NULL
       }
 
-      variability_list[[var]] <- type
+      # Validate type
+      if (!type %in% c("se", "reps")) {
+        stop(paste(
+          "Invalid variability type for",
+          var_name,
+          "- must be 'se' or 'reps', got:",
+          type
+        ))
+      }
+
+      variability_list[[var_name]] <- type
 
       if (type == "se") {
-        # Check if SE exists
-        if (!paste0(var, "_se") %in% names(data)) {
+        # Determine SE column name (custom or standard)
+        se_col <- custom_se_col %||% paste0(var_name, "_se")
+        mean_col <- custom_mean_col %||% paste0(var_name, "_mean")
+
+        # Check if SE column exists
+        if (!se_col %in% names(data)) {
           stop(paste(
             "Variable",
-            var,
-            "specified as 'se' type but",
-            paste0(var, "_se"),
+            var_name,
+            "specified as 'se' type but column",
+            se_col,
             "not found in data."
           ))
         }
 
-        # Handle mean
-        mean_name <- paste0(var, "_mean")
-        if (!mean_name %in% names(data)) {
-          if (var %in% names(data)) {
+        # Handle mean column
+        if (!mean_col %in% names(data)) {
+          if (var_name %in% names(data)) {
             # Rename var to var_mean
-            data[[mean_name]] <- data[[var]]
-            data[[var]] <- NULL
+            data[[mean_col]] <- data[[var_name]]
+            data[[var_name]] <- NULL
           } else {
             stop(paste(
               "Variable",
-              var,
+              var_name,
               "specified as 'se' type but neither",
-              var,
+              var_name,
               "nor",
-              mean_name,
+              mean_col,
               "found in data."
             ))
           }
         } else {
           # If both exist, ensure var is removed (it's a latent parameter now)
-          if (var %in% names(data)) data[[var]] <- NULL
+          if (var_name %in% names(data)) data[[var_name]] <- NULL
+        }
+
+        # Rename custom column to standard name if needed
+        if (se_col != paste0(var_name, "_se")) {
+          data[[paste0(var_name, "_se")]] <- data[[se_col]]
         }
       } else if (type == "reps") {
-        # Handle repeated measures
-        obs_name <- paste0(var, "_obs")
-        nrep_name <- paste0("N_reps_", var)
+        # Determine obs column name (custom or standard)
+        obs_col <- custom_obs_col %||% paste0(var_name, "_obs")
+        nrep_name <- paste0("N_reps_", var_name)
 
-        if (!obs_name %in% names(data)) {
-          if (var %in% names(data) && is.matrix(data[[var]])) {
+        # Check if obs column exists
+        if (!obs_col %in% names(data)) {
+          if (var_name %in% names(data) && is.matrix(data[[var_name]])) {
             # Rename var to var_obs
-            data[[obs_name]] <- data[[var]]
-            data[[var]] <- NULL
+            data[[obs_col]] <- data[[var_name]]
+            data[[var_name]] <- NULL
           } else {
             stop(paste(
               "Variable",
-              var,
-              "specified as 'reps' type but neither",
-              var,
-              "(as matrix) nor",
-              obs_name,
-              "found in data."
+              var_name,
+              "specified as 'reps' type but column",
+              obs_col,
+              "(as matrix) not found in data."
             ))
           }
         }
 
+        # Rename custom column to standard name if needed
+        if (obs_col != paste0(var_name, "_obs")) {
+          data[[paste0(var_name, "_obs")]] <- data[[obs_col]]
+        }
+
         # Calculate N_reps if not provided
         if (!nrep_name %in% names(data)) {
-          mat <- data[[obs_name]]
+          mat <- data[[paste0(var_name, "_obs")]]
           # Count non-NA values per row
           n_reps <- apply(mat, 1, function(x) sum(!is.na(x)))
           data[[nrep_name]] <- n_reps
