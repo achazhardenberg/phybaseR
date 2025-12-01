@@ -14,7 +14,7 @@
 #'   For model comparison, use WAIC or compare mean deviance across models with similar structure.
 #' @param WAIC Logical; whether to sample values for WAIC and deviance (default = FALSE).
 #'   WAIC is generally more appropriate than DIC for hierarchical models with latent variables.
-#' @param n.adapt Number of adaptation iterations (default = 100).
+#' @param n.adapt Number of adaptation iterations (default = 1000).
 #' @param quiet Logical; suppress JAGS output (default = FALSE).
 #' @param dsep Logical; if \code{TRUE}, monitor only the first beta in each structural equation (used for d-separation testing).
 #' @param variability Optional specification for variables with measurement error or within-species variability.
@@ -62,7 +62,7 @@ phybase_run <- function(
   n.thin = max(1, floor((n.iter - n.burnin) / 1000)),
   DIC = TRUE,
   WAIC = FALSE,
-  n.adapt = 100,
+  n.adapt = 1000,
   quiet = FALSE,
   dsep = FALSE,
   variability = NULL,
