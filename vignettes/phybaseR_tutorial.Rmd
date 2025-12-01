@@ -114,8 +114,13 @@ fit_se <- phybase_run(
 )
 
 summary(fit_se)
-
 ```
+
+**Note on DIC with measurement error**: When using measurement error (either SE or repeated measures), the DIC penalty will be inflated because PhyBaSE creates latent "true" values for each species. The penalty will be approximately: structural parameters + N (number of species). This is expected behavior.
+
+- For **model comparison**, use WAIC instead: `phybase_run(..., WAIC = TRUE)`
+- For **fit quality**, focus on the mean deviance (lower is better)
+- The inflated penalty does not affect the validity of the model, only the DIC interpretation
 
 ### Option 2: Using Repeated Measures
 
@@ -167,7 +172,7 @@ fit_bin <- phybase_run(
     equations = list(Bin ~ X),
     distribution = c(Bin = "binomial") # Specify distribution
 )
-    
+
 summary(fit_bin)
 ```
 
@@ -203,7 +208,6 @@ summary(fit_miss)
 To account for uncertainty in the phylogeny itself, simply pass a list of trees (e.g., a `multiPhylo` object) instead of a single tree.
 
 ```{r multitree, eval=FALSE}
-
 # For demonstration, simulate multiple trees
 num_trees <- 20
 trees <- lapply(1:num_trees, function(x) rtree(N))

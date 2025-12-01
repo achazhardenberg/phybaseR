@@ -878,13 +878,13 @@ phybase_model <- function(
               "  TAU",
               tolower(response),
               suffix,
-              " <- inverse(tau",
+              " <- tau",
               response,
               suffix,
-              "*Mlam",
+              "*inverse(Mlam",
               response,
               suffix,
-              "[,])"
+              "[,])" # Stable: inverse(M) then multiply by scalar tau
             )
           )
         } else {
@@ -906,13 +906,13 @@ phybase_model <- function(
               "  TAU",
               tolower(response),
               suffix,
-              " <- inverse(tau",
+              " <- tau",
               response,
               suffix,
-              "*Mlam",
+              "*inverse(Mlam",
               response,
               suffix,
-              "[,])"
+              "[,])" # Stable: inverse(M) then multiply by scalar tau
             )
           )
         }
