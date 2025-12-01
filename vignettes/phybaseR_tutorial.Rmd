@@ -364,13 +364,6 @@ When using the **explicit approach**, latent variables have no inherent scale, l
 - **Default to MAG (correlations)**: Safer, more interpretable, consistent with d-separation testing
 - **Use explicit sparingly**: Only when you have good reasons and understand the identification constraints
 
-### References
-
-- **Bollen, K. A. (1989).** *Structural Equations with Latent Variables*. Wiley. (Classic treatment of identification in SEM)
-- **Pearl, J. (2009).** *Causality: Models, Reasoning, and Inference* (2nd ed.). Cambridge University Press. (Chapter on MAGs and latent variables)
-- **Richardson, T., & Spirtes, P. (2002).** Ancestral graph Markov models. *Annals of Statistics*, 30(4), 962-1030. (Formal theory of MAGs)
-- **Shipley, B. (2016).** *Cause and Correlation in Biology* (2nd ed.). Cambridge University Press. (d-separation and causal inference in phylogenetics)
-
 ### Limitations
 
 - MAG approach currently supports **pairwise correlations** only
