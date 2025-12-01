@@ -4,5 +4,6 @@ phybase_model           Generate a JAGS model string for Phylogenetic
                         Bayesian SEM (PhyBaSE)
 phybase_run             Run a Phylogenetic Bayesian Structural Equation
                         model (PhyBaSE)
+phybase_waic            Calculate WAIC for a PhyBaSE Model
 rhino.dat               Rhinograd life-history data
 rhino.tree              Rhinograd phylogenetic tree

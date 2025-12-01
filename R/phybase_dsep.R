@@ -1,26 +1,31 @@
 #' Extract d-separation statements from a structural equation model
 #'
 #' This function takes a set of structural equations defining a causal model
-#' and returns the conditional independence statements (d-separation tests)
-#' implied by the model structure. These can be used to test the model's
-#' fit using the basis set method.
+#' and returns the conditional independence statements (d-separation or m-separation tests)
+#' implied by the model structure. If latent variables are specified, the function
+#' uses the MAG (Maximal Ancestral Graph) approach by Shipley and Douma (2021)
+#' to account for unmeasured latent variables.
 #'
 #' @param equations A list of model formulas (one per structural equation),
 #'   e.g., \code{list(Y ~ X1 + X2, Z ~ Y)}.
+#' @param latent Optional character vector of latent (unmeasured) variable names.
+#'   If provided, the function converts the DAG to a MAG and returns m-separation tests.
 #'
-#' @return A list of formulas representing conditional independence tests.
-#'   Each formula represents a regression that should yield a non-significant
-#'   coefficient if the model is correctly specified.
+#' @return If \code{latent} is NULL, returns a list of formulas representing
+#'   conditional independence tests. If \code{latent} is specified, returns a list with:
+#'   \itemize{
+#'     \item \code{tests}: List of m-separation test formulas
+#'     \item \code{correlations}: List of variable pairs with induced correlations
+#'   }
 #'
 #' @details
 #' The function implements the basis set approach to d-separation testing
-#' (Shipley 2000, 2009). For each pair of non-adjacent variables in the
-#' causal graph, it creates a conditional independence test by regressing
-#' one variable on the other while conditioning on their common parents.
+#' (Shipley 2000, 2009, 2016). For standard DAGs without latent variables, it identifies
+#' pairs of non-adjacent variables and creates conditional independence tests.
 #'
-#' Variables with no parents are preferentially placed on the right-hand
-#' side of test equations. When both variables have parents, descendants
-#' are placed on the left-hand side.
+#' When latent variables are specified, the function uses the DAG-to-MAG conversion
+#' (Shipley & Douma 2021) to identify m-separation statements and induced correlations
+#' among observed variables that arise from shared latent common causes.
 #'
 #' @references
 #' Shipley, B. (2000). A new inferential test for path models based on
@@ -29,18 +34,40 @@
 #' Shipley, B. (2009). Confirmatory path analysis in a generalized multilevel
 #' context. Ecology, 90(2), 363-368.
 #'
-#' @examples
-#' # Define a simple path model
-#' equations <- list(LS ~ BM, NL ~ BM + RS, DD ~ NL)
+#' Shipley, B. (2016). Cause and Correlation in Biology (2nd ed.).
+#' Cambridge University Press.
 #'
-#' # Get conditional independence tests
+#' Shipley, B., & Douma, J. C. (2021). Testing Piecewise Structural Equations
+#' Models in the Presence of Latent Variables and Including Correlated Errors.
+#' Structural Equation Modeling: A Multidisciplinary Journal, 28(4), 582–589.
+#' https://doi.org/10.1080/10705511.2020.1871355
+
+#'
+#' @examples
+#' # Standard DAG
+#' equations <- list(LS ~ BM, NL ~ BM + RS, DD ~ NL)
 #' ind_tests <- phybase_dsep(equations)
 #'
-#' # Each test is a formula
-#' print(ind_tests)
+#' # With latent variable
+#' equations_latent <- list(X ~ Quality, Y ~ Quality)
+#' result <- phybase_dsep(equations_latent, latent = "Quality")
+#' # result$tests: m-separation tests
+#' # result$correlations: induced correlation between X and Y
 #'
 #' @export
-phybase_dsep <- function(equations) {
+#' @importFrom stats formula terms as.formula
+phybase_dsep <- function(equations, latent = NULL) {
+  # If no latents, use standard DAG d-separation
+  if (is.null(latent)) {
+    return(dsep_standard(equations))
+  }
+
+  # With latents: use MAG m-separation
+  return(dsep_with_latents(equations, latent))
+}
+
+# Standard d-separation for DAGs (original logic)
+dsep_standard <- function(equations) {
   # Parse equations to extract parent-child relationships
   parents <- list()
   children <- list()
@@ -115,13 +142,57 @@ phybase_dsep <- function(equations) {
           }
         }
 
+        # Create the formula
+        f <- as.formula(reg_formula)
+
+        # Identify the test variable
+        if (length(parents_var1) == 0 && length(parents_var2) == 0) {
+          test_var <- var2
+        } else if (length(parents_var1) == 0) {
+          test_var <- var1
+        } else if (length(parents_var2) == 0) {
+          test_var <- var2
+        } else {
+          if (var1 %in% children[[var2]]) {
+            test_var <- var1
+          } else {
+            test_var <- var2
+          }
+        }
+
+        attr(f, "test_var") <- test_var
+
         # Add the formula to the list
         cond_indep_regressions[[
           length(cond_indep_regressions) + 1
-        ]] <- as.formula(reg_formula)
+        ]] <- f
       }
     }
   }
 
   return(cond_indep_regressions)
+}
+
+# M-separation for MAGs (with latent variables)
+dsep_with_latents <- function(equations, latent) {
+  # Convert equations to ggm DAG format
+  dag <- equations_to_dag(equations)
+
+  # Call Shipley's DAG.to.MAG (suppressing verbose output)
+  mag <- suppressMessages(DAG.to.MAG(dag, latents = latent))
+
+  # Extract basis set from MAG
+  basis <- suppressMessages(basiSet.mag(mag))
+
+  # Convert to formula format
+  tests <- mag_basis_to_formulas(basis)
+
+  # Extract bidirected edges (induced correlations)
+  correlations <- extract_bidirected_edges(mag)
+
+  return(list(
+    tests = tests,
+    correlations = correlations,
+    mag = mag # Include MAG for reference
+  ))
 }

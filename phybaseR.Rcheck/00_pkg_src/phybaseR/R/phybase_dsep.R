@@ -40,6 +40,7 @@
 #' print(ind_tests)
 #'
 #' @export
+#' @importFrom stats formula terms as.formula
 phybase_dsep <- function(equations) {
   # Parse equations to extract parent-child relationships
   parents <- list()

@@ -34,28 +34,11 @@
 * checking whether the package can be unloaded cleanly ... OK
 * checking whether the namespace can be loaded with stated dependencies ... OK
 * checking whether the namespace can be unloaded cleanly ... OK
-* checking dependencies in R code ... NOTE
-Namespace in Imports field not imported from: ‘stats’
-  All declared Imports should be used.
+* checking dependencies in R code ... OK
 * checking S3 generic/method consistency ... OK
 * checking replacement functions ... OK
 * checking foreign function calls ... OK
-* checking R code for possible problems ... NOTE
-phybase_dsep: no visible global function definition for ‘formula’
-phybase_dsep: no visible global function definition for ‘terms’
-phybase_dsep: no visible global function definition for ‘as.formula’
-phybase_model : <anonymous>: no visible global function definition for
-  ‘formula’
-phybase_model : <anonymous>: no visible global function definition for
-  ‘terms’
-phybase_run: no visible global function definition for ‘na.omit’
-phybase_run: no visible global function definition for ‘update’
-Undefined global functions or variables:
-  as.formula formula na.omit terms update
-Consider adding
-  importFrom("stats", "as.formula", "formula", "na.omit", "terms",
-             "update")
-to your NAMESPACE file.
+* checking R code for possible problems ... OK
 * checking Rd files ... OK
 * checking Rd metadata ... OK
 * checking Rd cross-references ... OK
@@ -68,6 +51,15 @@ to your NAMESPACE file.
 * checking data for non-ASCII characters ... OK
 * checking LazyData ... OK
 * checking data for ASCII and uncompressed saves ... OK
+* checking files in ‘vignettes’ ... WARNING
+Files in the 'vignettes' directory but no files in 'inst/doc':
+  ‘phybaseR_tutorial.Rmd’
 * checking examples ... OK
+* checking for unstated dependencies in vignettes ... OK
+* checking package vignettes ... WARNING
+Directory 'inst/doc' does not exist.
+Package vignette without corresponding single PDF/HTML:
+  ‘phybaseR_tutorial.Rmd’
+* checking re-building of vignette outputs ... OK
 * DONE
-Status: 2 NOTEs
+Status: 2 WARNINGs

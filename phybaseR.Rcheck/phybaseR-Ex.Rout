@@ -46,27 +46,27 @@ Type 'q()' to quit R.
 > print(ind_tests)
 [[1]]
 LS ~ NL + BM + RS
-<environment: 0x13dc61818>
+<environment: 0x1321f2318>
 
 [[2]]
 LS ~ DD + BM + NL
-<environment: 0x13dc61818>
+<environment: 0x1321f2318>
 
 [[3]]
 LS ~ RS + BM
-<environment: 0x13dc61818>
+<environment: 0x1321f2318>
 
 [[4]]
 DD ~ BM + NL
-<environment: 0x13dc61818>
+<environment: 0x1321f2318>
 
 [[5]]
 DD ~ RS + NL
-<environment: 0x13dc61818>
+<environment: 0x1321f2318>
 
 [[6]]
 BM ~ RS
-<environment: 0x13dc61818>
+<environment: 0x1321f2318>
 
 > 
 > 
@@ -150,6 +150,27 @@ model {
 > 
 > 
 > cleanEx()
+> nameEx("phybase_waic")
+> ### * phybase_waic
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: phybase_waic
+> ### Title: Calculate WAIC for a PhyBaSE Model
+> ### Aliases: phybase_waic
+> 
+> ### ** Examples
+> 
+> ## Not run: 
+> ##D   fit <- phybase_run(data, tree, equations)
+> ##D   waic_res <- phybase_waic(fit, n.iter = 1000)
+> ##D   print(waic_res)
+> ## End(Not run)
+> 
+> 
+> 
+> 
+> cleanEx()
 > nameEx("rhino.dat")
 > ### * rhino.dat
 > 
@@ -214,7 +235,7 @@ model {
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  0.133 0.01 0.145 0 0 
+Time elapsed:  0.112 0.01 0.128 0 0 
 > grDevices::dev.off()
 null device 
           1 
