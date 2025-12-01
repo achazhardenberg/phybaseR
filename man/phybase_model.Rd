@@ -27,7 +27,7 @@ If unnamed, it defaults to "se" for all specified variables.
 }}
 
 \item{distribution}{Optional named character vector specifying the distribution for response variables.
-Default is "gaussian" for all variables. Supported values: "gaussian", "binomial".
+Default is "gaussian" for all variables. Supported values: "gaussian", "binomial", "multinomial".
 For "binomial" variables, the model uses a logit link and a Bernoulli likelihood, with phylogenetic correlation modeled on the latent scale.}
 
 \item{vars_with_na}{Optional character vector of response variable names that have missing data.
