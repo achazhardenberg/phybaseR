@@ -499,6 +499,13 @@ phybase_run <- function(
     )
     update(model, n.iter = n.burnin)
 
+    # Disable DIC/WAIC if only 1 chain (rjags requirement)
+    if (n.chains < 2 && (DIC || WAIC)) {
+      warning("DIC and WAIC require at least 2 chains. Disabling calculation.")
+      DIC <- FALSE
+      WAIC <- FALSE
+    }
+
     # Sample posterior
     samples <- rjags::coda.samples(
       model,

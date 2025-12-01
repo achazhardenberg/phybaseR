@@ -48,8 +48,6 @@ The vignette covers:
 -   Handling missing data
 -   Incorporating measurement error
 -   Modeling binary variables
--   Modeling multinomial variables
--   Using latent variables
 -   Using latent variables
 -   Causal model validation with d-separation
 -   Parallel computing for faster MCMC
