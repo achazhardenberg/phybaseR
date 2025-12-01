@@ -8,16 +8,14 @@
 #            Causal Inference (2nd ed.). Cambridge University Press.
 #
 # These functions convert a DAG with latent variables into a MAG
-# @importFrom ggm dSep findPath
-# @noRd
-NULL
 # (Maximal Ancestral Graph) and generate the appropriate m-separation
 # basis set for testing.
 
-# Functions to accompany Shipley, B. & Douma, J. Douma.
-#Testing piecewise structural equations models in
-#the presence of latent variables,
-#including correlated errors.
+# Functions to accompany:
+#Shipley, B., & Douma, J. C. (2021). Testing Piecewise Structural Equations
+#Models in the Presence of Latent Variables and Including Correlated Errors.
+#Structural Equation Modeling: A Multidisciplinary Journal, 28(4), 582–589.
+#https://doi.org/10.1080/10705511.2020.1871355
 
 ## helper functions
 

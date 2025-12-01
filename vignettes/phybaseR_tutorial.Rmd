@@ -1,8 +1,8 @@
 ---
-title: "PhyBaSE: Phylogenetic Bayesian Structural Equation Models"
+title: "phybaseR: An R package to easily create and run PhyBaSE models
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{PhyBaSE: Phylogenetic Bayesian Structural Equation Models}
+  %\VignetteIndexEntry{phybaseR: An R package to easily create and run PhyBaSE models}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -16,13 +16,13 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-**PhyBaSE** (Phylogenetic Bayesian Structural Equation Models) is an R package designed to perform causal inference in phylogenetic comparative analyses. It allows you to fit Structural Equation Models (SEMs) that account for:
+**phybaseR** is an R package designed to easily perform causal inference in phylogenetic comparative analyses implementing and extending the methods proposed in von Hardenberg & Gonzalez-Voyer (2025). It allows you to fit Phylogenetic Bayesian Structural Equation Models (SEMs) that account for:
 
 *   **Phylogenetic Non-independence**: Using the phylogenetic covariance matrix.
 *   **Measurement Error**: Incorporating standard errors or repeated measures.
 *   **Missing Data**: Automatically handling missing values in both predictors and responses.
 *   **Phylogenetic Uncertainty**: integrating over a posterior sample of trees.
-*   **Non-Gaussian Data**: Supporting binomial (binary) response variables.
+*   **Non-Gaussian Data**: Supporting binomial (binary) and multinomial response variables.
 
 This tutorial will guide you through the main features of the package.
 
@@ -100,7 +100,7 @@ fit_med <- phybase_run(
 
 ## Measurement Error
 
-PhyBaSE can account for measurement error in your variables, which avoids attenuation bias (regression dilution).
+PhyBaSE can account for measurement error in your variables.
 
 ### Option 1: Using Standard Errors (SE)
 
@@ -151,7 +151,7 @@ fit_reps <- phybase_run(
 
 ## Binomial Variables
 
-You can model binary traits (0/1) using a phylogenetic logistic regression framework.
+You can model binary traits (binomial) using a phylogenetic logistic regression framework.
 
 ```{r binomial, eval=FALSE}
 # Simulate binary trait
@@ -312,8 +312,5 @@ The model decomposes each variable's error into independent phylogenetic and cor
 
 - Currently supports **pairwise correlations** only
 - Latent variables are **not estimated** (only their induced effects)
-- Requires `ggm` package
 
-## Conclusion
 
-PhyBaSE provides a flexible and powerful framework for phylogenetic path analysis. By handling measurement error, missing data, and phylogenetic uncertainty in a single Bayesian model, it allows for more robust evolutionary inferences.

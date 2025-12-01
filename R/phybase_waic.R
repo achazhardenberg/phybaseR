@@ -14,8 +14,6 @@
 #' @details
 #' This function uses the \code{dic} module in JAGS to monitor \code{WAIC} and \code{deviance}.
 #' The WAIC is calculated as: \code{WAIC = mean(deviance) + p_waic}.
-#' Note that for phylogenetic models using multivariate normal distributions, the effective number of parameters
-#' (\code{p_waic}) may reflect the correlation structure of the data.
 #'
 #' @examples
 #' \dontrun{

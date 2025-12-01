@@ -20,7 +20,11 @@ phybase_run(
   dsep = FALSE,
   variability = NULL,
   distribution = NULL,
-  latent = NULL
+  latent = NULL,
+  parallel = FALSE,
+  n.cores = 1,
+  cl = NULL,
+  ic_recompile = TRUE
 )
 }
 \arguments{
@@ -65,6 +69,19 @@ Example: \code{distribution = c(Gregarious = "binomial")}.}
 \item{latent}{Optional character vector of latent (unmeasured) variable names.
 If specified, the model will account for induced correlations among observed
 variables that share these latent common causes.}
+
+\item{parallel}{Logical; if \code{TRUE}, run MCMC chains in parallel (default = FALSE).
+Note: Requires \code{n.cores > 1} to take effect.}
+
+\item{n.cores}{Integer; number of CPU cores to use for parallel chains (default = 1).
+Only used when \code{parallel = TRUE}.}
+
+\item{cl}{Optional; a cluster object created by \code{parallel::makeCluster()}.
+If \code{NULL}, a cluster will be created and destroyed automatically.}
+
+\item{ic_recompile}{Logical; if \code{TRUE} and \code{parallel = TRUE}, recompile the model
+after parallel chains to compute DIC/WAIC (default = TRUE).
+This adds a small sequential overhead but enables information criteria calculation.}
 }
 \value{
 A list of class \code{"phybase"} with model output and diagnostics.

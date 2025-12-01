@@ -26,6 +26,15 @@
 #' @param latent Optional character vector of latent (unmeasured) variable names.
 #'   If specified, the model will account for induced correlations among observed
 #'   variables that share these latent common causes.
+#' @param parallel Logical; if \code{TRUE}, run MCMC chains in parallel (default = FALSE).
+#'   Note: Requires \code{n.cores > 1} to take effect.
+#' @param n.cores Integer; number of CPU cores to use for parallel chains (default = 1).
+#'   Only used when \code{parallel = TRUE}.
+#' @param cl Optional; a cluster object created by \code{parallel::makeCluster()}.
+#'   If \code{NULL}, a cluster will be created and destroyed automatically.
+#' @param ic_recompile Logical; if \code{TRUE} and \code{parallel = TRUE}, recompile the model
+#'   after parallel chains to compute DIC/WAIC (default = TRUE).
+#'   This adds a small sequential overhead but enables information criteria calculation.
 #'
 #' @return A list of class \code{"phybase"} with model output and diagnostics.
 #' @export
@@ -50,7 +59,11 @@ phybase_run <- function(
   dsep = FALSE,
   variability = NULL,
   distribution = NULL,
-  latent = NULL
+  latent = NULL,
+  parallel = FALSE,
+  n.cores = 1,
+  cl = NULL,
+  ic_recompile = TRUE
 ) {
   # Input validation
   if (is.null(data)) {
@@ -87,6 +100,39 @@ phybase_run <- function(
 
   data$ID <- ID
   data$N <- N
+
+  # Handle multinomial data
+  if (!is.null(distribution)) {
+    for (var in names(distribution)) {
+      if (distribution[[var]] == "multinomial") {
+        if (!var %in% names(data)) {
+          stop(paste("Multinomial variable", var, "not found in data."))
+        }
+
+        val <- data[[var]]
+        if (is.factor(val)) {
+          K <- nlevels(val)
+          data[[var]] <- as.integer(val)
+        } else {
+          # Assume it's already integer or character
+          val <- as.factor(val)
+          K <- nlevels(val)
+          data[[var]] <- as.integer(val)
+        }
+
+        if (K < 3) {
+          warning(paste(
+            "Multinomial variable",
+            var,
+            "has fewer than 3 levels. Consider using binomial."
+          ))
+        }
+
+        # Pass K to JAGS
+        data[[paste0("K_", var)]] <- K
+      }
+    }
+  }
 
   # Check for missing data
   all_vars <- unique(unlist(lapply(equations, function(eq) {
@@ -325,7 +371,9 @@ phybase_run <- function(
     extract_names <- function(pattern) {
       out <- grep(pattern, lines, value = TRUE)
       out <- grep("(<-|~)", out, value = TRUE)
-      gsub("^\\s*(\\w+)\\s*(<-|~).*", "\\1", out)
+      # Extract parameter name, including array indices like [k]
+      # This regex captures word characters followed by optional array notation
+      gsub("^\\s*(\\w+(?:\\[\\w+\\])?)\\s*(<-|~).*", "\\1", out)
     }
     monitor <- unique(c(
       extract_names("^\\s*beta"),
@@ -354,30 +402,115 @@ phybase_run <- function(
     }
   }
 
-  # Compile model
-  model <- rjags::jags.model(
-    model_file,
-    data = data,
-    n.chains = n.chains,
-    n.adapt = n.adapt,
-    quiet = quiet
-  )
-  update(model, n.iter = n.burnin)
+  # Run MCMC chains (parallel or sequential)
+  if (parallel && n.cores > 1 && n.chains > 1) {
+    # Parallel execution
+    message(sprintf(
+      "Running %d chains in parallel on %d cores...",
+      n.chains,
+      n.cores
+    ))
 
-  # Sample posterior
-  samples <- rjags::coda.samples(
-    model,
-    variable.names = monitor,
-    n.iter = n.iter - n.burnin,
-    thin = n.thin
-  )
+    # Setup cluster if not provided
+    if (is.null(cl)) {
+      cl <- parallel::makeCluster(n.cores)
+      on.exit(parallel::stopCluster(cl), add = TRUE)
+    }
+
+    # Helper function to run a single chain
+    run_single_chain <- function(
+      chain_id,
+      model_file,
+      data,
+      monitor,
+      n.burnin,
+      n.iter,
+      n.thin,
+      n.adapt,
+      quiet
+    ) {
+      # Load rjags in each worker
+      if (!requireNamespace("rjags", quietly = TRUE)) {
+        stop("Package 'rjags' is required for parallel execution.")
+      }
+      # Explicitly load rjags to ensure modules are available
+      loadNamespace("rjags")
+      # Compile model for this chain
+      model <- jags.model(
+        model_file,
+        data = data,
+        n.chains = 1,
+        n.adapt = n.adapt,
+        quiet = quiet
+      )
+
+      # Burn-in
+      update(model, n.iter = n.burnin)
+
+      # Sample
+      samples <- coda.samples(
+        model,
+        variable.names = monitor,
+        n.iter = n.iter - n.burnin,
+        thin = n.thin
+      )
+
+      return(list(samples = samples, model = model))
+    }
+
+    # Export necessary objects to cluster
+    parallel::clusterExport(cl, c("run_single_chain"), envir = environment())
+
+    # Run chains in parallel
+    chain_results <- parallel::parLapply(cl, seq_len(n.chains), function(i) {
+      run_single_chain(
+        i,
+        model_file,
+        data,
+        monitor,
+        n.burnin,
+        n.iter,
+        n.thin,
+        n.adapt,
+        quiet
+      )
+    })
+
+    # Combine samples from all chains
+    samples <- coda::mcmc.list(lapply(chain_results, function(x) {
+      x$samples[[1]]
+    }))
+
+    # Use the first chain's model for DIC/WAIC (they all have the same structure)
+    model <- chain_results[[1]]$model
+  } else {
+    # Sequential execution (default)
+    # Compile model
+    model <- rjags::jags.model(
+      model_file,
+      data = data,
+      n.chains = n.chains,
+      n.adapt = n.adapt,
+      quiet = quiet
+    )
+    update(model, n.iter = n.burnin)
+
+    # Sample posterior
+    samples <- rjags::coda.samples(
+      model,
+      variable.names = monitor,
+      n.iter = n.iter - n.burnin,
+      thin = n.thin
+    )
+  }
 
   # Summarize posterior
   sum_stats <- summary(samples)
 
   # Initialize result object
   result <- list(
-    model = model_output,
+    model = model,
+    model_code = model_output$model,
     samples = samples,
     summary = sum_stats,
     monitor = monitor,
@@ -388,24 +521,80 @@ phybase_run <- function(
     induced_correlations = induced_cors
   )
 
-  # Add DIC
-  if (DIC) {
-    result$DIC <- rjags::dic.samples(model, n.iter = n.iter - n.burnin)
-  }
+  # Add DIC and WAIC
+  # For parallel runs, recompile the model if ic_recompile=TRUE
+  if (
+    (DIC || WAIC) && parallel && n.cores > 1 && n.chains > 1 && ic_recompile
+  ) {
+    message("Recompiling model for DIC/WAIC calculation...")
 
-  # Optionally sample for WAIC
-  if (WAIC) {
-    waic_samples <- rjags::jags.samples(
-      model,
-      c("WAIC", "deviance"),
-      type = "mean",
-      n.iter = n.iter - n.burnin,
-      thin = n.thin
+    # Recompile model with 2 chains for IC calculation (DIC requires >=2)
+    ic_model <- rjags::jags.model(
+      model_file,
+      data = data,
+      n.chains = 2,
+      n.adapt = n.adapt,
+      quiet = quiet
     )
-    waic_samples$p_waic <- waic_samples$WAIC
-    waic_samples$waic <- waic_samples$deviance + waic_samples$p_waic
-    tmp <- sapply(waic_samples, sum)
-    result$WAIC <- round(c(waic = tmp[["waic"]], p_waic = tmp[["p_waic"]]), 1)
+
+    # Short burn-in (use a fraction of original)
+    update(ic_model, n.iter = min(n.burnin, 500))
+
+    # Compute DIC
+    if (DIC) {
+      result$DIC <- rjags::dic.samples(
+        ic_model,
+        n.iter = min(n.iter - n.burnin, 1000)
+      )
+    }
+
+    # Compute WAIC
+    if (WAIC) {
+      waic_samples <- rjags::jags.samples(
+        ic_model,
+        c("WAIC", "deviance"),
+        type = "mean",
+        n.iter = min(n.iter - n.burnin, 1000),
+        thin = n.thin
+      )
+      waic_samples$p_waic <- waic_samples$WAIC
+      waic_samples$waic <- waic_samples$deviance + waic_samples$p_waic
+      tmp <- sapply(waic_samples, sum)
+      result$WAIC <- round(c(waic = tmp[["waic"]], p_waic = tmp[["p_waic"]]), 1)
+    }
+  } else if ((DIC || WAIC) && parallel && n.cores > 1 && n.chains > 1) {
+    # Parallel without recompilation - warn user
+    if (DIC) {
+      warning(
+        "DIC calculation disabled for parallel chains. Set ic_recompile=TRUE to compute DIC."
+      )
+      result$DIC <- NULL
+    }
+    if (WAIC) {
+      warning(
+        "WAIC calculation disabled for parallel chains. Set ic_recompile=TRUE to compute WAIC."
+      )
+      result$WAIC <- NULL
+    }
+  } else {
+    # Sequential execution - use standard approach
+    if (DIC) {
+      result$DIC <- rjags::dic.samples(model, n.iter = n.iter - n.burnin)
+    }
+
+    if (WAIC) {
+      waic_samples <- rjags::jags.samples(
+        model,
+        c("WAIC", "deviance"),
+        type = "mean",
+        n.iter = n.iter - n.burnin,
+        thin = n.thin
+      )
+      waic_samples$p_waic <- waic_samples$WAIC
+      waic_samples$waic <- waic_samples$deviance + waic_samples$p_waic
+      tmp <- sapply(waic_samples, sum)
+      result$WAIC <- round(c(waic = tmp[["waic"]], p_waic = tmp[["p_waic"]]), 1)
+    }
   }
 
   class(result) <- "phybase"

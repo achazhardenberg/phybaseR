@@ -62,14 +62,12 @@ if (!is.null(fit$induced_correlations)) {
 }
 
 # Check JAGS model code for correlated residuals
-cat("\nDebugging fit$model structure:\n")
-str(fit$model)
-
-model_code <- fit$model$model
+# Check if model contains correlated residuals
+model_code <- fit$model_code
 if (is.null(model_code)) {
-    cat("fit$model$model is NULL!\n")
+    cat("fit$model_code is NULL!\n")
 } else if (!is.character(model_code)) {
-    cat("fit$model$model is NOT character! Type:", typeof(model_code), "\n")
+    cat("fit$model_code is NOT character! Type:", typeof(model_code), "\n")
 }
 
 if (grepl("rho_X_Y", model_code) || grepl("rho_Y_X", model_code)) {
