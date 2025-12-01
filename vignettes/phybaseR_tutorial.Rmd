@@ -280,15 +280,15 @@ Note: For d-separation, we expect high P(≈0) and Joint values (close to 1).
 
 The `P(≈0)` gives you a Bayesian measure of how plausible independence is for each individual test, while the `Joint` probability tells you how often ALL tests simultaneously support the model structure.
 
-## Latent Variables (Experimental)
+## Latent Variables
 
-> **Warning**: This is an experimental feature. Use with caution and verify results carefully.
+PhyBaSE can handle **unobserved (latent) variables** using two different approaches:
 
-PhyBaSE can handle **unobserved (latent) variables** that act as common causes. Rather than modeling latents explicitly, the package models the **correlations they induce** between observed variables.
+### Approach 1: MAG (Correlations) - **Default**
 
-### Example: Latent Common Cause
+The **Maximal Ancestral Graph (MAG)** approach marginalizes latent variables and models the **induced correlations** they create between observed variables.
 
-```{r latent_example, eval=FALSE}
+```{r latent_mag, eval=FALSE}
 # Suppose we have a latent variable L that affects both X and Y
 # L -> X, L -> Y (L is unmeasured)
 
@@ -297,35 +297,56 @@ equations <- list(
     Y ~ L
 )
 
-fit_latent <- phybase_run(
+fit_mag <- phybase_run(
     data = data_list,
     tree = tree,
     equations = equations,
-    latent = "L", # Specify latent variable(s)
-    dsep = TRUE, # Optional: test m-separation
+    latent = "L",
+    latent_method = "correlations", # Default, can omit
     n.iter = 10000
 )
 
 # Check induced correlations
-fit_latent$induced_correlations
+fit_mag$induced_correlations
 # [[1]]
 # [1] "X" "Y"
 
 # The correlation parameter rho_X_Y is estimated
-summary(fit_latent)
+summary(fit_mag)
 ```
 
-### How It Works
+**How it works**:
+1. Converts your DAG to a MAG
+2. Identifies bidirected edges `X <-> Y` from latent common causes
+3. Models correlations using correlated residuals in JAGS
 
-1. **MAG Conversion**: Converts your DAG to a Maximal Ancestral Graph (MAG)
-2. **Induced Correlations**: Identifies bidirected edges `X <-> Y` 
-3. **Correlated Residuals**: Models correlations using multivariate normal in JAGS
+**Advantages**: Consistent with Shipley's d-separation framework, no need to worry about latent variable identification.
 
-The model decomposes each variable's error into independent phylogenetic and correlated residual components.
+### Approach 2: Explicit Latent Variables
+
+Alternatively, you can model latents as **actual JAGS nodes** and estimate the structural paths from latents to observed variables.
+
+```{r latent_explicit, eval=FALSE}
+fit_explicit <- phybase_run(
+    data = data_list,
+    tree = tree,
+    equations = list(X ~ L, Y ~ L),
+    latent = "L",
+    latent_method = "explicit", # Model L as a node
+    n.iter = 10000
+)
+
+# Estimates betaX_L and betaY_L
+summary(fit_explicit)
+```
+
+**Advantages**: More flexible, allows estimation of latent -> observed paths.
+
+**Disadvantages**: Requires careful consideration of identification and scaling.
 
 ### Limitations
 
-- Currently supports **pairwise correlations** only
-- Latent variables are **not estimated** (only their induced effects)
+- MAG approach currently supports **pairwise correlations** only
+- Explicit approach may have identification issues with complex latent structures
 
 

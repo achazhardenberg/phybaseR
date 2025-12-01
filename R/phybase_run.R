@@ -34,6 +34,13 @@
 #' @param latent Optional character vector of latent (unmeasured) variable names.
 #'   If specified, the model will account for induced correlations among observed
 #'   variables that share these latent common causes.
+#' @param latent_method Method for handling latent variables (default = "correlations").
+#'   \itemize{
+#'     \item \code{"correlations"}: MAG approach - marginalize latent variables and estimate
+#'           induced correlations (\code{rho}) between observed variables that share latent parents.
+#'     \item \code{"explicit"}: Model latent variables as JAGS nodes and estimate structural
+#'           paths from latents to observed variables.
+#'   }
 #' @param parallel Logical; if \code{TRUE}, run MCMC chains in parallel (default = FALSE).
 #'   Note: Requires \code{n.cores > 1} to take effect.
 #' @param n.cores Integer; number of CPU cores to use for parallel chains (default = 1).
@@ -68,6 +75,7 @@ phybase_run <- function(
   variability = NULL,
   distribution = NULL,
   latent = NULL,
+  latent_method = c("correlations", "explicit"),
   parallel = FALSE,
   n.cores = 1,
   cl = NULL,
@@ -423,12 +431,90 @@ phybase_run <- function(
     }
 
     if (length(dsep_tests) == 0) {
-      warning(
-        "No d-separation tests implied by the model (model is saturated)."
+      stop(
+        "No d-separation tests implied by the model (model is saturated). Stopping run."
       )
     } else {
       # Use d-sep tests as equations
       equations <- dsep_tests
+    }
+  }
+
+  # Handle latent variable method
+  if (!is.null(latent)) {
+    latent_method <- match.arg(latent_method)
+
+    # Force MAG approach when doing d-separation testing
+    if (dsep && latent_method == "explicit") {
+      if (!quiet) {
+        message(
+          "Note: d-separation testing with latent variables requires MAG approach. ",
+          "Using latent_method = 'correlations'."
+        )
+      }
+      latent_method <- "correlations"
+    }
+
+    if (latent_method == "correlations") {
+      # MAG approach: marginalize latents, use induced correlations
+      # If not already computed by dsep, compute now
+      if (is.null(induced_cors)) {
+        dsep_result <- phybase_dsep(equations, latent = latent)
+        induced_cors <- dsep_result$correlations
+      }
+
+      # Filter out equations involving latent variables
+      original_eq_count <- length(equations)
+      equations <- Filter(
+        function(eq) {
+          vars <- all.vars(eq)
+          !any(vars %in% latent)
+        },
+        equations
+      )
+
+      if (!quiet && original_eq_count > length(equations)) {
+        message(
+          "Using MAG approach: removed ",
+          original_eq_count - length(equations),
+          " equation(s) involving latent variable(s)"
+        )
+      }
+
+      # If all equations were removed (pure latent model), create intercept-only equations
+      # for observed variables with induced correlations
+      if (length(equations) == 0 && length(induced_cors) > 0) {
+        # Get all observed variables from induced correlations
+        obs_vars <- unique(unlist(induced_cors))
+
+        # Create intercept-only models: X ~ 1
+        equations <- lapply(obs_vars, function(v) {
+          as.formula(paste(v, "~ 1"))
+        })
+
+        if (!quiet) {
+          message(
+            "Created intercept-only models for ",
+            length(obs_vars),
+            " observed variable(s) with induced correlations"
+          )
+        }
+      }
+
+      if (!quiet && length(induced_cors) > 0) {
+        message(
+          "Estimating ",
+          length(induced_cors),
+          " induced correlation(s) from latent variable(s)"
+        )
+      }
+    } else {
+      # Explicit approach: keep all equations, don't use induced correlations
+      induced_cors <- NULL
+
+      if (!quiet) {
+        message("Using explicit latent variable modeling")
+      }
     }
   }
 
