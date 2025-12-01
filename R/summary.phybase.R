@@ -150,10 +150,7 @@ summary.phybase <- function(object, ...) {
             "  P(~0): Bayesian probability that effect crosses zero (0-1 scale)\n"
         )
         cat(
-            "  Joint: Probability that ALL tests simultaneously support independence (all parameters cross zero)\n"
-        )
-        cat(
-            "\nNote: For d-separation, we expect high P(~0) and Joint values (close to 1).\n"
+            "\nNote: For d-separation, we expect high P(~0) values (close to 1).\n"
         )
 
         invisible(results)
