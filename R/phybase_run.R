@@ -9,7 +9,11 @@
 #' @param n.burnin Number of burn-in iterations (default = n.iter / 2).
 #' @param n.thin Thinning rate (default = max(1, floor((n.iter - n.burnin) / 1000))).
 #' @param DIC Logical; whether to compute DIC using \code{dic.samples()} (default = TRUE).
+#'   **Note**: DIC penalty will be inflated for models with measurement error or repeated measures
+#'   because latent variables are counted as parameters (penalty ≈ structural parameters + N).
+#'   For model comparison, use WAIC or compare mean deviance across models with similar structure.
 #' @param WAIC Logical; whether to sample values for WAIC and deviance (default = FALSE).
+#'   WAIC is generally more appropriate than DIC for hierarchical models with latent variables.
 #' @param n.adapt Number of adaptation iterations (default = 100).
 #' @param quiet Logical; suppress JAGS output (default = FALSE).
 #' @param dsep Logical; if \code{TRUE}, monitor only the first beta in each structural equation (used for d-separation testing).
