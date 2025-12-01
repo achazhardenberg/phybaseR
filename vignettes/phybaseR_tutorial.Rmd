@@ -1,10 +1,10 @@
 ---
 title: "phybaseR: An R package to easily create and run PhyBaSE models"
 output: rmarkdown::html_vignette
-vignette:
-  index: "phybaseR: An R package to easily create and run PhyBaSE models"
-  engine: "knitr::rmarkdown"
-  encoding: "UTF-8"
+vignette: >
+  %\VignetteIndexEntry{phybaseR: An R package to easily create and run PhyBaSE models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ## Introduction
