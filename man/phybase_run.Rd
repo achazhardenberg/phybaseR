@@ -44,9 +44,13 @@ phybase_run(
 
 \item{n.thin}{Thinning rate (default = max(1, floor((n.iter - n.burnin) / 1000))).}
 
-\item{DIC}{Logical; whether to compute DIC using \code{dic.samples()} (default = TRUE).}
+\item{DIC}{Logical; whether to compute DIC using \code{dic.samples()} (default = TRUE).
+**Note**: DIC penalty will be inflated for models with measurement error or repeated measures
+because latent variables are counted as parameters (penalty ≈ structural parameters + N).
+For model comparison, use WAIC or compare mean deviance across models with similar structure.}
 
-\item{WAIC}{Logical; whether to sample values for WAIC and deviance (default = FALSE).}
+\item{WAIC}{Logical; whether to sample values for WAIC and deviance (default = FALSE).
+WAIC is generally more appropriate than DIC for hierarchical models with latent variables.}
 
 \item{n.adapt}{Number of adaptation iterations (default = 100).}
 
@@ -54,13 +58,17 @@ phybase_run(
 
 \item{dsep}{Logical; if \code{TRUE}, monitor only the first beta in each structural equation (used for d-separation testing).}
 
-\item{variability}{Optional character vector or named character vector of variable names that have measurement error or within-species variability.
-If named, the names should be the variable names and the values should be the type of variability: "se" (for mean and standard error) or "reps" (for repeated measures).
-If unnamed, the function attempts to infer the type from the data:
-\itemize{
-  \item If \code{Var_se} exists in data, type is "se".
-  \item If \code{Var} is a matrix or \code{Var_obs} exists, type is "reps".
-}}
+\item{variability}{Optional specification for variables with measurement error or within-species variability.
+  **AUTO-DETECTION**: If a variable \code{X} has a corresponding column \code{X_se} (standard errors),
+  \code{X_obs} (repeated measures), or is provided as a matrix, variability is automatically detected.
+
+  **Manual specification** (for non-standard column names):
+  \itemize{
+    \item Simple: \code{list(X = "se", Y = "reps")} - uses standard \code{X_se}/\code{Y_obs} naming
+    \item Custom columns: \code{list(X = list(type = "se", se_col = "X_SD"))} - specify custom column names
+    \item For SE: \code{se_col} (SE column), \code{mean_col} (mean column, optional)
+    \item For reps: \code{obs_col} (observations matrix column)
+  }}
 
 \item{distribution}{Optional named character vector specifying the distribution for response variables.
 Default is "gaussian" for all variables. Supported values: "gaussian", "binomial".

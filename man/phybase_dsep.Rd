@@ -25,15 +25,16 @@ If \code{latent} is NULL, returns a list of formulas representing
 This function takes a set of structural equations defining a causal model
 and returns the conditional independence statements (d-separation or m-separation tests)
 implied by the model structure. If latent variables are specified, the function
-uses Shipley's MAG (Maximal Ancestral Graph) approach to account for unmeasured confounders.
+uses the MAG (Maximal Ancestral Graph) approach by Shipley and Douma (2021)
+to account for unmeasured latent variables.
 }
 \details{
 The function implements the basis set approach to d-separation testing
-(Shipley 2000, 2009). For standard DAGs without latent variables, it identifies
+(Shipley 2000, 2009, 2016). For standard DAGs without latent variables, it identifies
 pairs of non-adjacent variables and creates conditional independence tests.
 
 When latent variables are specified, the function uses the DAG-to-MAG conversion
-(Shipley 2016) to identify m-separation statements and induced correlations
+(Shipley & Douma 2021) to identify m-separation statements and induced correlations
 among observed variables that arise from shared latent common causes.
 }
 \examples{
@@ -57,4 +58,9 @@ context. Ecology, 90(2), 363-368.
 
 Shipley, B. (2016). Cause and Correlation in Biology (2nd ed.).
 Cambridge University Press.
+
+Shipley, B., & Douma, J. C. (2021). Testing Piecewise Structural Equations
+Models in the Presence of Latent Variables and Including Correlated Errors.
+Structural Equation Modeling: A Multidisciplinary Journal, 28(4), 582–589.
+https://doi.org/10.1080/10705511.2020.1871355
 }
