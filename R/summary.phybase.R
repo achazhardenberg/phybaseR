@@ -60,8 +60,6 @@ summary.phybase <- function(object, ...) {
         # Track which samples pass all tests (for joint probability)
         n_samples <- nrow(samples_matrix)
 
-        all_pass_joint <- rep(TRUE, n_samples) # Tracks samples where *all* parameters are "effectively zero"
-
         for (i in seq_along(tests)) {
             test_formula <- tests[[i]]
             test_var <- attr(test_formula, "test_var")
@@ -114,16 +112,6 @@ summary.phybase <- function(object, ...) {
                 n_below <- sum(param_samples < 0)
                 p_approx_0 <- 2 * min(n_above, n_below) / n_samples
 
-                # Update joint probability tracker
-                # For joint probability, we need samples where the parameter is "effectively zero"
-                # uses a threshold based on the standard deviation of the posterior
-                # A sample "passes" if |param| < threshold
-                # Use SD as threshold (roughly 68% of samples will be within ±1 SD if centered at zero)
-                param_sd <- sd(param_samples)
-                threshold <- param_sd
-                all_pass_joint <- all_pass_joint &
-                    (abs(param_samples) < threshold)
-
                 rhs <- attr(stats::terms(test_formula), "term.labels")
                 cond_vars <- setdiff(rhs, test_var)
 
@@ -153,10 +141,6 @@ summary.phybase <- function(object, ...) {
         }
 
         print(results, row.names = FALSE)
-
-        # Calculate and report joint probability
-        joint_prob <- sum(all_pass_joint) / n_samples
-        cat("\nJoint P(all tests ~ 0) =", round(joint_prob, 3), "\n")
 
         cat("\nLegend:\n")
         cat(
