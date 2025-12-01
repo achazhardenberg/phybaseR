@@ -75,6 +75,10 @@ phybase_run <- function(
   if (is.null(equations)) {
     stop("Argument 'equations' must be provided.")
   }
+
+  # Ensure data is a list (crucial for adding matrices like VCV)
+  data <- as.list(data)
+
   # Handle tree(s)
   is_multiple <- inherits(tree, "multiPhylo") ||
     (is.list(tree) && all(sapply(tree, inherits, "phylo")))

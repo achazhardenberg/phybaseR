@@ -61,7 +61,7 @@ fit <- phybase_run(
 )
 
 # View summary
-summary(fit$samples)
+summary(fit)
 ```
 
 ## Mediation Analysis
@@ -89,6 +89,8 @@ fit_med <- phybase_run(
     tree = tree,
     equations = equations_med
 )
+
+summary(fit_med)
 ```
 
 ## Measurement Error
@@ -110,6 +112,9 @@ fit_se <- phybase_run(
     equations = list(Y ~ X),
     variability = c(X = "se") # Tell PhyBaSE that X has SEs
 )
+
+summary(fit_se)
+
 ```
 
 ### Option 2: Using Repeated Measures
@@ -139,9 +144,12 @@ fit_reps <- phybase_run(
     equations = list(Y ~ X),
     variability = c(X = "reps")
 )
+
+summary(fit_reps)
+
 # PhyBaSE automatically handles the NAs and counts valid replicates per species.
 ```
-
+m
 ## Binomial Variables
 
 You can model binary traits (binomial) using a phylogenetic logistic regression framework.
@@ -159,6 +167,8 @@ fit_bin <- phybase_run(
     equations = list(Bin ~ X),
     distribution = c(Bin = "binomial") # Specify distribution
 )
+    
+summary(fit_bin)
 ```
 
 **Note**: Binomial variables should generally be child nodes (responses) in your DAG.
@@ -182,6 +192,9 @@ fit_miss <- phybase_run(
     tree = tree,
     equations = list(Y ~ X)
 )
+
+summary(fit_miss)
+
 # PhyBaSE automatically detects NAs and handles them.
 ```
 
@@ -190,13 +203,18 @@ fit_miss <- phybase_run(
 To account for uncertainty in the phylogeny itself, simply pass a list of trees (e.g., a `multiPhylo` object) instead of a single tree.
 
 ```{r multitree, eval=FALSE}
-# trees <- read.nexus("posterior_trees.nex")
+
+# For demonstration, simulate multiple trees
+num_trees <- 20
+trees <- lapply(1:num_trees, function(x) rtree(N))
 
 fit_multi <- phybase_run(
     data = data_list,
     tree = trees, # Pass list of trees
     equations = equations
 )
+
+summary(fit_multi)
 ```
 
 ## Model Comparison (WAIC)
@@ -205,7 +223,7 @@ You can compare models using the Widely Applicable Information Criterion (WAIC).
 
 ```{r waic, eval=FALSE}
 waic_res <- phybase_waic(fit, n.iter = 2000)
-print(waic_res)
+waic_res
 ```
 
 ## Model Validation (d-separation)

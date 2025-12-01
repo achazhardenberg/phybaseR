@@ -14,6 +14,24 @@ summary.phybase <- function(object, ...) {
     # Standard summary of the MCMC samples
     summ <- summary(object$samples, ...)
 
+    # Calculate convergence diagnostics
+    n_chains <- coda::nchain(object$samples)
+
+    # Effective sample size
+    eff_size <- tryCatch(
+        coda::effectiveSize(object$samples),
+        error = function(e) return(NULL)
+    )
+
+    # Gelman-Rubin diagnostic (Rhat) - requires at least 2 chains
+    rhat <- NULL
+    if (n_chains > 1) {
+        rhat <- tryCatch(
+            coda::gelman.diag(object$samples, multivariate = FALSE)$psrf[, 1],
+            error = function(e) return(NULL)
+        )
+    }
+
     # If this was a d-sep run, we want to format the output specifically
     if (!is.null(object$dsep) && object$dsep) {
         cat("PhyBaSE d-separation Tests\n")
@@ -30,7 +48,9 @@ summary.phybase <- function(object, ...) {
             LowerCI = numeric(),
             UpperCI = numeric(),
             Indep = character(),
-            P_approx_0 = numeric(), # New column
+            P_approx_0 = numeric(),
+            Rhat = numeric(),
+            n.eff = numeric(),
             stringsAsFactors = FALSE
         )
 
@@ -69,6 +89,20 @@ summary.phybase <- function(object, ...) {
                 est <- summ$statistics[param_name, "Mean"]
                 lower <- summ$quantiles[param_name, "2.5%"]
                 upper <- summ$quantiles[param_name, "97.5%"]
+
+                # Get diagnostics for this parameter
+                p_rhat <- if (!is.null(rhat) && param_name %in% names(rhat)) {
+                    rhat[param_name]
+                } else {
+                    NA
+                }
+                p_neff <- if (
+                    !is.null(eff_size) && param_name %in% names(eff_size)
+                ) {
+                    eff_size[param_name]
+                } else {
+                    NA
+                }
 
                 # Independence check (if CI includes 0, they are independent)
                 indep <- if (lower > 0 || upper < 0) "No" else "Yes"
@@ -111,7 +145,9 @@ summary.phybase <- function(object, ...) {
                     LowerCI = round(lower, 3),
                     UpperCI = round(upper, 3),
                     Indep = indep,
-                    P_approx_0 = round(p_approx_0, 3)
+                    P_approx_0 = round(p_approx_0, 3),
+                    Rhat = round(p_rhat, 3),
+                    n.eff = round(p_neff, 0)
                 )
             }
         }
@@ -139,7 +175,30 @@ summary.phybase <- function(object, ...) {
         invisible(results)
     } else {
         # Standard summary
-        print(summ)
+        # Combine statistics with diagnostics
+        stats_table <- summ$statistics[,
+            c("Mean", "SD", "Naive SE", "Time-series SE"),
+            drop = FALSE
+        ]
+        quant_table <- summ$quantiles[, c("2.5%", "50%", "97.5%"), drop = FALSE]
+
+        # Create combined table
+        combined <- cbind(stats_table, quant_table)
+
+        # Add Rhat if available
+        if (!is.null(rhat)) {
+            # Ensure alignment
+            rhat_aligned <- rhat[rownames(combined)]
+            combined <- cbind(combined, Rhat = rhat_aligned)
+        }
+
+        # Add n.eff if available
+        if (!is.null(eff_size)) {
+            eff_aligned <- eff_size[rownames(combined)]
+            combined <- cbind(combined, n.eff = eff_aligned)
+        }
+
+        print(combined)
 
         if (!is.null(object$DIC)) {
             cat("\nDIC:\n")
@@ -151,6 +210,6 @@ summary.phybase <- function(object, ...) {
             print(object$WAIC)
         }
 
-        invisible(summ)
+        invisible(combined)
     }
 }
