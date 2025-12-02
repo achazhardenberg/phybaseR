@@ -344,6 +344,8 @@ summary(fit_explicit)
 
 **Disadvantages**: Requires careful consideration of identification and scaling.
 
+**Note**: `phybaseR` automatically standardizes latent variables (fixes variance to 1) when using the explicit approach. This ensures identification and makes path coefficients interpretable as standardized effects. This is consistent with the recommendation to standardize all variables before running PhyBaSE models.
+
 ### Understanding Identification Issues
 
 When using the **explicit approach**, latent variables have no inherent scale, leading to **identification problems** where multiple parameter combinations fit the data equally well.
@@ -354,10 +356,15 @@ When using the **explicit approach**, latent variables have no inherent scale, l
 
 **Why MAG avoids this**: The MAG approach only estimates the **correlation** `rho_X_Y` induced by `L`, which is scale-invariant. You don't need to worry about the scale of `L` or its individual paths.
 
-**When to use explicit**: If you have:
-- Strong theoretical priors on latent variable scales
-- Additional constraints (e.g., fixing one path to 1, "marker variable" approach)
-- Need to report specific latent -> observed effects (acknowledging identification constraints)
+**How phybaseR handles this**: When using `latent_method = "explicit"`, `phybaseR` automatically **standardizes latent variables** by fixing their variance to 1 (`tau_L <- 1` in the JAGS model). This:
+- Ensures the model is identified (no scale ambiguity)
+- Makes path coefficients interpretable as standardized effects
+- Is consistent with the recommendation to standardize all variables
+
+**Example**: With `L -> X` and `L -> Y`:
+- `L` has variance = 1 (standardized)
+- `betaX_L = 0.8` means "1 SD change in L → 0.8 SD change in X"
+- Path coefficients are directly comparable
 
 ### Recommendations
 
