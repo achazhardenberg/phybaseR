@@ -434,10 +434,113 @@ phybase_run <- function(
       stop(
         "No d-separation tests implied by the model (model is saturated). Stopping run."
       )
-    } else {
-      # Use d-sep tests as equations
-      equations <- dsep_tests
     }
+
+    # Run tests sequentially to avoid cyclic dependencies in JAGS
+    if (!quiet) {
+      message(sprintf(
+        "Running %d d-separation tests sequentially...",
+        length(dsep_tests)
+      ))
+    }
+
+    combined_samples <- NULL
+    combined_map <- NULL
+
+    # Loop through each test
+    for (i in seq_along(dsep_tests)) {
+      test_eq <- dsep_tests[[i]]
+      if (!quiet) {
+        message(sprintf(
+          "  Test %d/%d: %s",
+          i,
+          length(dsep_tests),
+          deparse(test_eq)
+        ))
+      }
+
+      # Run model for this single test
+      # We pass dsep=FALSE to treat it as a standard model run
+      # We must pass the same MCMC parameters to ensure chains align
+      fit <- phybase_run(
+        data = data,
+        tree = tree,
+        equations = list(test_eq), # Pass as list of 1 equation
+        monitor = monitor,
+        n.chains = n.chains,
+        n.iter = n.iter,
+        n.burnin = n.burnin,
+        n.thin = n.thin,
+        DIC = FALSE, # DIC not needed for d-sep tests
+        WAIC = FALSE,
+        n.adapt = n.adapt,
+        quiet = TRUE, # Suppress output for individual runs
+        dsep = FALSE,
+        variability = variability,
+        distribution = distribution,
+        latent = latent,
+        latent_method = latent_method,
+        parallel = parallel,
+        n.cores = n.cores,
+        cl = cl,
+        ic_recompile = ic_recompile
+      )
+
+      # Extract samples and map
+      samples <- fit$samples
+      param_map <- fit$parameter_map
+
+      # Update equation index in parameter map to match the d-sep test index
+      param_map$equation_index <- i
+
+      # Combine samples (cbind chains)
+      if (is.null(combined_samples)) {
+        combined_samples <- samples
+      } else {
+        # Check if dimensions match
+        if (niter(combined_samples) != niter(samples)) {
+          stop("MCMC iteration mismatch between d-sep tests")
+        }
+        # Combine chains: for each chain, cbind the variables
+        new_samples <- coda::mcmc.list()
+        for (ch in 1:nchain(combined_samples)) {
+          # Combine matrices
+          mat1 <- combined_samples[[ch]]
+          mat2 <- samples[[ch]]
+          # Avoid duplicate columns (e.g. if some params are monitored in both)
+          cols_to_add <- setdiff(colnames(mat2), colnames(mat1))
+          if (length(cols_to_add) > 0) {
+            new_mat <- cbind(mat1, mat2[, cols_to_add, drop = FALSE])
+            new_samples[[ch]] <- coda::mcmc(
+              new_mat,
+              start = start(mat1),
+              thin = thin(mat1)
+            )
+          } else {
+            new_samples[[ch]] <- mat1
+          }
+        }
+        combined_samples <- new_samples
+      }
+
+      # Combine parameter maps
+      if (is.null(combined_map)) {
+        combined_map <- param_map
+      } else {
+        combined_map <- rbind(combined_map, param_map)
+      }
+    }
+
+    # Return combined result
+    result <- list(
+      samples = combined_samples,
+      parameter_map = combined_map,
+      dsep = TRUE,
+      dsep_tests = dsep_tests,
+      induced_correlations = induced_cors
+    )
+    class(result) <- "phybase"
+    return(result)
   }
 
   # Handle latent variable method
@@ -559,11 +662,13 @@ phybase_run <- function(
   }
 
   # Add response variables
+  # Use perl=TRUE for robust regex matching of variable names
   matches <- regmatches(
     model_string,
-    gregexpr("\\b(\\w+)\\[1:N\\]\\s*~", model_string)
+    gregexpr("\\b([a-zA-Z0-9_]+)\\s*\\[1:N\\]\\s*~", model_string, perl = TRUE)
   )[[1]]
-  response_vars <- unique(gsub("\\[1:N\\]\\s*~", "", matches))
+
+  response_vars <- unique(gsub("\\s*\\[1:N\\]\\s*~", "", matches))
   for (v in response_vars) {
     # Skip if variable is in variability list (it's latent, not data)
     if (!is.null(variability) && v %in% names(variability_list)) {

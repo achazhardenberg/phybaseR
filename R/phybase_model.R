@@ -311,7 +311,15 @@ phybase_model <- function(
           # Standard MVN for complete data
           model_lines <- c(
             model_lines,
-            paste0("  ", response_var, "[1:N] ~ dmnorm(", mu, "[], ", tau, ")")
+            paste0(
+              "  ",
+              response_var,
+              "[1:N] ~ dmnorm(",
+              mu,
+              "[1:N], ",
+              tau,
+              ")"
+            )
           )
         }
       } else if (dist == "binomial") {
@@ -1062,7 +1070,15 @@ phybase_model <- function(
       paste0("  for (i in 1:N) {"),
       paste0("    mu", var, "[i] <- 0"),
       paste0("  }"),
-      paste0("  ", var, "[1:N] ~ dmnorm(mu", var, "[], TAU", tolower(var), ")")
+      paste0(
+        "  ",
+        var,
+        "[1:N] ~ dmnorm(mu",
+        var,
+        "[1:N], TAU",
+        tolower(var),
+        ")"
+      )
     )
 
     # For latent variables, fix tau = 1 (standardize)
