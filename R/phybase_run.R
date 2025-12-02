@@ -437,31 +437,32 @@ phybase_run <- function(
     }
 
     # Run tests sequentially to avoid cyclic dependencies in JAGS
+    # Decide whether to run tests in parallel
+    use_parallel <- parallel && n.cores > 1 && length(dsep_tests) > 1
+
     if (!quiet) {
-      message(sprintf(
-        "Running %d d-separation tests sequentially...",
-        length(dsep_tests)
-      ))
+      if (use_parallel) {
+        message(sprintf(
+          "Running %d d-separation tests in parallel on %d cores...",
+          length(dsep_tests),
+          n.cores
+        ))
+      } else {
+        message(sprintf(
+          "Running %d d-separation tests sequentially...",
+          length(dsep_tests)
+        ))
+      }
     }
 
     combined_samples <- NULL
     combined_map <- NULL
 
-    # Loop through each test
-    for (i in seq_along(dsep_tests)) {
-      test_eq <- dsep_tests[[i]]
-      if (!quiet) {
-        message(sprintf(
-          "  Test %d/%d: %s",
-          i,
-          length(dsep_tests),
-          deparse(test_eq)
-        ))
-      }
-
+    # Define function to run a single d-sep test
+    run_single_dsep_test <- function(i, test_eq) {
       # Run model for this single test
       # We pass dsep=FALSE to treat it as a standard model run
-      # We must pass the same MCMC parameters to ensure chains align
+      # We pass parallel=FALSE to avoid nested parallelism
       fit <- phybase_run(
         data = data,
         tree = tree,
@@ -480,18 +481,116 @@ phybase_run <- function(
         distribution = distribution,
         latent = latent,
         latent_method = latent_method,
-        parallel = parallel,
-        n.cores = n.cores,
-        cl = cl,
+        parallel = FALSE, # Disable nested parallelism
+        n.cores = 1,
+        cl = NULL,
         ic_recompile = ic_recompile
       )
 
-      # Extract samples and map
+      # Extract samples, map, and model
       samples <- fit$samples
       param_map <- fit$parameter_map
+      model_string <- fit$model
 
       # Update equation index in parameter map to match the d-sep test index
       param_map$equation_index <- i
+
+      list(
+        samples = samples,
+        param_map = param_map,
+        model = model_string,
+        test_index = i
+      )
+    }
+
+    # Run tests (parallel or sequential)
+    if (use_parallel) {
+      # Setup cluster if not provided
+      if (is.null(cl)) {
+        cl <- parallel::makeCluster(n.cores)
+        on.exit(parallel::stopCluster(cl), add = TRUE)
+      }
+
+      # Export necessary objects to cluster
+      parallel::clusterExport(
+        cl,
+        c(
+          "data",
+          "tree",
+          "monitor",
+          "n.chains",
+          "n.iter",
+          "n.burnin",
+          "n.thin",
+          "n.adapt",
+          "variability",
+          "distribution",
+          "latent",
+          "latent_method",
+          "ic_recompile"
+        ),
+        envir = environment()
+      )
+
+      # Run tests in parallel
+      results <- parallel::parLapply(
+        cl,
+        seq_along(dsep_tests),
+        function(i) {
+          run_single_dsep_test(i, dsep_tests[[i]])
+        }
+      )
+    } else {
+      # Sequential execution
+      results <- lapply(seq_along(dsep_tests), function(i) {
+        test_eq <- dsep_tests[[i]]
+        if (!quiet) {
+          message(sprintf(
+            "  Test %d/%d: %s",
+            i,
+            length(dsep_tests),
+            deparse(test_eq)
+          ))
+        }
+        run_single_dsep_test(i, test_eq)
+      })
+    }
+
+    # Combine results
+    combined_models <- list()
+
+    for (result in results) {
+      samples <- result$samples
+      param_map <- result$param_map
+      model_string <- result$model
+      i <- result$test_index
+
+      # Store model for this test
+      combined_models[[i]] <- model_string
+
+      # Rename parameters to include equation index to avoid collisions
+      # e.g., betaRS becomes betaRS_1 for equation 1, betaRS_2 for equation 2
+      for (ch in seq_along(samples)) {
+        chain <- samples[[ch]]
+        colnames_orig <- colnames(chain)
+
+        # Add suffix _i to all beta, alpha, lambda, tau, rho parameters
+        new_colnames <- sapply(colnames_orig, function(name) {
+          if (grepl("^(beta|alpha|lambda|tau|rho|sigma)", name)) {
+            paste0(name, "_", i)
+          } else {
+            name
+          }
+        })
+
+        colnames(chain) <- new_colnames
+        samples[[ch]] <- chain
+      }
+
+      # Update parameter_map to reflect new names
+      if (!is.null(param_map) && nrow(param_map) > 0) {
+        param_map$parameter <- paste0(param_map$parameter, "_", i)
+      }
 
       # Combine samples (cbind chains)
       if (is.null(combined_samples)) {
@@ -507,18 +606,13 @@ phybase_run <- function(
           # Combine matrices
           mat1 <- combined_samples[[ch]]
           mat2 <- samples[[ch]]
-          # Avoid duplicate columns (e.g. if some params are monitored in both)
-          cols_to_add <- setdiff(colnames(mat2), colnames(mat1))
-          if (length(cols_to_add) > 0) {
-            new_mat <- cbind(mat1, mat2[, cols_to_add, drop = FALSE])
-            new_samples[[ch]] <- coda::mcmc(
-              new_mat,
-              start = start(mat1),
-              thin = thin(mat1)
-            )
-          } else {
-            new_samples[[ch]] <- mat1
-          }
+          # All columns from mat2 should be new (due to renaming)
+          new_mat <- cbind(mat1, mat2)
+          new_samples[[ch]] <- coda::mcmc(
+            new_mat,
+            start = start(mat1),
+            thin = thin(mat1)
+          )
         }
         combined_samples <- new_samples
       }
@@ -535,6 +629,7 @@ phybase_run <- function(
     result <- list(
       samples = combined_samples,
       parameter_map = combined_map,
+      models = combined_models,
       dsep = TRUE,
       dsep_tests = dsep_tests,
       induced_correlations = induced_cors
