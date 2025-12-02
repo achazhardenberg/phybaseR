@@ -15,12 +15,13 @@ phybase_run(
   n.thin = max(1, floor((n.iter - n.burnin)/1000)),
   DIC = TRUE,
   WAIC = FALSE,
-  n.adapt = 100,
+  n.adapt = 1000,
   quiet = FALSE,
   dsep = FALSE,
   variability = NULL,
   distribution = NULL,
   latent = NULL,
+  latent_method = c("correlations", "explicit"),
   parallel = FALSE,
   n.cores = 1,
   cl = NULL,
@@ -52,7 +53,7 @@ For model comparison, use WAIC or compare mean deviance across models with simil
 \item{WAIC}{Logical; whether to sample values for WAIC and deviance (default = FALSE).
 WAIC is generally more appropriate than DIC for hierarchical models with latent variables.}
 
-\item{n.adapt}{Number of adaptation iterations (default = 100).}
+\item{n.adapt}{Number of adaptation iterations (default = 1000).}
 
 \item{quiet}{Logical; suppress JAGS output (default = FALSE).}
 
@@ -77,6 +78,14 @@ Example: \code{distribution = c(Gregarious = "binomial")}.}
 \item{latent}{Optional character vector of latent (unmeasured) variable names.
 If specified, the model will account for induced correlations among observed
 variables that share these latent common causes.}
+
+\item{latent_method}{Method for handling latent variables (default = "correlations").
+\itemize{
+  \item \code{"correlations"}: MAG approach - marginalize latent variables and estimate
+        induced correlations (\code{rho}) between observed variables that share latent parents.
+  \item \code{"explicit"}: Model latent variables as JAGS nodes and estimate structural
+        paths from latents to observed variables.
+}}
 
 \item{parallel}{Logical; if \code{TRUE}, run MCMC chains in parallel (default = FALSE).
 Note: Requires \code{n.cores > 1} to take effect.}

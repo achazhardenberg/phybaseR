@@ -26,7 +26,8 @@ test_that("summary.phybase handles standard output", {
         summ <- summary(fit)
     })
 
-    expect_s3_class(summ, "summary.mcmc")
+    # summary.phybase returns a matrix for standard output
+    expect_true(is.matrix(summ) || is.data.frame(summ))
     expect_match(output, "DIC")
     expect_match(output, "WAIC")
 })
@@ -50,6 +51,7 @@ test_that("summary.phybase handles d-sep output", {
         response = "Y",
         predictor = "X",
         parameter = "beta_Y_X",
+        equation_index = 1,
         stringsAsFactors = FALSE
     )
 

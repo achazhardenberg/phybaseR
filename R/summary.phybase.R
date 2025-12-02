@@ -68,8 +68,12 @@ summary.phybase <- function(object, ...) {
             response <- as.character(test_formula)[2]
 
             # Find the parameter name for this path (response ~ test_var)
+            # We filter by equation_index to handle cases where the same response/predictor pair
+            # appears in multiple equations (e.g. different d-sep tests)
             param_row <- map[
-                map$response == response & map$predictor == test_var,
+                map$response == response &
+                    map$predictor == test_var &
+                    map$equation_index == i,
             ]
 
             if (nrow(param_row) == 0) {
