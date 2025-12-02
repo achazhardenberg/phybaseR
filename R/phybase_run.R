@@ -525,7 +525,8 @@ phybase_run <- function(
     variability = variability_list,
     distribution = distribution,
     vars_with_na = response_vars_with_na,
-    induced_correlations = induced_cors
+    induced_correlations = induced_cors,
+    latent = latent
   )
 
   model_string <- model_output$model

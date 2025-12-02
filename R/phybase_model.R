@@ -57,7 +57,8 @@ phybase_model <- function(
   variability = NULL,
   distribution = NULL,
   vars_with_na = NULL,
-  induced_correlations = NULL
+  induced_correlations = NULL,
+  latent = NULL
 ) {
   `%||%` <- function(a, b) if (!is.null(a)) a else b
 
@@ -1053,16 +1054,35 @@ phybase_model <- function(
   model_lines <- c(model_lines, "  # Predictor priors for imputation")
   non_response_vars <- setdiff(all_vars, names(response_counter))
   for (var in non_response_vars) {
+    # Check if this is a latent variable
+    is_latent <- !is.null(latent) && var %in% latent
+
     model_lines <- c(
       model_lines,
       paste0("  for (i in 1:N) {"),
       paste0("    mu", var, "[i] <- 0"),
       paste0("  }"),
-      paste0("  ", var, "[1:N] ~ dmnorm(mu", var, "[], TAU", tolower(var), ")"),
-      paste0("  lambda", var, " ~ dunif(0, 1)"),
-      paste0("  tau", var, " ~ dgamma(1, 1)"),
-      paste0("  sigma", var, " <- 1/sqrt(tau", var, ")")
+      paste0("  ", var, "[1:N] ~ dmnorm(mu", var, "[], TAU", tolower(var), ")")
     )
+
+    # For latent variables, fix tau = 1 (standardize)
+    # For observed predictors, estimate tau
+    if (is_latent) {
+      model_lines <- c(
+        model_lines,
+        paste0("  # Latent variable: standardized (var = 1)"),
+        paste0("  lambda", var, " ~ dunif(0, 1)"),
+        paste0("  tau", var, " <- 1  # Fixed for identification"),
+        paste0("  sigma", var, " <- 1/sqrt(tau", var, ")")
+      )
+    } else {
+      model_lines <- c(
+        model_lines,
+        paste0("  lambda", var, " ~ dunif(0, 1)"),
+        paste0("  tau", var, " ~ dgamma(1, 1)"),
+        paste0("  sigma", var, " <- 1/sqrt(tau", var, ")")
+      )
+    }
 
     if (multi.tree) {
       model_lines <- c(
