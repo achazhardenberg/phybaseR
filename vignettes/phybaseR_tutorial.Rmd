@@ -257,8 +257,26 @@ fit_dsep <- phybase_run(
 )
 
 # The summary will show the conditional independence tests
+fit_dsep <- phybase_run(
+    data = data_dsep,
+    tree = tree,
+    equations = equations_dsep,
+    dsep = TRUE
+)
+
 summary(fit_dsep)
 ```
+
+### Note on Sequential Testing
+
+In the original PhyBaSE methodology (von Hardenberg & Gonzalez-Voyer, 2025), d-separation tests were proposed to be run within a single JAGS model by renaming variables (e.g., `BM`, `BM2`) to avoid cyclic dependencies in the Directed Acyclic Graph (DAG). 
+
+`phybaseR` automates this process by running each d-separation test **sequentially** as a separate JAGS model. This approach offers several advantages for automation:
+
+1.  **Computational Robustness**: It completely avoids cyclic dependency errors (e.g., "Unable to resolve parameter") that can occur in JAGS when multiple conditional independence tests imply conflicting directions of causality (e.g., testing $X \perp Y | Z$ and $Y \perp X | W$ simultaneously).
+2.  **Statistical Validity**: D-separation tests are tests of *local* conditional independence. Running them sequentially is statistically valid because each test evaluates a specific implication of the DAG using the observed data.
+3.  **Local Imputation**: For datasets with missing values, this approach implies that imputation is performed "locally" for each test based on the variables included in that specific test's conditioning set (plus the phylogeny). This is a standard and valid approach for piecewise SEM, ensuring that each test correctly propagates uncertainty given the local model structure.
+
 
 **Output:**
 ```
