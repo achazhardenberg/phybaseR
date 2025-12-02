@@ -10,7 +10,8 @@ phybase_model(
   variability = NULL,
   distribution = NULL,
   vars_with_na = NULL,
-  induced_correlations = NULL
+  induced_correlations = NULL,
+  latent = NULL
 )
 }
 \arguments{

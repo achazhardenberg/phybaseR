@@ -3,6 +3,7 @@
 S3method(summary,phybase)
 export(phybase_compare)
 export(phybase_dsep)
+export(phybase_format_data)
 export(phybase_model)
 export(phybase_run)
 export(phybase_waic)
