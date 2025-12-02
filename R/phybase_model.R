@@ -141,7 +141,8 @@ phybase_model <- function(
       param_map[[length(param_map) + 1]] <- list(
         response = response,
         predictor = pred,
-        parameter = beta_name
+        parameter = beta_name,
+        equation_index = j
       )
     }
 
@@ -193,7 +194,8 @@ phybase_model <- function(
           param_map[[length(param_map) + 1]] <- list(
             response = response,
             predictor = pred,
-            parameter = paste0(beta_name, "[]")
+            parameter = paste0(beta_name, "[]"),
+            equation_index = j
           )
         }
       }

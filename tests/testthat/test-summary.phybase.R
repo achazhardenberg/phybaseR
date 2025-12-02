@@ -51,6 +51,7 @@ test_that("summary.phybase handles d-sep output", {
         response = "Y",
         predictor = "X",
         parameter = "beta_Y_X",
+        equation_index = 1,
         stringsAsFactors = FALSE
     )
 
