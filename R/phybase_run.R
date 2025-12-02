@@ -836,8 +836,14 @@ phybase_run <- function(
     parallel::clusterExport(cl, c("run_single_chain"), envir = environment())
 
     # Run chains in parallel
+    # Run chains in parallel with progress bar
+    if (!quiet) {
+      message("Sampling...")
+      pb <- txtProgressBar(min = 0, max = n.chains, style = 3)
+    }
+
     chain_results <- parallel::parLapply(cl, seq_len(n.chains), function(i) {
-      run_single_chain(
+      res <- run_single_chain(
         i,
         model_file,
         data,
@@ -848,7 +854,13 @@ phybase_run <- function(
         n.adapt,
         quiet
       )
+      return(res)
     })
+
+    if (!quiet) {
+      setTxtProgressBar(pb, n.chains)
+      close(pb)
+    }
 
     # Combine samples from all chains
     samples <- coda::mcmc.list(lapply(chain_results, function(x) {
@@ -888,10 +900,44 @@ phybase_run <- function(
   # Summarize posterior
   sum_stats <- summary(samples)
 
+  # Explicitly calculate R-hat if multiple chains
+  if (n.chains > 1) {
+    tryCatch(
+      {
+        gelman_diag <- coda::gelman.diag(samples, multivariate = FALSE)
+        psrf <- gelman_diag$psrf
+
+        # Add R-hat to summary statistics
+        # summary(samples) returns a list with 'statistics' and 'quantiles'
+        # We want to add R-hat to the statistics matrix
+
+        # Match parameter names
+        common_params <- intersect(
+          rownames(sum_stats$statistics),
+          rownames(psrf)
+        )
+
+        if (length(common_params) > 0) {
+          # Create a new column for R-hat
+          rhat_col <- rep(NA, nrow(sum_stats$statistics))
+          names(rhat_col) <- rownames(sum_stats$statistics)
+          rhat_col[common_params] <- psrf[common_params, "Point est."]
+
+          # Add to statistics matrix
+          sum_stats$statistics <- cbind(sum_stats$statistics, Rhat = rhat_col)
+        }
+      },
+      error = function(e) {
+        warning("Could not calculate R-hat: ", e$message)
+      }
+    )
+  }
+
   # Initialize result object
   result <- list(
     model = model,
     model_code = model_output$model,
+    data = data, # Store data for recompilation if needed
     samples = samples,
     summary = sum_stats,
     monitor = monitor,

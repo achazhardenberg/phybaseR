@@ -11,8 +11,12 @@
 #'
 #' @export
 summary.phybase <- function(object, ...) {
-    # Standard summary of the MCMC samples
-    summ <- summary(object$samples, ...)
+    # Use stored summary if available, otherwise calculate it
+    if (!is.null(object$summary)) {
+        summ <- object$summary
+    } else {
+        summ <- summary(object$samples, ...)
+    }
 
     # Calculate convergence diagnostics
     n_chains <- coda::nchain(object$samples)
@@ -23,9 +27,14 @@ summary.phybase <- function(object, ...) {
         error = function(e) return(NULL)
     )
 
-    # Gelman-Rubin diagnostic (Rhat) - requires at least 2 chains
+    # Gelman-Rubin diagnostic (Rhat)
+    # Use stored Rhat if available (calculated in phybase_run)
     rhat <- NULL
-    if (n_chains > 1) {
+    if ("Rhat" %in% colnames(summ$statistics)) {
+        rhat <- summ$statistics[, "Rhat"]
+        names(rhat) <- rownames(summ$statistics)
+    } else if (n_chains > 1) {
+        # Try to calculate if not stored
         rhat <- tryCatch(
             coda::gelman.diag(object$samples, multivariate = FALSE)$psrf[, 1],
             error = function(e) return(NULL)
