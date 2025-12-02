@@ -679,23 +679,38 @@ phybase_run <- function(
         )
       }
 
-      # If all equations were removed (pure latent model), create intercept-only equations
-      # for observed variables with induced correlations
-      if (length(equations) == 0 && length(induced_cors) > 0) {
-        # Get all observed variables from induced correlations
-        obs_vars <- unique(unlist(induced_cors))
+      # Check if variables with induced correlations need intercept-only models
+      # This happens when a variable is involved in an induced correlation
+      # but is not a response variable in any remaining equation
+      if (length(induced_cors) > 0) {
+        # Get all variables from induced correlations
+        vars_with_correlations <- unique(unlist(induced_cors))
 
-        # Create intercept-only models: X ~ 1
-        equations <- lapply(obs_vars, function(v) {
-          as.formula(paste(v, "~ 1"))
+        # Get response variables from remaining equations
+        response_vars <- sapply(equations, function(eq) {
+          as.character(eq)[2]
         })
 
-        if (!quiet) {
-          message(
-            "Created intercept-only models for ",
-            length(obs_vars),
-            " observed variable(s) with induced correlations"
-          )
+        # Find variables that need intercept models
+        vars_needing_intercept <- setdiff(vars_with_correlations, response_vars)
+
+        if (length(vars_needing_intercept) > 0) {
+          # Create intercept-only models: X ~ 1
+          intercept_equations <- lapply(vars_needing_intercept, function(v) {
+            as.formula(paste(v, "~ 1"))
+          })
+
+          # Add to equations list
+          equations <- c(equations, intercept_equations)
+
+          if (!quiet) {
+            message(
+              "Created intercept-only models for ",
+              length(vars_needing_intercept),
+              " variable(s) with induced correlations: ",
+              paste(vars_needing_intercept, collapse = ", ")
+            )
+          }
         }
       }
 
