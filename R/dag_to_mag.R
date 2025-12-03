@@ -53,7 +53,12 @@ is.directed.path <- function(use.dag, start.var, end.var) {
   #findPath is a function in ggm that finds one path between two nodes of a graph
   #it returns a vector of numbers giving the sequence of nodes of this path
   #starting at st and going to en
-  test1 <- length(ggm::findPath(amat = use.dag, st = start.node, en = end.node)) > 0
+  test1 <- length(ggm::findPath(
+    amat = use.dag,
+    st = start.node,
+    en = end.node
+  )) >
+    0
   test2 <- !ggm::dSep(
     amat = use.dag,
     first = start.var,
@@ -110,6 +115,30 @@ basiSet.mag <- function(cgraph) {
   cat("Basis Set for MAG:", "\n")
   cat("I(X,Y|Z) means X is m-separated from Y given the set Z in the MAG", "\n")
   mag <- cgraph
+
+  # Ensure mag is always a matrix (avoid R's automatic vector conversion)
+  if (!is.matrix(mag)) {
+    mag <- as.matrix(mag)
+    # If it was a flattened square matrix, try to restore dimensions
+    if (length(mag) > 0) {
+      sq_dim <- sqrt(length(mag))
+      if (sq_dim %% 1 == 0) {
+        dim(mag) <- c(sq_dim, sq_dim)
+        if (!is.null(rownames(cgraph))) {
+          rownames(mag) <- rownames(cgraph)
+        }
+        if (!is.null(colnames(cgraph))) colnames(mag) <- colnames(cgraph)
+      }
+    }
+  }
+
+  if (nrow(mag) == 1 || ncol(mag) == 1) {
+    # Force to remain matrix for consistent indexing
+    # Only if it's truly 1x1 or 1xN
+    # dim(mag) <- c(nrow(mag), ncol(mag))
+    # The above line is redundant if it's already a matrix
+  }
+
   nod <- rownames(mag)
   dv <- length(nod)
   ind <- NULL
