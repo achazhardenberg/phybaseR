@@ -79,7 +79,8 @@ phybase_run <- function(
   parallel = FALSE,
   n.cores = 1,
   cl = NULL,
-  ic_recompile = TRUE
+  ic_recompile = TRUE,
+  optimize = TRUE
 ) {
   # Input validation
   if (is.null(data)) {
@@ -99,19 +100,40 @@ phybase_run <- function(
   is_multiple <- inherits(tree, "multiPhylo") ||
     (is.list(tree) && all(sapply(tree, inherits, "phylo")))
 
-  if (is_multiple) {
-    for (i in seq_along(tree)) {
-      tree[[i]]$edge.length <- tree[[i]]$edge.length /
-        max(ape::branching.times(tree[[i]]))
+  # Standardize tree edge lengths to max branching time
+  # This ensures lambda is scaled 0-1 for proper interpretation
+  standardize_tree <- function(phylo_tree) {
+    max_bt <- max(ape::branching.times(phylo_tree))
+    # Check if already standardized (max branching time ≈ 1)
+    if (abs(max_bt - 1.0) > 0.01) {
+      if (!quiet) {
+        message(sprintf(
+          "Standardizing tree edge lengths (max branching time: %.2f -> 1.0)",
+          max_bt
+        ))
+      }
+      phylo_tree$edge.length <- phylo_tree$edge.length / max_bt
     }
-    multiVCV <- sapply(tree, ape::vcv.phylo, simplify = "array")
-    ID <- diag(nrow(multiVCV[,, 1]))
-    VCV <- NULL
-    N <- dim(multiVCV)[1]
+    return(phylo_tree)
+  }
+
+  if (is_multiple) {
+    # Standardize each tree
+    tree <- lapply(tree, standardize_tree)
+    # Create multi-tree VCV array
+    K <- length(tree)
+    N <- length(tree[[1]]$tip.label)
+    multiVCV <- array(0, dim = c(N, N, K))
+    for (k in 1:K) {
+      multiVCV[,, k] <- ape::vcv.phylo(tree[[k]])
+    }
     data$multiVCV <- multiVCV
-    data$Ntree <- dim(multiVCV)[3]
+    data$K <- K
+    VCV <- multiVCV[,, 1] # Use first for ID dimension
+    ID <- diag(N)
   } else {
-    tree$edge.length <- tree$edge.length / max(ape::branching.times(tree))
+    # Standardize single tree
+    tree <- standardize_tree(tree)
     VCV <- ape::vcv.phylo(tree)
     ID <- diag(nrow(VCV))
     N <- nrow(VCV)
@@ -120,6 +142,24 @@ phybase_run <- function(
 
   data$ID <- ID
   data$N <- N
+
+  # Pre-compute inverse VCV for optimized random effects model
+  if (optimize) {
+    if (is_multiple) {
+      # For multiple trees, we need an array of precision matrices
+      # Dimension: [N, N, K]
+      K <- length(tree)
+      Prec_phylo_fixed <- array(0, dim = c(N, N, K))
+      for (k in 1:K) {
+        Prec_phylo_fixed[,, k] <- solve(ape::vcv.phylo(tree[[k]]))
+      }
+      data$Prec_phylo_fixed <- Prec_phylo_fixed
+    } else {
+      # Single tree
+      data$Prec_phylo_fixed <- solve(VCV)
+    }
+    data$zeros <- rep(0, N)
+  }
 
   # Handle multinomial data
   if (!is.null(distribution)) {
@@ -733,13 +773,14 @@ phybase_run <- function(
 
   # JAGS model code
   model_output <- phybase_model(
-    equations,
+    equations = equations,
     multi.tree = is_multiple,
     variability = variability_list,
     distribution = distribution,
     vars_with_na = response_vars_with_na,
     induced_correlations = induced_cors,
-    latent = latent
+    latent = latent,
+    optimize = optimize
   )
 
   model_string <- model_output$model
