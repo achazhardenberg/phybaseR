@@ -479,7 +479,7 @@ phybase_run <- function(
         dsep = FALSE,
         variability = variability,
         distribution = distribution,
-        latent = latent,
+        latent = NULL, # D-sep tests are on observed variables only
         latent_method = latent_method,
         parallel = FALSE, # Disable nested parallelism
         n.cores = 1,
