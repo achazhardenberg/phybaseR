@@ -322,12 +322,21 @@ phybase_model <- function(
             tau_u <- paste0("tau_u_", response, suffix)
             tau_e <- paste0("tau_e_", response, suffix)
 
+            # Handle multi-tree: use Prec_phylo_fixed[,,K] instead of Prec_phylo_fixed[,]
+            prec_index <- if (multi.tree) {
+              "Prec_phylo_fixed[1:N, 1:N, K]"
+            } else {
+              "Prec_phylo_fixed[1:N, 1:N]"
+            }
+
             model_lines <- c(
               model_lines,
               paste0(
                 "  ",
                 u_std,
-                "[1:N] ~ dmnorm(zeros[1:N], Prec_phylo_fixed[1:N, 1:N])"
+                "[1:N] ~ dmnorm(zeros[1:N], ",
+                prec_index,
+                ")"
               ),
               paste0("  for (i in 1:N) {"),
               paste0("    ", u, "[i] <- ", u_std, "[i] / sqrt(", tau_u, ")"),
@@ -372,14 +381,17 @@ phybase_model <- function(
           tau_u <- paste0("tau_u_", response, suffix)
           tau_e <- paste0("tau_e_", response, suffix)
 
+          # Handle multi-tree: use Prec_phylo_fixed[,,K] instead of Prec_phylo_fixed[,]
+          prec_index <- if (multi.tree) {
+            "Prec_phylo_fixed[1:N, 1:N, K]"
+          } else {
+            "Prec_phylo_fixed[1:N, 1:N]"
+          }
+
           model_lines <- c(
             model_lines,
             paste0("  # Random effects for binomial: ", response),
-            paste0(
-              "  ",
-              u_std,
-              "[1:N] ~ dmnorm(zeros[1:N], Prec_phylo_fixed[1:N, 1:N])"
-            ),
+            paste0("  ", u_std, "[1:N] ~ dmnorm(zeros[1:N], ", prec_index, ")"),
             paste0("  for (i in 1:N) {"),
             paste0("    ", u, "[i] <- ", u_std, "[i] / sqrt(", tau_u, ")"),
             paste0("    ", epsilon, "[i] ~ dnorm(0, ", tau_e, ")"),
@@ -1187,12 +1199,21 @@ phybase_model <- function(
       tau_u <- paste0("tau_u_", var)
       tau_e <- paste0("tau_e_", var)
 
+      # Handle multi-tree: use Prec_phylo_fixed[,,K] instead of Prec_phylo_fixed[,]
+      prec_index <- if (multi.tree) {
+        "Prec_phylo_fixed[1:N, 1:N, K]"
+      } else {
+        "Prec_phylo_fixed[1:N, 1:N]"
+      }
+
       model_lines <- c(
         model_lines,
         paste0(
           "  ",
           u_std,
-          "[1:N] ~ dmnorm(zeros[1:N], Prec_phylo_fixed[1:N, 1:N])"
+          "[1:N] ~ dmnorm(zeros[1:N], ",
+          prec_index,
+          ")"
         ),
         paste0("  for (i in 1:N) {"),
         paste0("    ", u, "[i] <- ", u_std, "[i] / sqrt(", tau_u, ")"),

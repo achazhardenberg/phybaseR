@@ -128,7 +128,7 @@ phybase_run <- function(
       multiVCV[,, k] <- ape::vcv.phylo(tree[[k]])
     }
     data$multiVCV <- multiVCV
-    data$K <- K
+    data$Ntree <- K
     VCV <- multiVCV[,, 1] # Use first for ID dimension
     ID <- diag(N)
   } else {
