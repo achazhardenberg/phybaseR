@@ -199,26 +199,59 @@ summary(fit_bin)
 For categorical traits with more than two unordered levels (e.g., diet type: Carnivore, Herbivore, Omnivore), you can use the multinomial distribution.
 
 ```{r multinomial, eval=FALSE}
-# Simulate multinomial trait (3 categories)
-# Latent variables for k=2, 3 (k=1 is reference)
-L2 <- -1 + 0.5 * X
-L3 <- 1 - 0.5 * X
-P1 <- 1 / (1 + exp(L2) + exp(L3))
-P2 <- exp(L2) / (1 + exp(L2) + exp(L3))
-P3 <- exp(L3) / (1 + exp(L2) + exp(L3))
+# Simulate multinomial trait with phylogenetic signal (3 categories)
+# Example: Diet type (Carnivore, Herbivore, Omnivore)
+library(MASS)
 
+VCV <- ape::vcv.phylo(tree)
+
+# Phylogenetically structured errors for categories 2 and 3
+# (category 1 is the reference)
+lambda_2 <- 0.6 # Phylogenetic signal for category 2
+tau_u_2 <- 1 / 0.5
+tau_e_2 <- 1 / 0.3
+u_std_2 <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = solve(VCV)))
+err_2 <- u_std_2 / sqrt(tau_u_2) + rnorm(N, 0, sqrt(1 / tau_e_2))
+
+lambda_3 <- 0.7 # Phylogenetic signal for category 3
+tau_u_3 <- 1 / 0.5
+tau_e_3 <- 1 / 0.3
+u_std_3 <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = solve(VCV)))
+err_3 <- u_std_3 / sqrt(tau_u_3) + rnorm(N, 0, sqrt(1 / tau_e_3))
+
+# Latent utilities for each category (with phylogenetic signal)
+L1 <- rep(0, N) # Reference category (Carnivore)
+L2 <- -1 + 0.5 * X + err_2 # Category 2 (Herbivore)
+L3 <- 1 - 0.5 * X + err_3 # Category 3 (Omnivore)
+
+# Softmax transformation to get probabilities
+exp_L1 <- exp(L1)
+exp_L2 <- exp(L2)
+exp_L3 <- exp(L3)
+sum_exp <- exp_L1 + exp_L2 + exp_L3
+
+P1 <- exp_L1 / sum_exp # P(Carnivore)
+P2 <- exp_L2 / sum_exp # P(Herbivore)
+P3 <- exp_L3 / sum_exp # P(Omnivore)
+
+# Sample multinomial outcome
 MultiTrait <- apply(cbind(P1, P2, P3), 1, function(p) sample(1:3, 1, prob = p))
 
-data_multi <- list(X = X, Multi = MultiTrait)
+data_multi <- list(X = X, Multi = MultiTrait, K_Multi = 3)
 
 fit_multi <- phybase_run(
     data = data_multi,
     tree = tree,
     equations = list(Multi ~ X),
-    distribution = c(Multi = "multinomial")
+    distribution = c(Multi = "multinomial"),
+    optimise = TRUE
 )
 
 summary(fit_multi)
+
+# Check recovery of phylogenetic signal for each category
+# lambda parameters should be ~ 0.6 and 0.7
+fit_multi$summary$statistics[grep("lambda", rownames(fit_multi$summary$statistics)), ]
 ```
 
 **Note**: The summary will show parameters for each category $k \ge 2$ (e.g., `beta_Multi_X[2]`, `beta_Multi_X[3]`), relative to the reference category $k=1$.
