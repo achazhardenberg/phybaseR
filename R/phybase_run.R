@@ -1034,10 +1034,8 @@ phybase_run <- function(
     parallel::clusterExport(cl, c("run_single_chain"), envir = environment())
 
     # Run chains in parallel
-    # Run chains in parallel with progress bar
     if (!quiet) {
-      message("Sampling...")
-      pb <- txtProgressBar(min = 0, max = n.chains, style = 3)
+      message(sprintf("Sampling %d chains in parallel...", n.chains))
     }
 
     chain_results <- parallel::parLapply(cl, seq_len(n.chains), function(i) {
@@ -1056,8 +1054,7 @@ phybase_run <- function(
     })
 
     if (!quiet) {
-      setTxtProgressBar(pb, n.chains)
-      close(pb)
+      message("All chains completed.")
     }
 
     # Combine samples from all chains
