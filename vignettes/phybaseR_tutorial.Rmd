@@ -14,10 +14,19 @@ vignette: >
 *   **Phylogenetic Non-independence**: Using the phylogenetic covariance matrix.
 *   **Measurement Error**: Incorporating standard errors or repeated measures.
 *   **Missing Data**: Automatically handling missing values in both predictors and responses.
-*   **Phylogenetic Uncertainty**: integrating over a posterior sample of trees.
-*   **Non-Gaussian Data**: Supporting binomial (binary) and multinomial response variables.
+*   **Phylogenetic Uncertainty**: Integrating over a posterior sample of trees.
+*   **Multiple Response Distributions**: 
+    - Gaussian (continuous data)
+    - Binomial (binary/proportion data)
+    - Multinomial (unordered categorical data)
+    - Ordinal (ordered categorical data)
+    - Poisson (count data)
+    - Negative Binomial (overdispersed count data)
+*   **Categorical Predictors**: Automatic handling of factor variables with dummy coding.
+*   **Optimized Performance**: Fast random effects formulation (4.6× speedup) for large datasets.
 
 This tutorial will guide you through the main features of the package.
+
 
 ## Setup
 
@@ -634,12 +643,37 @@ print(results$comparison)
 
 ## Model Comparison (WAIC)
 
-You can compare models using the Widely Applicable Information Criterion (WAIC).
+You can compare models using the Widely Applicable Information Criterion (WAIC). There are two ways to calculate WAIC:
 
-```{r waic, eval=FALSE}
+### Option 1: Calculate during model fitting
+
+Set `WAIC = TRUE` in `phybase_run()` to calculate WAIC automatically:
+
+```{r waic_during_run, eval=FALSE}
+fit <- phybase_run(
+    data = data,
+    tree = tree,
+    equations = equations,
+    WAIC = TRUE, # Calculate WAIC during fitting
+    n.chains = 2 # WAIC requires at least 2 chains
+)
+
+# WAIC is stored in the fit object
+fit$WAIC
+```
+
+### Option 2: Calculate from an existing fitted model
+
+If you didn't calculate WAIC initially, use the standalone `phybase_waic()` function. This is useful because you don't need to rerun the entire model - it uses the existing MCMC samples:
+
+```{r waic_standalone, eval=FALSE}
+# Calculate WAIC from a previously fitted model
 waic_res <- phybase_waic(fit, n.iter = 2000)
 waic_res
 ```
+
+**Note**: WAIC requires at least 2 chains. If you only ran 1 chain, you'll need to refit the model with `n.chains = 2` or more before calculating WAIC.
+
 
 ## Model Validation (d-separation)
 
