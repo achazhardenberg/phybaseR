@@ -71,6 +71,50 @@ phybase_format_data <- function(data, species_col = "SP", tree) {
         stop("No trait columns found in data")
     }
 
+    # Detect and expand categorical variables (factor or character)
+    categorical_vars <- list()
+    for (col in trait_cols) {
+        if (is.factor(data[[col]]) || is.character(data[[col]])) {
+            # Get unique levels (excluding NA)
+            levels <- sort(unique(data[[col]][!is.na(data[[col]])]))
+
+            if (length(levels) < 2) {
+                warning(sprintf(
+                    "Categorical variable '%s' has fewer than 2 levels, skipping dummy coding",
+                    col
+                ))
+                next
+            }
+
+            # Store categorical info
+            categorical_vars[[col]] <- list(
+                levels = levels,
+                reference = levels[1],
+                dummies = paste0(col, "_", levels[-1])
+            )
+
+            # Create dummy variables (K-1 for K levels)
+            for (i in 2:length(levels)) {
+                dummy_name <- paste0(col, "_", levels[i])
+                data[[dummy_name]] <- as.numeric(data[[col]] == levels[i])
+            }
+
+            message(sprintf(
+                "Categorical variable '%s' expanded to %d dummy variable(s) | Reference: '%s'",
+                col,
+                length(levels) - 1,
+                levels[1]
+            ))
+        }
+    }
+
+    # Update trait_cols: remove categoricals, add dummies
+    if (length(categorical_vars) > 0) {
+        original_categoricals <- names(categorical_vars)
+        all_dummies <- unlist(lapply(categorical_vars, function(x) x$dummies))
+        trait_cols <- c(setdiff(trait_cols, original_categoricals), all_dummies)
+    }
+
     # Check for species alignment
     data_species <- unique(data[[species_col]])
     tree_species <- tree$tip.label
@@ -130,6 +174,11 @@ phybase_format_data <- function(data, species_col = "SP", tree) {
         }
 
         data_list[[trait]] <- trait_matrix
+    }
+
+    # Store categorical variable info as attribute for reference
+    if (length(categorical_vars) > 0) {
+        attr(data_list, "categorical_vars") <- categorical_vars
     }
 
     return(data_list)

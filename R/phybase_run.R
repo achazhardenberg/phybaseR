@@ -771,6 +771,45 @@ phybase_run <- function(
     }
   }
 
+  # Auto-expand categorical variables in equations
+  if (!is.null(attr(data, "categorical_vars"))) {
+    categorical_vars <- attr(data, "categorical_vars")
+
+    equations <- lapply(equations, function(eq) {
+      # Parse formula to get all variables
+      vars <- all.vars(eq)
+
+      # Check if any predictors are categorical
+      for (var in vars) {
+        if (var %in% names(categorical_vars)) {
+          # Get dummy variable names
+          dummies <- categorical_vars[[var]]$dummies
+
+          # Convert formula to character for manipulation
+          eq_str <- deparse(eq)
+
+          # Replace categorical variable with its dummies
+          # Match whole word only (avoid partial matches)
+          pattern <- paste0("\\b", var, "\\b")
+          replacement <- paste(dummies, collapse = " + ")
+          eq_str <- gsub(pattern, replacement, eq_str)
+
+          # Convert back to formula
+          eq <- as.formula(eq_str)
+
+          if (!quiet) {
+            message(sprintf(
+              "Expanded '%s' to: %s",
+              var,
+              paste(dummies, collapse = ", ")
+            ))
+          }
+        }
+      }
+      return(eq)
+    })
+  }
+
   # JAGS model code
   model_output <- phybase_model(
     equations = equations,

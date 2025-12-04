@@ -286,6 +286,86 @@ summary(fit_poisson)
 - **Poisson**: Default for count data; handles moderate overdispersion
 - **Negative Binomial**: Heavy overdispersion (variance >> mean)
 
+## Negative Binomial Variables (Overdispersed Counts)
+
+For **heavily overdispersed count data** where variance far exceeds the mean, use the Negative Binomial distribution. It includes an explicit **size parameter** (`r`) that controls overdispersion.
+
+```{r negbinomial, eval=FALSE}
+# Simulate heavily overdispersed count data
+# (e.g., parasite loads, highly variable population counts)
+log_host_mass <- rnorm(N)
+r_true <- 2 # Size parameter (smaller = more overdispersed)
+
+# Simulate overdispersed counts
+log_mu <- 2 + 0.5 * log_host_mass
+mu <- exp(log_mu)
+parasite_count <- rnbinom(N, size = r_true, mu = mu)
+
+data_nb <- list(HostMass = log_host_mass, Parasites = parasite_count)
+
+fit_nb <- phybase_run(
+    data = data_nb,
+    tree = tree,
+    equations = list(Parasites ~ HostMass),
+    distribution = c(Parasites = "negbinomial")
+)
+
+summary(fit_nb)
+```
+
+**Understanding the size parameter (`r`)**:
+- **Smaller `r`** → More overdispersion (variance >> mean)
+- **Larger `r`** → Less overdispersion (approaches Poisson)
+- **Typical values**: r = 0.5-5 for heavily overdispersed biological data
+
+```
+**Poisson vs. Negative Binomial decision tree**:
+1. **Variance ≈ Mean**: Use Poisson (simpler, fewer parameters)
+2. **Variance > Mean** (2-5x): Poisson with random effects (handles it via `tau_e`)
+3. **Variance >> Mean** (>5x): Negative Binomial (explicit overdispersion modeling)
+
+## Categorical Predictors
+
+`phybaseR` automatically handles categorical predictors (factor or character variables) by converting them to **dummy variables** and **auto-expanding** equations.
+
+```{r categorical, eval=FALSE}
+# Data with categorical predictor
+data <- data.frame(
+    Species = tree$tip.label,
+    BodyMass = rnorm(N),
+    Diet = sample(c("Carnivore", "Herbivore", "Omnivore"), N, replace = TRUE),
+    Habitat = factor(sample(c("Forest", "Grassland"), N, replace = TRUE))
+)
+
+# phybase_format_data automatically creates dummy variables
+data_list <- phybase_format_data(data, tree = tree)
+# Messages:
+# Categorical variable 'Diet' expanded to 2 dummy variable(s) | Reference: 'Carnivore'
+# Categorical variable 'Habitat' expanded to 1 dummy variable(s) | Reference: 'Forest'
+
+# Use categorical variables DIRECTLY in equations - auto-expands!
+fit <- phybase_run(
+    data = data_list,
+    tree = tree,
+    equations = list(BodyMass ~ Diet + Habitat) # Auto-expands to dummies!
+)
+# Messages:
+# Expanded 'Diet' to: Diet_Herbivore, Diet_Omnivore
+# Expanded 'Habitat' to: Habitat_Grassland
+
+summary(fit)
+```
+
+**Key points**:
+- **Auto-expansion**: Write `Y ~ Diet`, get `Y ~ Diet_Herbivore + Diet_Omnivore`
+- **Reference category**: First level alphabetically (e.g., "Carnivore" for Diet)
+- **K-1 encoding**: K levels → K-1 dummy variables
+- **Interpretation**: Coefficients are effects relative to reference category
+
+**Example interpretation**:
+- `beta_BodyMass_Diet_Herbivore = -0.65` → Herbivores 0.65 units lighter than Carnivores
+- `beta_BodyMass_Habitat_Grassland = 0.56` → Grassland species 0.56 units heavier than Forest
+
 ## Missing Data
 
 PhyBaSE fully supports missing data (`NA`) in both response and predictor variables. It uses a **Latent Variable (GLMM)** approach to impute missing values while preserving phylogenetic signal.
