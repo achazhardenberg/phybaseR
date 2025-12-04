@@ -3,7 +3,15 @@
 #' @param data A named list of data for JAGS.
 #' @param tree A single phylogenetic tree of class \code{"phylo"} or a list of trees of class \code{"multiPhylo"} (i.e., a list of \code{"phylo"} objects). If multiple trees are provided, phylogenetic uncertainty is incorporated by sampling among them during model fitting.
 #' @param equations A list of model formulas describing the structural equation model.
-#' @param monitor Optional character vector of parameter names to monitor. If \code{NULL}, parameters will be selected automatically based on model structure.
+#' @param monitor Parameter monitoring mode. Options:
+#'   \itemize{
+#'     \item \code{"interpretable"} (default): Monitor only scientifically meaningful parameters:
+#'           intercepts (alpha), regression coefficients (beta), phylogenetic signals (lambda) for
+#'          responses, and WAIC terms. Excludes variance components (tau) and auxiliary predictor parameters.
+#'     \item \code {"all"}: Monitor all model parameters including variance components and implicit equation parameters.
+#'     \item Custom vector: Provide a character vector of specific parameter names to monitor.
+#'     \item \code{NULL}: Auto-detect based on model structure (equivalent to "interpretable").
+#'   }
 #' @param n.chains Number of MCMC chains (default = 3).
 #' @param n.iter Total number of MCMC iterations (default = 2000).
 #' @param n.burnin Number of burn-in iterations (default = n.iter / 2).
@@ -75,12 +83,12 @@ phybase_run <- function(
   equations,
   monitor = NULL,
   n.chains = 3,
-  n.iter = 2000,
-  n.burnin = floor(n.iter / 2),
-  n.thin = max(1, floor((n.iter - n.burnin) / 1000)),
+  n.iter = 13000,
+  n.burnin = 3000,
+  n.thin = 10,
   DIC = TRUE,
   WAIC = FALSE,
-  n.adapt = 1000,
+  n.adapt = 5000,
   quiet = FALSE,
   dsep = FALSE,
   variability = NULL,
@@ -185,12 +193,17 @@ phybase_run <- function(
     }
   }
 
-  # Handle multinomial data
+  # Handle multinomial and ordinal data
   if (!is.null(distribution)) {
     for (var in names(distribution)) {
-      if (distribution[[var]] == "multinomial") {
+      if (distribution[[var]] %in% c("multinomial", "ordinal")) {
         if (!var %in% names(data)) {
-          stop(paste("Multinomial variable", var, "not found in data."))
+          stop(paste(
+            distribution[[var]],
+            "variable",
+            var,
+            "not found in data."
+          ))
         }
 
         val <- data[[var]]
@@ -204,7 +217,7 @@ phybase_run <- function(
           data[[var]] <- as.integer(val)
         }
 
-        if (K < 3) {
+        if (distribution[[var]] == "multinomial" && K < 3) {
           warning(paste(
             "Multinomial variable",
             var,
@@ -212,8 +225,28 @@ phybase_run <- function(
           ))
         }
 
-        # Pass K to JAGS
-        data[[paste0("K_", var)]] <- K
+        if (distribution[[var]] == "ordinal" && K < 3) {
+          warning(paste(
+            "Ordinal variable",
+            var,
+            "has fewer than 3 levels. Consider using binomial."
+          ))
+        }
+
+        # Pass K to JAGS (auto-detected from data)
+        K_name <- paste0("K_", var)
+        if (!K_name %in% names(data)) {
+          data[[K_name]] <- K
+          if (!quiet) {
+            message(sprintf(
+              "Auto-detected K_%s = %d from %s variable '%s'",
+              var,
+              K,
+              distribution[[var]],
+              var
+            ))
+          }
+        }
       }
     }
   }
@@ -932,6 +965,22 @@ phybase_run <- function(
   writeLines(model_string, model_file)
 
   # Monitor parameters
+  # Handle monitor mode
+  monitor_mode <- NULL
+  if (
+    is.character(monitor) &&
+      length(monitor) == 1 &&
+      monitor %in% c("interpretable", "all")
+  ) {
+    monitor_mode <- monitor
+    monitor <- NULL # Will be auto-detected based on mode
+  }
+
+  # Default mode is "interpretable"
+  if (is.null(monitor_mode) && is.null(monitor)) {
+    monitor_mode <- "interpretable"
+  }
+
   if (is.null(monitor)) {
     lines <- unlist(strsplit(model_string, "\n"))
 
@@ -942,7 +991,9 @@ phybase_run <- function(
       # This regex captures only the base variable name
       gsub("^\\s*(\\w+)(?:\\[.*\\])?\\s*(<-|~).*", "\\1", out)
     }
-    monitor <- unique(c(
+
+    # Extract all parameters
+    all_params <- unique(c(
       extract_names("^\\s*beta"),
       extract_names("^\\s*alpha"),
       extract_names("^\\s*lambda"),
@@ -951,7 +1002,37 @@ phybase_run <- function(
     ))
 
     # Remove tau_obs_* (deterministic constants, not stochastic parameters)
-    monitor <- monitor[!grepl("^tau_obs", monitor)]
+    all_params <- all_params[!grepl("^tau_obs", all_params)]
+
+    if (!is.null(monitor_mode) && monitor_mode == "interpretable") {
+      # Filter to interpretable parameters only
+      # Get response variables to distinguish them from predictors
+      response_vars <- unique(sapply(equations, function(eq) {
+        all.vars(formula(eq)[[2]])
+      }))
+
+      # Include:
+      # - Alphas for RESPONSE variables only (exclude auxiliary predictor alphas)
+      # - All betas (regression coefficients)
+      # - Lambdas for RESPONSE variables only (exclude auxiliary predictor lambdas)
+      # - Rhos (induced correlations)
+      # Exclude:
+      # - All taus (variance components)
+      # - Lambdas for predictor-only variables
+      # - Alphas for predictor-only variables (implicit X ~ 1 equations)
+
+      monitor <- all_params[
+        (grepl("^alpha", all_params) &
+          gsub("^alpha", "", all_params) %in% response_vars) | # Response intercepts only
+          grepl("^beta", all_params) | # All regression coefficients
+          grepl("^rho", all_params) | # Induced correlations
+          (grepl("^lambda", all_params) &
+            gsub("^lambda", "", all_params) %in% response_vars) # Response lambdas only
+      ]
+    } else {
+      # monitor_mode == "all" or NULL: include everything
+      monitor <- all_params
+    }
   }
 
   # Add response variables
