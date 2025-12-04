@@ -30,10 +30,15 @@ This tutorial will guide you through the main features of the package.
 
 ## Setup
 
-First, load the package and the necessary dependencies.
+First, load the package:
 
 ```{r setup}
 library(phybaseR)
+```
+
+**Note**: `phybaseR` uses `ape` internally for phylogenetic calculations (it's automatically loaded as a dependency). We'll also load it explicitly here for the tutorial examples, since we use `ape` functions like `rtree()` and `rTraitCont()` to simulate data:
+
+```{r load_ape}
 library(ape)
 ```
 
