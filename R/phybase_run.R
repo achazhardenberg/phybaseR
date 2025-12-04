@@ -796,9 +796,9 @@ phybase_run <- function(
     extract_names <- function(pattern) {
       out <- grep(pattern, lines, value = TRUE)
       out <- grep("(<-|~)", out, value = TRUE)
-      # Extract parameter name, including array indices like [k]
-      # This regex captures word characters followed by optional array notation
-      gsub("^\\s*(\\w+(?:\\[\\w+\\])?)\\s*(<-|~).*", "\\1", out)
+      # Extract parameter name, ignoring array indices like [k]
+      # This regex captures only the base variable name
+      gsub("^\\s*(\\w+)(?:\\[.*\\])?\\s*(<-|~).*", "\\1", out)
     }
     monitor <- unique(c(
       extract_names("^\\s*beta"),

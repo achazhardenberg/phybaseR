@@ -412,21 +412,72 @@ phybase_model <- function(
         err <- paste0("err_", response, suffix)
         K_var <- paste0("K_", response)
 
-        model_lines <- c(
-          model_lines,
-          paste0("  # Multinomial phylogenetic errors for ", response),
-          paste0("  for (k in 2:", K_var, ") {"),
-          paste0(
-            "    ",
-            err,
-            "[1:N, k] ~ dmnorm(zero_vec[], TAU_",
-            tolower(response),
-            "_",
-            suffix,
-            "[,,k])"
-          ),
-          "  }"
-        )
+        if (optimize) {
+          # Optimized Random Effects Formulation for Multinomial
+          u_std <- paste0("u_std_", response, suffix)
+          u <- paste0("u_", response, suffix)
+          epsilon <- paste0("epsilon_", response, suffix)
+          tau_u <- paste0("tau_u_", response, suffix)
+          tau_e <- paste0("tau_e_", response, suffix)
+
+          # Handle multi-tree: use Prec_phylo_fixed[,,K] instead of Prec_phylo_fixed[,]
+          prec_index <- if (multi.tree) {
+            "Prec_phylo_fixed[1:N, 1:N, K]"
+          } else {
+            "Prec_phylo_fixed[1:N, 1:N]"
+          }
+
+          model_lines <- c(
+            model_lines,
+            paste0("  # Random effects for multinomial: ", response),
+            paste0("  for (k in 2:", K_var, ") {"),
+            paste0(
+              "    ",
+              u_std,
+              "[1:N, k] ~ dmnorm(zeros[1:N], ",
+              prec_index,
+              ")"
+            ),
+            paste0("    for (i in 1:N) {"),
+            paste0(
+              "      ",
+              u,
+              "[i, k] <- ",
+              u_std,
+              "[i, k] / sqrt(",
+              tau_u,
+              "[k])"
+            ),
+            paste0("      ", epsilon, "[i, k] ~ dnorm(0, ", tau_e, "[k])"),
+            paste0(
+              "      ",
+              err,
+              "[i, k] <- ",
+              u,
+              "[i, k] + ",
+              epsilon,
+              "[i, k]"
+            ),
+            paste0("    }"),
+            paste0("  }")
+          )
+        } else {
+          model_lines <- c(
+            model_lines,
+            paste0("  # Multinomial phylogenetic errors for ", response),
+            paste0("  for (k in 2:", K_var, ") {"),
+            paste0(
+              "    ",
+              err,
+              "[1:N, k] ~ dmnorm(zero_vec[], TAU_",
+              tolower(response),
+              "_",
+              suffix,
+              "[,,k])"
+            ),
+            "  }"
+          )
+        }
       }
     }
   }
@@ -765,15 +816,39 @@ phybase_model <- function(
     dist <- dist_list[[response]] %||% "gaussian"
     if (dist == "multinomial") {
       K_var <- paste0("K_", response)
-      model_lines <- c(
-        model_lines,
-        paste0("  # Priors for ", response, " (Multinomial)"),
-        paste0("  for (k in 2:", K_var, ") {"),
-        paste0("    alpha_", response, "[k] ~ dnorm(0, 1.0E-6)"),
-        paste0("    lambda_", response, "[k] ~ dunif(0, 1)"),
-        paste0("    tau_", response, "[k] ~ dgamma(1, 1)"),
-        "  }"
-      )
+      if (optimize) {
+        model_lines <- c(
+          model_lines,
+          paste0("  # Priors for ", response, " (Multinomial)"),
+          paste0("  for (k in 2:", K_var, ") {"),
+          paste0("    alpha_", response, "[k] ~ dnorm(0, 1.0E-6)"),
+          paste0("    tau_u_", response, "[k] ~ dgamma(1, 1)"),
+          paste0("    tau_e_", response, "[k] ~ dgamma(1, 1)"),
+          # Derived lambda
+          paste0(
+            "    lambda_",
+            response,
+            "[k] <- (1/tau_u_",
+            response,
+            "[k]) / ((1/tau_u_",
+            response,
+            "[k]) + (1/tau_e_",
+            response,
+            "[k]))"
+          ),
+          "  }"
+        )
+      } else {
+        model_lines <- c(
+          model_lines,
+          paste0("  # Priors for ", response, " (Multinomial)"),
+          paste0("  for (k in 2:", K_var, ") {"),
+          paste0("    alpha_", response, "[k] ~ dnorm(0, 1.0E-6)"),
+          paste0("    lambda_", response, "[k] ~ dunif(0, 1)"),
+          paste0("    tau_", response, "[k] ~ dgamma(1, 1)"),
+          "  }"
+        )
+      }
 
       # Betas (arrays)
       for (eq in eq_list) {
@@ -1058,98 +1133,80 @@ phybase_model <- function(
         # We need TAU[,,k] for each k
         K_var <- paste0("K_", response)
 
-        # k=1 is reference category (fixed to identity)
-        # k>=2 have estimated phylogenetic signal
-        if (multi.tree) {
-          model_lines <- c(
-            model_lines,
-            paste0("  # Covariance matrices for multinomial"),
-            "  # Reference category k=1",
-            "  for (i in 1:N) {",
-            "    for (j in 1:N) {",
-            paste0("      Mlam_", response, "[i,j,1] <- ID[i,j]"),
-            "    }",
-            "  }",
-            paste0(
-              "  TAU_",
-              tolower(response),
-              "_",
-              suffix,
-              "[1:N,1:N,1] <- ID[1:N,1:N]"
-            ),
-            "  # Estimated categories k>=2",
-            paste0("  for (k in 2:", K_var, ") {"),
-            "    for (i in 1:N) {",
-            "      for (j in 1:N) {",
-            paste0(
-              "        Mlam_",
-              response,
-              "[i,j,k] <- lambda_",
-              response,
-              "[k]*multiVCV[i,j,K] + (1-lambda_",
-              response,
-              "[k])*ID[i,j]"
-            ),
-            "      }",
-            "    }",
-            paste0(
-              "    TAU_",
-              tolower(response),
-              "_",
-              suffix,
-              "[1:N,1:N,k] <- inverse(tau_",
-              response,
-              "[k]*Mlam_",
-              response,
-              "[1:N,1:N,k])"
-            ),
-            "  }"
-          )
-        } else {
-          model_lines <- c(
-            model_lines,
-            paste0("  # Covariance matrices for multinomial"),
-            "  # Reference category k=1",
-            "  for (i in 1:N) {",
-            "    for (j in 1:N) {",
-            paste0("      Mlam_", response, "[i,j,1] <- ID[i,j]"),
-            "    }",
-            "  }",
-            paste0(
-              "  TAU_",
-              tolower(response),
-              "_",
-              suffix,
-              "[1:N,1:N,1] <- ID[1:N,1:N]"
-            ),
-            "  # Estimated categories k>=2",
-            paste0("  for (k in 2:", K_var, ") {"),
-            "    for (i in 1:N) {",
-            "      for (j in 1:N) {",
-            paste0(
-              "        Mlam_",
-              response,
-              "[i,j,k] <- lambda_",
-              response,
-              "[k]*VCV[i,j] + (1-lambda_",
-              response,
-              "[k])*ID[i,j]"
-            ),
-            "      }",
-            "    }",
-            paste0(
-              "    TAU_",
-              tolower(response),
-              "_",
-              suffix,
-              "[1:N,1:N,k] <- inverse(tau_",
-              response,
-              "[k]*Mlam_",
-              response,
-              "[1:N,1:N,k])"
-            ),
-            "  }"
-          )
+        if (!optimize) {
+          # k=1 is reference category (fixed to identity)
+          # k>=2 have estimated phylogenetic signal
+          if (multi.tree) {
+            model_lines <- c(
+              model_lines,
+              paste0("  # Covariance matrices for multinomial"),
+              "  # Reference category k=1",
+              "  for (i in 1:N) {",
+              "    for (j in 1:N) {",
+              paste0("      Mlam_", response, "[i,j,1] <- ID[i,j]"),
+              "    }",
+              "  }",
+              paste0(
+                "  TAU_",
+                tolower(response),
+                "_",
+                suffix,
+                "[1:N,1:N,1] <- ID[1:N,1:N]"
+              ),
+              "  # Estimated categories k>=2",
+              paste0("  for (k in 2:", K_var, ") {"),
+              "    for (i in 1:N) {",
+              "      for (j in 1:N) {",
+              paste0(
+                "        Mlam_",
+                response,
+                "[i,j,k] <- lambda_",
+                response,
+                "[k]*multiVCV[i,j,K] + (1-lambda_",
+                response,
+                "[k])*ID[i,j]"
+              ),
+              "      }",
+              "    }",
+              paste0(
+                "    TAU_",
+                tolower(response),
+                "_",
+                suffix,
+                "[1:N,1:N,k] <- inverse(Mlam_",
+                response,
+                "[,,k])"
+              ),
+              "  }"
+            )
+          } else {
+            model_lines <- c(
+              model_lines,
+              paste0("  # Covariance matrices for multinomial"),
+              "  # Reference category k=1",
+              paste0(
+                "  TAU_",
+                tolower(response),
+                "_",
+                suffix,
+                "[1:N,1:N,1] <- ID[1:N,1:N]"
+              ),
+              "  # Estimated categories k>=2",
+              paste0("  for (k in 2:", K_var, ") {"),
+              paste0(
+                "    TAU_",
+                tolower(response),
+                "_",
+                suffix,
+                "[1:N, 1:N, k] <- inverse(lambda_",
+                response,
+                "[k] * VCV + (1 - lambda_",
+                response,
+                "[k]) * ID)"
+              ),
+              "  }"
+            )
+          }
         }
       }
     }
