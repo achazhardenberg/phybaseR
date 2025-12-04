@@ -47,7 +47,7 @@
 #' eqs <- list(BR ~ BM, S ~ BR, G ~ BR, L ~ BR)
 #' cat(phybase_model(eqs, multi.tree = TRUE)$model)
 #'
-#' @param optimize Logical. If TRUE (default), use random effects formulation for 4.6× speedup.
+#' @param optimise Logical. If TRUE (default), use random effects formulation for 4.6× speedup.
 #'   If FALSE, use original marginal covariance formulation.
 #' @export
 #' @importFrom stats formula terms setNames sd
@@ -61,7 +61,7 @@ phybase_model <- function(
   vars_with_na = NULL,
   induced_correlations = NULL,
   latent = NULL,
-  optimize = TRUE
+  optimise = TRUE
 ) {
   `%||%` <- function(a, b) if (!is.null(a)) a else b
 
@@ -430,7 +430,7 @@ phybase_model <- function(
             paste0("  }")
           )
         } else {
-          if (optimize) {
+          if (optimise) {
             # Optimized Random Effects Formulation (4.6x faster)
             # u_std ~ dmnorm(0, Prec_phylo_fixed)
             # u = u_std / sqrt(tau_u)
@@ -492,7 +492,7 @@ phybase_model <- function(
         # For binomial, the error term has the phylogenetic structure
         err <- paste0("err_", response, suffix)
 
-        if (optimize) {
+        if (optimise) {
           # Random Effects Formulation
           u_std <- paste0("u_std_", response, suffix)
           u <- paste0("u_", response, suffix)
@@ -531,8 +531,8 @@ phybase_model <- function(
         err <- paste0("err_", response, suffix)
         K_var <- paste0("K_", response)
 
-        if (optimize) {
-          # Optimized Random Effects Formulation for Multinomial
+        if (optimise) {
+          # Optimised Random Effects Formulation for Multinomial
           u_std <- paste0("u_std_", response, suffix)
           u <- paste0("u_", response, suffix)
           epsilon <- paste0("epsilon_", response, suffix)
@@ -602,7 +602,7 @@ phybase_model <- function(
         # Single phylogenetic effect (unlike multinomial with K-1 effects)
         err <- paste0("err_", response, suffix)
 
-        # Random Effects Formulation (optimize-only)
+        # Random Effects Formulation (optimise-only)
         u_std <- paste0("u_std_", response, suffix)
         u <- paste0("u_", response, suffix)
         epsilon <- paste0("epsilon_", response, suffix)
@@ -631,59 +631,61 @@ phybase_model <- function(
         # Single phylogenetic effect (like ordinal)
         err <- paste0("err_", response, suffix)
 
-        # Random Effects Formulation (optimize-only)
-        u_std <- paste0("u_std_", response, suffix)
-        u <- paste0("u_", response, suffix)
-        epsilon <- paste0("epsilon_", response, suffix)
-        tau_u <- paste0("tau_u_", response, suffix)
-        tau_e <- paste0("tau_e_", response, suffix)
+        if (optimise) {
+          u_std <- paste0("u_std_", response, suffix)
+          u <- paste0("u_", response, suffix)
+          epsilon <- paste0("epsilon_", response, suffix)
+          tau_u <- paste0("tau_u_", response, suffix)
+          tau_e <- paste0("tau_e_", response, suffix)
 
-        # Handle multi-tree
-        prec_index <- if (multi.tree) {
-          "Prec_phylo_fixed[1:N, 1:N, K]"
-        } else {
-          "Prec_phylo_fixed[1:N, 1:N]"
+          # Handle multi-tree
+          prec_index <- if (multi.tree) {
+            "Prec_phylo_fixed[1:N, 1:N, K]"
+          } else {
+            "Prec_phylo_fixed[1:N, 1:N]"
+          }
+
+          model_lines <- c(
+            model_lines,
+            paste0("  # Random effects for Poisson: ", response),
+            paste0("  ", u_std, "[1:N] ~ dmnorm(zeros[1:N], ", prec_index, ")"),
+            paste0("  for (i in 1:N) {"),
+            paste0("    ", u, "[i] <- ", u_std, "[i] / sqrt(", tau_u, ")"),
+            paste0("    ", epsilon, "[i] ~ dnorm(0, ", tau_e, ")"),
+            paste0("    ", err, "[i] <- ", u, "[i] + ", epsilon, "[i]"),
+            paste0("  }")
+          )
         }
-
-        model_lines <- c(
-          model_lines,
-          paste0("  # Random effects for Poisson: ", response),
-          paste0("  ", u_std, "[1:N] ~ dmnorm(zeros[1:N], ", prec_index, ")"),
-          paste0("  for (i in 1:N) {"),
-          paste0("    ", u, "[i] <- ", u_std, "[i] / sqrt(", tau_u, ")"),
-          paste0("    ", epsilon, "[i] ~ dnorm(0, ", tau_e, ")"),
-          paste0("    ", err, "[i] <- ", u, "[i] + ", epsilon, "[i]"),
-          paste0("  }")
-        )
       } else if (dist == "negbinomial") {
         # Negative Binomial error term: err[1:N]
         # Single phylogenetic effect (like Poisson/ordinal)
         err <- paste0("err_", response, suffix)
 
-        # Random Effects Formulation (optimize-only)
-        u_std <- paste0("u_std_", response, suffix)
-        u <- paste0("u_", response, suffix)
-        epsilon <- paste0("epsilon_", response, suffix)
-        tau_u <- paste0("tau_u_", response, suffix)
-        tau_e <- paste0("tau_e_", response, suffix)
+        if (optimise) {
+          u_std <- paste0("u_std_", response, suffix)
+          u <- paste0("u_", response, suffix)
+          epsilon <- paste0("epsilon_", response, suffix)
+          tau_u <- paste0("tau_u_", response, suffix)
+          tau_e <- paste0("tau_e_", response, suffix)
 
-        # Handle multi-tree
-        prec_index <- if (multi.tree) {
-          "Prec_phylo_fixed[1:N, 1:N, K]"
-        } else {
-          "Prec_phylo_fixed[1:N, 1:N]"
+          # Handle multi-tree
+          prec_index <- if (multi.tree) {
+            "Prec_phylo_fixed[1:N, 1:N, K]"
+          } else {
+            "Prec_phylo_fixed[1:N, 1:N]"
+          }
+
+          model_lines <- c(
+            model_lines,
+            paste0("  # Random effects for Negative Binomial: ", response),
+            paste0("  ", u_std, "[1:N] ~ dmnorm(zeros[1:N], ", prec_index, ")"),
+            paste0("  for (i in 1:N) {"),
+            paste0("    ", u, "[i] <- ", u_std, "[i] / sqrt(", tau_u, ")"),
+            paste0("    ", epsilon, "[i] ~ dnorm(0, ", tau_e, ")"),
+            paste0("    ", err, "[i] <- ", u, "[i] + ", epsilon, "[i]"),
+            paste0("  }")
+          )
         }
-
-        model_lines <- c(
-          model_lines,
-          paste0("  # Random effects for Negative Binomial: ", response),
-          paste0("  ", u_std, "[1:N] ~ dmnorm(zeros[1:N], ", prec_index, ")"),
-          paste0("  for (i in 1:N) {"),
-          paste0("    ", u, "[i] <- ", u_std, "[i] / sqrt(", tau_u, ")"),
-          paste0("    ", epsilon, "[i] ~ dnorm(0, ", tau_e, ")"),
-          paste0("    ", err, "[i] <- ", u, "[i] + ", epsilon, "[i]"),
-          paste0("  }")
-        )
       }
     }
   }
@@ -966,7 +968,7 @@ phybase_model <- function(
       # Only generate lambda/tau priors if NOT using GLMM (missing data)
       # For GLMM, we generate specific priors in the covariance section
       if (is.null(vars_with_na) || !response %in% vars_with_na) {
-        if (optimize) {
+        if (optimise) {
           # Random Effects Priors (tau_u, tau_e)
           model_lines <- c(
             model_lines,
@@ -1027,7 +1029,7 @@ phybase_model <- function(
     dist <- dist_list[[response]] %||% "gaussian"
     if (dist == "multinomial") {
       K_var <- paste0("K_", response)
-      if (optimize) {
+      if (optimise) {
         model_lines <- c(
           model_lines,
           paste0("  # Priors for ", response, " (Multinomial)"),
@@ -1332,7 +1334,7 @@ phybase_model <- function(
       use_glmm <- (!is.null(vars_with_na) && response %in% vars_with_na)
 
       if (dist == "gaussian" && !use_glmm) {
-        if (!optimize) {
+        if (!optimise) {
           if (multi.tree) {
             model_lines <- c(
               model_lines,
@@ -1467,7 +1469,7 @@ phybase_model <- function(
         }
       } else if (dist == "binomial") {
         # GLMM covariance for binomial error term
-        if (!optimize) {
+        if (!optimise) {
           # Marginal Formulation
           if (multi.tree) {
             model_lines <- c(
@@ -1527,13 +1529,13 @@ phybase_model <- function(
             )
           }
         }
-        # When optimize=TRUE, skip - using random effects instead
+        # When optimise=TRUE, skip - using random effects instead
       } else if (dist == "multinomial") {
         # Multinomial covariance
         # We need TAU[,,k] for each k
         K_var <- paste0("K_", response)
 
-        if (!optimize) {
+        if (!optimise) {
           # k=1 is reference category (fixed to identity)
           # k>=2 have estimated phylogenetic signal
           if (multi.tree) {
@@ -1649,7 +1651,7 @@ phybase_model <- function(
       paste0("  }")
     )
 
-    if (optimize) {
+    if (optimise) {
       # Optimized Random Effects Formulation for Predictors
       u_std <- paste0("u_std_", var)
       u <- paste0("u_", var)
@@ -1708,7 +1710,7 @@ phybase_model <- function(
     # For latent variables, fix tau = 1 (standardize)
     # For observed predictors, estimate tau
     if (is_latent) {
-      if (optimize) {
+      if (optimise) {
         model_lines <- c(
           model_lines,
           paste0("  # Latent variable: standardized (var = 1)"),
@@ -1731,7 +1733,7 @@ phybase_model <- function(
         )
       }
     } else {
-      if (optimize) {
+      if (optimise) {
         model_lines <- c(
           model_lines,
           paste0("  lambda", var, " ~ dunif(0, 1)"),
@@ -1753,7 +1755,7 @@ phybase_model <- function(
       }
     }
 
-    if (!optimize) {
+    if (!optimise) {
       if (multi.tree) {
         model_lines <- c(
           model_lines,
