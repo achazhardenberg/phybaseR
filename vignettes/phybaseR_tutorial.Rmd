@@ -14,17 +14,31 @@ vignette: >
 *   **Phylogenetic Non-independence**: Using the phylogenetic covariance matrix.
 *   **Measurement Error**: Incorporating standard errors or repeated measures.
 *   **Missing Data**: Automatically handling missing values in both predictors and responses.
-*   **Phylogenetic Uncertainty**: integrating over a posterior sample of trees.
-*   **Non-Gaussian Data**: Supporting binomial (binary) and multinomial response variables.
+*   **Phylogenetic Uncertainty**: Integrating over a posterior sample of trees.
+*   **Multiple Response Distributions**: 
+    - Gaussian (continuous data)
+    - Binomial (binary/proportion data)
+    - Multinomial (unordered categorical data)
+    - Ordinal (ordered categorical data)
+    - Poisson (count data)
+    - Negative Binomial (overdispersed count data)
+*   **Categorical Predictors**: Automatic handling of factor variables with dummy coding.
+*   **Optimized Performance**: Fast random effects formulation (4.6× speedup) for large datasets.
 
 This tutorial will guide you through the main features of the package.
 
+
 ## Setup
 
-First, load the package and the necessary dependencies.
+First, load the package:
 
 ```{r setup}
 library(phybaseR)
+```
+
+**Note**: `phybaseR` uses `ape` internally for phylogenetic calculations (it's automatically loaded as a dependency). We'll also load it explicitly here for the tutorial examples, since we use `ape` functions like `rtree()` and `rTraitCont()` to simulate data:
+
+```{r load_ape}
 library(ape)
 ```
 
@@ -185,26 +199,59 @@ summary(fit_bin)
 For categorical traits with more than two unordered levels (e.g., diet type: Carnivore, Herbivore, Omnivore), you can use the multinomial distribution.
 
 ```{r multinomial, eval=FALSE}
-# Simulate multinomial trait (3 categories)
-# Latent variables for k=2, 3 (k=1 is reference)
-L2 <- -1 + 0.5 * X
-L3 <- 1 - 0.5 * X
-P1 <- 1 / (1 + exp(L2) + exp(L3))
-P2 <- exp(L2) / (1 + exp(L2) + exp(L3))
-P3 <- exp(L3) / (1 + exp(L2) + exp(L3))
+# Simulate multinomial trait with phylogenetic signal (3 categories)
+# Example: Diet type (Carnivore, Herbivore, Omnivore)
+library(MASS)
 
+VCV <- ape::vcv.phylo(tree)
+
+# Phylogenetically structured errors for categories 2 and 3
+# (category 1 is the reference)
+lambda_2 <- 0.6 # Phylogenetic signal for category 2
+tau_u_2 <- 1 / 0.5
+tau_e_2 <- 1 / 0.3
+u_std_2 <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = solve(VCV)))
+err_2 <- u_std_2 / sqrt(tau_u_2) + rnorm(N, 0, sqrt(1 / tau_e_2))
+
+lambda_3 <- 0.7 # Phylogenetic signal for category 3
+tau_u_3 <- 1 / 0.5
+tau_e_3 <- 1 / 0.3
+u_std_3 <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = solve(VCV)))
+err_3 <- u_std_3 / sqrt(tau_u_3) + rnorm(N, 0, sqrt(1 / tau_e_3))
+
+# Latent utilities for each category (with phylogenetic signal)
+L1 <- rep(0, N) # Reference category (Carnivore)
+L2 <- -1 + 0.5 * X + err_2 # Category 2 (Herbivore)
+L3 <- 1 - 0.5 * X + err_3 # Category 3 (Omnivore)
+
+# Softmax transformation to get probabilities
+exp_L1 <- exp(L1)
+exp_L2 <- exp(L2)
+exp_L3 <- exp(L3)
+sum_exp <- exp_L1 + exp_L2 + exp_L3
+
+P1 <- exp_L1 / sum_exp # P(Carnivore)
+P2 <- exp_L2 / sum_exp # P(Herbivore)
+P3 <- exp_L3 / sum_exp # P(Omnivore)
+
+# Sample multinomial outcome
 MultiTrait <- apply(cbind(P1, P2, P3), 1, function(p) sample(1:3, 1, prob = p))
 
-data_multi <- list(X = X, Multi = MultiTrait)
+data_multi <- list(X = X, Multi = MultiTrait, K_Multi = 3)
 
 fit_multi <- phybase_run(
     data = data_multi,
     tree = tree,
     equations = list(Multi ~ X),
-    distribution = c(Multi = "multinomial")
+    distribution = c(Multi = "multinomial"),
+    optimise = TRUE
 )
 
 summary(fit_multi)
+
+# Check recovery of phylogenetic signal for each category
+# lambda parameters should be ~ 0.6 and 0.7
+fit_multi$summary$statistics[grep("lambda", rownames(fit_multi$summary$statistics)), ]
 ```
 
 **Note**: The summary will show parameters for each category $k \ge 2$ (e.g., `beta_Multi_X[2]`, `beta_Multi_X[3]`), relative to the reference category $k=1$.
@@ -214,12 +261,40 @@ summary(fit_multi)
 For **ordered categorical data** (e.g., IUCN Red List categories: LC < NT < VU < EN < CR), use the ordinal distribution. This respects the ordering of categories and is more appropriate than multinomial for such data.
 
 ```{r ordinal, eval=FALSE}
-# Simulate IUCN-like conservation status (1=LC, 2=NT, 3=VU, 4=EN, 5=CR)
-# Larger body mass -> lower threat
-eta <- -0.8 * log(abs(X) + 1) # Linear predictor
+# Simulate IUCN-like conservation status with phylogenetic signal
+# DAG: BodyMass -> IUCN <- HabitatLoss
+#      BodyMass -> HabitatLoss
+# Implied independence: IUCN ⊥ BodyMass | HabitatLoss
+library(MASS)
+
+# Phylogenetically structured predictors
+VCV <- ape::vcv.phylo(tree)
+
+# Body Mass (exogenous)
+lambda_mass <- 0.6
+Sigma_mass <- lambda_mass * VCV + (1 - lambda_mass) * diag(N)
+BodyMass <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = Sigma_mass))
+
+# Habitat Loss (caused by body mass)
+lambda_habitat <- 0.5
+tau_u_habitat <- 1 / 0.4
+tau_e_habitat <- 1 / 0.3
+u_std_habitat <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = solve(VCV)))
+HabitatLoss <- 1.2 + 0.7 * BodyMass + u_std_habitat / sqrt(tau_u_habitat) +
+    rnorm(N, 0, sqrt(1 / tau_e_habitat))
+
+# IUCN status (ordinal response, caused by both predictors)
+lambda_IUCN <- 0.75
+tau_u_IUCN <- 1 / 0.5
+tau_e_IUCN <- 1 / 0.3
+u_std_IUCN <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = solve(VCV)))
+phylo_error <- u_std_IUCN / sqrt(tau_u_IUCN) + rnorm(N, 0, sqrt(1 / tau_e_IUCN))
+
+# Linear predictor: larger mass + more habitat loss -> higher threat
+eta <- -0.5 * BodyMass + 0.8 * HabitatLoss + phylo_error
 cutpoints <- c(-1, 0, 1, 2) # Thresholds between categories
 
-# Calculate probabilities using cumulative logit (proportional odds)
+# Calculate probabilities using cumulative logit
 Q <- matrix(0, nrow = N, ncol = 4)
 for (i in 1:N) {
     for (k in 1:4) {
@@ -235,20 +310,51 @@ for (k in 2:4) {
 }
 P[, 5] <- 1 - Q[, 4]
 
-# Sample ordinal outcome
+# Sample ordinal outcome (1=LC, 2=NT, 3=VU, 4=EN, 5=CR)
 IUCN <- apply(P, 1, function(p) sample(1:5, 1, prob = p))
 
-data_ordinal <- list(X = log(abs(X) + 1), IUCN = IUCN, K_IUCN = 5)
+data_ordinal <- list(
+    BodyMass = BodyMass,
+    HabitatLoss = HabitatLoss,
+    IUCN = IUCN,
+    K_IUCN = 5
+)
 
+# Fit the DAG
 fit_ordinal <- phybase_run(
     data = data_ordinal,
     tree = tree,
-    equations = list(IUCN ~ X),
-    distribution = c(IUCN = "ordinal")
+    equations = list(
+        IUCN ~ BodyMass + HabitatLoss,
+        HabitatLoss ~ BodyMass
+    ),
+    distribution = c(IUCN = "ordinal"),
+    optimise = TRUE
 )
 
 summary(fit_ordinal)
+
+# Check recovery of phylogenetic signal
+fit_ordinal$summary$statistics["lambdaIUCN", ]
+
+# Test d-separation: IUCN ⊥ BodyMass | HabitatLoss
+fit_dsep <- phybase_run(
+    data = data_ordinal,
+    tree = tree,
+    equations = list(
+        IUCN ~ BodyMass + HabitatLoss,
+        HabitatLoss ~ BodyMass
+    ),
+    distribution = c(IUCN = "ordinal"),
+    dsep = TRUE,
+    optimise = TRUE
+)
+
+# Check if betaBodyMass is close to zero in the d-sep test
+summary(fit_dsep$samples)
+# If 95% CI of betaBodyMass includes zero -> independence supported
 ```
+
 
 **Key advantages of ordinal over multinomial**:
 - Respects category ordering (statistical validity)
@@ -262,22 +368,82 @@ summary(fit_ordinal)
 For **count data** (e.g., number of species, offspring count, population size), use the Poisson distribution. The random effects formulation naturally handles **overdispersion** via the residual variance component.
 
 ```{r poisson, eval=FALSE}
-# Simulate count data (e.g., species richness)
-# Larger area -> more species
-log_area <- rnorm(N)
-log_richness <- 2 + 0.5 * log_area # log(E[Y])
+# Simulate count data with phylogenetic signal (e.g., species richness)
+# DAG: Temperature -> Richness <- Area
+#      Temperature -> Area
+# Implied independence: Richness ⊥ Temperature | Area
+library(MASS)
+
+# Phylogenetically structured predictors
+VCV <- ape::vcv.phylo(tree)
+
+# Temperature (exogenous)
+lambda_temp <- 0.5
+Sigma_temp <- lambda_temp * VCV + (1 - lambda_temp) * diag(N)
+Temperature <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = Sigma_temp))
+
+# Area (caused by temperature)
+lambda_area <- 0.6
+tau_u_area <- 1 / 0.4
+tau_e_area <- 1 / 0.3
+u_std_area <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = solve(VCV)))
+Area <- 2 + 0.6 * Temperature + u_std_area / sqrt(tau_u_area) +
+    rnorm(N, 0, sqrt(1 / tau_e_area))
+
+# Phylogenetically structured error term for richness
+lambda_richness <- 0.7 # True phylogenetic signal in Richness
+tau_u <- 1 / 0.5 # Phylogenetic variance
+tau_e <- 1 / 0.3 # Residual variance
+u_std <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = solve(VCV)))
+u <- u_std / sqrt(tau_u)
+epsilon <- rnorm(N, 0, sqrt(1 / tau_e))
+phylo_error <- u + epsilon
+
+# True model: log(E[Richness]) = 2 + 0.5*Area + phylo_error
+# Temperature affects richness ONLY through Area
+log_richness <- 2 + 0.5 * Area + phylo_error
 richness <- rpois(N, lambda = exp(log_richness))
 
-data_poisson <- list(Area = log_area, Richness = richness)
+data_poisson <- list(
+    Temperature = Temperature,
+    Area = Area,
+    Richness = richness
+)
 
+# Fit the DAG
 fit_poisson <- phybase_run(
     data = data_poisson,
     tree = tree,
-    equations = list(Richness ~ Area),
-    distribution = c(Richness = "poisson")
+    equations = list(
+        Richness ~ Area,
+        Area ~ Temperature
+    ),
+    distribution = c(Richness = "poisson"),
+    optimise = TRUE
 )
 
 summary(fit_poisson)
+
+# Check recovery of phylogenetic signal
+# lambdaRichness should be ~ 0.7
+fit_poisson$summary$statistics["lambdaRichness", ]
+
+# Test d-separation: Richness ⊥ Temperature | Area
+fit_dsep <- phybase_run(
+    data = data_poisson,
+    tree = tree,
+    equations = list(
+        Richness ~ Area,
+        Area ~ Temperature
+    ),
+    distribution = c(Richness = "poisson"),
+    dsep = TRUE,
+    optimise = TRUE
+)
+
+# Check if betaTemperature is close to zero in the d-sep test
+summary(fit_dsep$samples)
+# If 95% CI of betaTemperature includes zero -> independence supported
 ```
 
 **Overdispersion handling**: Unlike standard Poisson GLMs, the random effects formulation includes `tau_e` (residual precision), which absorbs extra-Poisson variation. This makes it equivalent to a **quasi-Poisson** model without needing an explicit overdispersion parameter.
@@ -291,26 +457,84 @@ summary(fit_poisson)
 For **heavily overdispersed count data** where variance far exceeds the mean, use the Negative Binomial distribution. It includes an explicit **size parameter** (`r`) that controls overdispersion.
 
 ```{r negbinomial, eval=FALSE}
-# Simulate heavily overdispersed count data
-# (e.g., parasite loads, highly variable population counts)
-log_host_mass <- rnorm(N)
-r_true <- 2 # Size parameter (smaller = more overdispersed)
+# Simulate heavily overdispersed count data with phylogenetic signal
+# DAG: HostSize -> Parasites <- Stress
+#      HostSize -> Stress
+# Implied independence: Parasites ⊥ HostSize | Stress
+library(MASS)
 
-# Simulate overdispersed counts
-log_mu <- 2 + 0.5 * log_host_mass
+# Phylogenetically structured predictors
+VCV <- ape::vcv.phylo(tree)
+
+# Host Size (exogenous)
+lambda_size <- 0.4
+Sigma_size <- lambda_size * VCV + (1 - lambda_size) * diag(N)
+HostSize <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = Sigma_size))
+
+# Stress (caused by host size)
+lambda_stress <- 0.5
+tau_u_stress <- 1 / 0.4
+tau_e_stress <- 1 / 0.3
+u_std_stress <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = solve(VCV)))
+Stress <- 1.5 + 0.6 * HostSize + u_std_stress / sqrt(tau_u_stress) +
+    rnorm(N, 0, sqrt(1 / tau_e_stress))
+
+# Phylogenetically structured error term for parasites
+lambda_parasites <- 0.8 # True phylogenetic signal
+tau_u <- 1 / 0.6
+tau_e <- 1 / 0.4
+u_std <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = solve(VCV)))
+u <- u_std / sqrt(tau_u)
+epsilon <- rnorm(N, 0, sqrt(1 / tau_e))
+phylo_error <- u + epsilon
+
+# True model with overdispersion
+# Stress increases parasite load (HostSize affects load ONLY through Stress)
+r_true <- 2 # Size parameter (smaller = more overdispersed)
+log_mu <- 2 + 0.7 * Stress + phylo_error
 mu <- exp(log_mu)
 parasite_count <- rnbinom(N, size = r_true, mu = mu)
 
-data_nb <- list(HostMass = log_host_mass, Parasites = parasite_count)
+data_nb <- list(
+    HostSize = HostSize,
+    Stress = Stress,
+    Parasites = parasite_count
+)
 
+# Fit the DAG
 fit_nb <- phybase_run(
     data = data_nb,
     tree = tree,
-    equations = list(Parasites ~ HostMass),
-    distribution = c(Parasites = "negbinomial")
+    equations = list(
+        Parasites ~ Stress,
+        Stress ~ HostSize
+    ),
+    distribution = c(Parasites = "negbinomial"),
+    optimise = TRUE
 )
 
 summary(fit_nb)
+
+# Check recovery of phylogenetic signal
+# lambdaParasites should be ~ 0.8
+fit_nb$summary$statistics["lambdaParasites", ]
+
+# Test d-separation: Parasites ⊥ HostSize | Stress
+fit_dsep <- phybase_run(
+    data = data_nb,
+    tree = tree,
+    equations = list(
+        Parasites ~ Stress,
+        Stress ~ HostSize
+    ),
+    distribution = c(Parasites = "negbinomial"),
+    dsep = TRUE,
+    optimise = TRUE
+)
+
+# Check if betaHostSize is close to zero in the d-sep test
+summary(fit_dsep$samples)
+# If 95% CI of betaHostSize includes zero -> independence supported
 ```
 
 **Understanding the size parameter (`r`)**:
@@ -457,12 +681,37 @@ print(results$comparison)
 
 ## Model Comparison (WAIC)
 
-You can compare models using the Widely Applicable Information Criterion (WAIC).
+You can compare models using the Widely Applicable Information Criterion (WAIC). There are two ways to calculate WAIC:
 
-```{r waic, eval=FALSE}
+### Option 1: Calculate during model fitting
+
+Set `WAIC = TRUE` in `phybase_run()` to calculate WAIC automatically:
+
+```{r waic_during_run, eval=FALSE}
+fit <- phybase_run(
+    data = data,
+    tree = tree,
+    equations = equations,
+    WAIC = TRUE, # Calculate WAIC during fitting
+    n.chains = 2 # WAIC requires at least 2 chains
+)
+
+# WAIC is stored in the fit object
+fit$WAIC
+```
+
+### Option 2: Calculate from an existing fitted model
+
+If you didn't calculate WAIC initially, use the standalone `phybase_waic()` function. This is useful because you don't need to rerun the entire model - it uses the existing MCMC samples:
+
+```{r waic_standalone, eval=FALSE}
+# Calculate WAIC from a previously fitted model
 waic_res <- phybase_waic(fit, n.iter = 2000)
 waic_res
 ```
+
+**Note**: WAIC requires at least 2 chains. If you only ran 1 chain, you'll need to refit the model with `n.chains = 2` or more before calculating WAIC.
+
 
 ## Model Validation (d-separation)
 

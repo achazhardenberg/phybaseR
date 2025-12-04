@@ -63,7 +63,10 @@ phybase_model <- function(
   latent = NULL,
   optimise = TRUE
 ) {
-  `%||%` <- function(a, b) if (!is.null(a)) a else b
+  # Helper: returns b if a is NULL or if a is a list element that doesn't exist
+  `%||%` <- function(a, b) {
+    tryCatch(if (!is.null(a)) a else b, error = function(e) b)
+  }
 
   beta_counter <- list()
   response_counter <- list()

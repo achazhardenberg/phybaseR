@@ -619,10 +619,10 @@ phybase_run <- function(
                 is_categorical <- TRUE
                 dummies <- cat_vars[[predictor]]$dummies
                 # Monitor all dummy betas
-                # Note: phybase_model uses "beta_Response_Predictor" format
+                # For Gaussian: betaPredictor format
                 params_to_monitor <- c(
                   params_to_monitor,
-                  paste0("beta_", response, "_", dummies)
+                  paste0("beta", dummies)
                 )
               }
             }
@@ -631,7 +631,7 @@ phybase_run <- function(
               # Standard continuous predictor
               params_to_monitor <- c(
                 params_to_monitor,
-                paste0("beta_", response, "_", predictor)
+                paste0("beta", predictor)
               )
             }
           }
@@ -670,20 +670,14 @@ phybase_run <- function(
               is_categorical <- TRUE
               dummies <- cat_vars[[predictor]]$dummies
               # Monitor all dummy betas
-              # Note: phybase_model uses "beta_Response_Predictor" format
-              params_to_monitor <- c(
-                params_to_monitor,
-                paste0("beta_", response, "_", dummies)
-              )
+              # For Gaussian: betaPredictor format
+              params_to_monitor <- c(params_to_monitor, paste0("beta", dummies))
             }
           }
 
           if (!is_categorical) {
             # Standard continuous predictor
-            params_to_monitor <- c(
-              params_to_monitor,
-              paste0("beta_", response, "_", predictor)
-            )
+            params_to_monitor <- c(params_to_monitor, paste0("beta", predictor))
           }
         }
 
@@ -1040,10 +1034,8 @@ phybase_run <- function(
     parallel::clusterExport(cl, c("run_single_chain"), envir = environment())
 
     # Run chains in parallel
-    # Run chains in parallel with progress bar
     if (!quiet) {
-      message("Sampling...")
-      pb <- txtProgressBar(min = 0, max = n.chains, style = 3)
+      message(sprintf("Sampling %d chains in parallel...", n.chains))
     }
 
     chain_results <- parallel::parLapply(cl, seq_len(n.chains), function(i) {
@@ -1062,8 +1054,7 @@ phybase_run <- function(
     })
 
     if (!quiet) {
-      setTxtProgressBar(pb, n.chains)
-      close(pb)
+      message("All chains completed.")
     }
 
     # Combine samples from all chains
