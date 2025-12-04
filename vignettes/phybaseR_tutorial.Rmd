@@ -109,6 +109,129 @@ fit_med <- phybase_run(
 summary(fit_med)
 ```
 
+## Understanding Parameter Names
+
+`phybaseR` uses a systematic naming convention for all estimated parameters. Understanding this helps you interpret your results.
+
+### Regression Coefficients
+
+**Format**: `beta_Response_Predictor` or `betaPredictor` (for simple models)
+
+- `betaX` - Effect of X on Y in model `Y ~ X`
+- `beta_Y_X` - Effect of X on Y (when X is also a response in another equation)
+- `beta_Y_M` - Effect of M on Y in model `Y ~ X + M`
+
+**Special cases**:
+- **Multinomial/Ordinal**: `beta_Response_Predictor[k]` - Effect on category k (k ≥ 2)
+- **Intercepts**: Always named `alpha_Response` or `alpha_Response[k]` for categorical responses
+
+**Naming convention**: 
+- `alpha` = intercepts
+- `beta` = regression coefficients (slopes)
+
+### Phylogenetic Signal
+
+**Format**: `lambda_Variable` or `lambdaVariable`
+
+- `lambdaX` - Pagel's λ for variable X (0 = no signal, 1 = Brownian motion)
+- `lambda_Multi[k]`- Phylogenetic signal in category k of multinomial response
+
+**Range**: 0 to 1
+- **0** = No phylogenetic signal (pure residual variance)
+- **1** = Full Brownian motion (pure phylogenetic variance)
+- **0.5** = Equal phylogenetic and residual variance
+
+### Variance Components
+
+**Precision parameters** (inverse of variance):
+
+- `tau_Variable` or `tauVariable` - Overall precision (older parameter name)
+- `tau_u_Variable` - **Phylogenetic** precision (1 / phylogenetic variance)
+- `tau_e_Variable` - **Residual** precision (1 / residual variance)
+
+**Relationship**: Higher precision = Lower variance = Less uncertainty
+
+**For categorical responses** (multinomial, ordinal):
+- `tau_u_Response[k]` - Phylogenetic precision for category k
+- `tau_e_Response[k]` - Residual precision for category k
+
+### Ordinal-Specific Parameters
+
+- `cutpoint_Response[j]` - Threshold between categories j and j+1
+  - Example: `cutpoint_IUCN[1]` separates LC from NT
+
+### Examples in Context
+
+```r
+# Model: Y ~ X + M
+equations <- list(Y ~ X + M)
+
+# Key output parameters:
+# alphaY         - Intercept for Y
+# beta_Y_X       - Effect of X on Y (focal parameter)
+# beta_Y_M       - Effect of M on Y (focal parameter)
+# lambdaY        - Phylogenetic signal in Y
+# tau_u_Y, tau_e_Y - Variance components for Y
+```
+
+### Auxiliary Parameters for Predictors
+
+If your model includes **missing values in predictors** or requires modeling **phylogenetic structure in predictors**, phybaseR automatically adds implicit equations (e.g., `X ~ 1`). This results in additional parameters:
+
+```r
+# Example: Y ~ X with missing values in X
+# Implicit equation X ~ 1 is added automatically
+
+# You'll see these EXTRA parameters:
+# alphaX         - Mean of X (auxiliary, not usually interpreted)
+# lambdaX        - Phylogenetic signal in X
+# tau_u_X, tau_e_X - Variance components for X
+```
+
+**When this happens**:
+- ✅ Missing data in any predictor
+- ✅ Predictors with phylogenetic signal that needs to be accounted for
+
+**Interpretation**: Focus on `beta` coefficients and `lambda` for responses. The auxiliary predictor parameters are needed for the model to work correctly but are rarely the focus of biological interpretation.
+
+### Controlling Output with `monitor` Modes
+
+For cleaner output, use the `monitor` parameter to control which parameters are shown:
+
+```r
+# Default: "interpretable" mode - shows only meaningful parameters
+fit <- phybase_run(
+  data = data_list,
+  tree = tree,
+  equations = equations,
+  monitor = "interpretable"  # or just omit (default)
+)
+
+# Output includes:
+# - alphas (intercepts)
+# - betas (regression coefficients)  
+# - lambdas for RESPONSES only
+# But EXCLUDES:
+# - taus (variance components)
+# - lambdas for auxiliary predictors
+
+# To see ALL parameters including variance components:
+fit_complete <- phybase_run(
+  data = data_list,
+  tree = tree,
+  equations = equations,
+  monitor = "all"  # Complete output
+)
+
+# Custom monitoring (advanced):
+fit_custom <- phybase_run(
+  data = data_list,
+  tree = tree,
+  equations = equations,
+  monitor = c("betaX", "lambdaY", "alphaY")  # Specific parameters
+)
+```
+
 ## Measurement Error
 
 PhyBaSE can account for measurement error in your variables.
@@ -242,7 +365,7 @@ P3 <- exp_L3 / sum_exp # P(Omnivore)
 # Sample multinomial outcome
 MultiTrait <- apply(cbind(P1, P2, P3), 1, function(p) sample(1:3, 1, prob = p))
 
-data_multi <- list(X = X, Multi = MultiTrait, K_Multi = 3)
+data_multi <- list(X = X, Multi = MultiTrait) # K is auto-detected
 
 fit_multi <- phybase_run(
     data = data_multi,
@@ -259,7 +382,9 @@ summary(fit_multi)
 fit_multi$summary$statistics[grep("lambda", rownames(fit_multi$summary$statistics)), ]
 ```
 
-**Note**: The summary will show parameters for each category $k \ge 2$ (e.g., `beta_Multi_X[2]`, `beta_Multi_X[3]`), relative to the reference category $k=1$.
+**Note**: The summary will show parameters for each category $k \ge 2$ (e.g., `beta_Multi_X[2]`, `beta_Multi_X[3]`), relative to the reference category $k=1$. Key parameters to interpret:
+- `beta_Multi_X[k]` - Effects of X on each category 
+- `lambda_Multi[k]` - Phylogenetic signal in each category
 
 ## Ordinal Variables
 
