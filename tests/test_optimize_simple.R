@@ -63,7 +63,7 @@ time_opt <- system.time({
         n.iter = 5000,
         n.burnin = 1000,
         n.thin = 5,
-        optimize = TRUE,
+        optimise = TRUE,
         quiet = FALSE # Enable output to see errors
     )
 })
@@ -112,7 +112,7 @@ time_unopt <- system.time({
         n.iter = 5000,
         n.burnin = 1000,
         n.thin = 5,
-        optimize = FALSE,
+        optimise = FALSE,
         quiet = TRUE
     )
 })

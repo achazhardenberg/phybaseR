@@ -29,7 +29,15 @@
 #'     \item For reps: \code{obs_col} (observations matrix column)
 #'   }
 #' @param distribution Optional named character vector specifying the distribution for response variables.
-#'   Default is "gaussian" for all variables. Supported values: "gaussian", "binomial".
+#'   Default is "gaussian" for all variables. Supported values:
+#'   \itemize{
+#'     \item "gaussian" (default)
+#'     \item "binomial" (binary data)
+#'     \item "multinomial" (unordered categorical > 2 levels)
+#'     \item "ordinal" (ordered categorical > 2 levels)
+#'     \item "poisson" (count data)
+#'     \item "negbinomial" (overdispersed count data)
+#'   }
 #'   Example: \code{distribution = c(Gregarious = "binomial")}.
 #' @param latent Optional character vector of latent (unmeasured) variable names.
 #'   If specified, the model will account for induced correlations among observed
@@ -50,6 +58,9 @@
 #' @param ic_recompile Logical; if \code{TRUE} and \code{parallel = TRUE}, recompile the model
 #'   after parallel chains to compute DIC/WAIC (default = TRUE).
 #'   This adds a small sequential overhead but enables information criteria calculation.
+#' @param optimise Logical; if \code{TRUE} (default), use the optimized random effects formulation
+#'   for phylogenetic models. This is significantly faster (5-10x) and more numerically stable.
+#'   If \code{FALSE}, use the traditional marginal formulation (slower, but provided for comparison).
 #'
 #' @return A list of class \code{"phybase"} with model output and diagnostics.
 #' @export
@@ -80,7 +91,7 @@ phybase_run <- function(
   n.cores = 1,
   cl = NULL,
   ic_recompile = TRUE,
-  optimize = TRUE
+  optimise = TRUE
 ) {
   # Input validation
   if (is.null(data)) {
@@ -144,7 +155,7 @@ phybase_run <- function(
   data$N <- N
 
   # Pre-compute inverse VCV for optimized random effects model
-  if (optimize) {
+  if (optimise) {
     if (is_multiple) {
       # For multiple trees, we need an array of precision matrices
       # Dimension: [N, N, K]
@@ -819,7 +830,7 @@ phybase_run <- function(
     vars_with_na = response_vars_with_na,
     induced_correlations = induced_cors,
     latent = latent,
-    optimize = optimize
+    optimise = optimise
   )
 
   model_string <- model_output$model

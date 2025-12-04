@@ -73,7 +73,7 @@ time_opt <- system.time({
     n.iter = 2000,
     n.burnin = 500,
     n.thin = 2,
-    optimize = TRUE,
+    optimise = TRUE,
     quiet = TRUE
   )
 })
@@ -114,7 +114,7 @@ time_unopt <- system.time({
     n.iter = 2000,
     n.burnin = 500,
     n.thin = 2,
-    optimize = FALSE,
+    optimise = FALSE,
     quiet = TRUE
   )
 })

@@ -62,7 +62,7 @@ fit_marg <- phybase_run(
     tree = tree,
     equations = equations,
     distribution = c(Y = "multinomial"),
-    optimize = FALSE,
+    optimise = FALSE,
     n.iter = 1000,
     n.burnin = 500,
     n.chains = 2 # Reduced for speed
@@ -78,7 +78,7 @@ fit_opt <- phybase_run(
     tree = tree,
     equations = equations,
     distribution = c(Y = "multinomial"),
-    optimize = TRUE,
+    optimise = TRUE,
     n.iter = 1000,
     n.burnin = 500,
     n.chains = 2

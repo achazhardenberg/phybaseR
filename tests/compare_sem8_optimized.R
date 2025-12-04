@@ -88,7 +88,7 @@ cat("\n=== Running MARGINAL Model (optimize = FALSE) ===\n")
 #         n.iter = n.iter,
 #         n.burnin = n.burnin,
 #         n.thin = n.thin,
-#         optimize = FALSE,
+#         optimise = FALSE,
 #         quiet = TRUE
 #     )
 # })
@@ -112,7 +112,7 @@ time_optimized <- system.time({
         n.iter = n.iter,
         n.burnin = n.burnin,
         n.thin = n.thin,
-        optimize = TRUE,
+        optimise = TRUE,
         quiet = TRUE
     )
 })

@@ -52,7 +52,7 @@ fit_opt <- phybase_run(
     tree = tree,
     equations = equations,
     distribution = c(Y = "poisson"),
-    optimize = TRUE,
+    optimise = TRUE,
     n.iter = 2000,
     n.burnin = 1000,
     n.chains = 2

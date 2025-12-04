@@ -6,7 +6,7 @@ source("R/phybase_model.R")
 model_out <- phybase_model(
     equations = list(Y ~ X),
     distribution = c(Y = "negbinomial"),
-    optimize = TRUE,
+    optimise = TRUE,
     multi.tree = FALSE
 )
 
