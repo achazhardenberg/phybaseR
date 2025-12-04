@@ -115,10 +115,9 @@ summary(fit_med)
 
 ### Regression Coefficients
 
-**Format**: `beta_Response_Predictor` or `betaPredictor` (for simple models)
+**Format**: `beta_Response_Predictor` (consistent for all models)
 
-- `betaX` - Effect of X on Y in model `Y ~ X`
-- `beta_Y_X` - Effect of X on Y (when X is also a response in another equation)
+- `beta_Y_X` - Effect of X on Y in model `Y ~ X`
 - `beta_Y_M` - Effect of M on Y in model `Y ~ X + M`
 
 **Special cases**:
@@ -228,7 +227,7 @@ fit_custom <- phybase_run(
   data = data_list,
   tree = tree,
   equations = equations,
-  monitor = c("betaX", "lambdaY", "alphaY")  # Specific parameters
+  monitor = c("beta_Y_X", "lambdaY", "alphaY")  # Specific parameters
 )
 ```
 

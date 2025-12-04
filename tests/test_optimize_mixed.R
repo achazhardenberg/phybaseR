@@ -92,14 +92,14 @@ cat(sprintf(
 cat("\nChecking parameter estimates:\n")
 sum_opt <- fit_opt$summary
 print(sum_opt$statistics[
-    c("betaZ", "betaY", "lambdaY", "lambdaB"),
+    c("beta_Y_Z", "beta_B_Y", "lambdaY", "lambdaB"),
     c("Mean", "SD")
 ])
 
 # Check convergence
 cat("\nChecking convergence (R-hat):\n")
 gelman <- gelman.diag(fit_opt$samples)
-key_params <- c("betaZ", "betaY", "lambdaY", "lambdaB")
+key_params <- c("beta_Y_Z", "beta_B_Y", "lambdaY", "lambdaB")
 print(gelman$psrf[key_params, ])
 
 if (all(gelman$psrf[key_params, "Point est."] < 1.1)) {
@@ -110,13 +110,13 @@ if (all(gelman$psrf[key_params, "Point est."] < 1.1)) {
 
 # Check parameter recovery
 cat("\nParameter Recovery:\n")
-if ("betaZ" %in% rownames(sum_opt$statistics)) {
-    beta_Z_est <- sum_opt$statistics["betaZ", "Mean"]
+if ("beta_Y_Z" %in% rownames(sum_opt$statistics)) {
+    beta_Z_est <- sum_opt$statistics["beta_Y_Z", "Mean"]
     cat(sprintf("  beta_ZY: True=%.2f, Est=%.2f\n", beta_ZY, beta_Z_est))
 }
 
-if ("betaY" %in% rownames(sum_opt$statistics)) {
-    beta_Y_est <- sum_opt$statistics["betaY", "Mean"]
+if ("beta_B_Y" %in% rownames(sum_opt$statistics)) {
+    beta_Y_est <- sum_opt$statistics["beta_B_Y", "Mean"]
     cat(sprintf("  beta_YB: True=%.2f, Est=%.2f\n", beta_YB, beta_Y_est))
 }
 

@@ -47,7 +47,7 @@ equations <- list(Y ~ X)
 cat("Generating model code...\n")
 model_out <- phybase_model(
     equations = equations,
-    optimize = TRUE
+    optimise = TRUE
 )
 cat("---------------------------------------------------\n")
 cat(model_out$model)
@@ -79,18 +79,19 @@ sum_opt <- fit_opt$summary
 print(sum_opt$statistics[, c("Mean", "SD")])
 
 # Check convergence
+# Check convergence
 cat("\nChecking convergence (R-hat):\n")
 gelman <- gelman.diag(fit_opt$samples)
 print(gelman)
 
-if (all(gelman$psrf[c("betaX", "lambdaY"), "Point est."] < 1.1)) {
+if (all(gelman$psrf[c("beta_Y_X", "lambdaY"), "Point est."] < 1.1)) {
     cat("✓ Convergence successful for key parameters (R-hat < 1.1)\n")
 } else {
     cat("⚠ Convergence warning for key parameters\n")
 }
 
 # Check parameter recovery
-beta_est <- sum_opt$statistics["betaX", "Mean"]
+beta_est <- sum_opt$statistics["beta_Y_X", "Mean"]
 lambda_est <- sum_opt$statistics["lambdaY", "Mean"]
 
 cat(sprintf("\nTrue beta: %.2f, Estimated: %.2f\n", beta, beta_est))
@@ -125,7 +126,7 @@ cat(sprintf("Speedup: %.2fx\n", time_unopt["elapsed"] / time_opt["elapsed"]))
 
 # Compare estimates
 sum_unopt <- fit_unopt$summary
-beta_unopt <- sum_unopt$statistics["betaX", "Mean"]
+beta_unopt <- sum_unopt$statistics["beta_Y_X", "Mean"]
 lambda_unopt <- sum_unopt$statistics["lambdaY", "Mean"]
 
 cat(sprintf(

@@ -136,9 +136,8 @@ phybase_model <- function(
     for (pred in predictors) {
       key <- paste(response, pred, suffix, sep = "_")
       if (!key %in% names(beta_counter)) {
-        base <- paste0("beta", pred)
-        count <- sum(grepl(paste0("^", base), unlist(beta_counter)))
-        beta_name <- if (count == 0) base else paste0(base, count + 1)
+        # Use consistent naming: beta_Response_Predictor
+        beta_name <- paste0("beta_", response, suffix, "_", pred)
         beta_counter[[key]] <- beta_name
       }
       beta_name <- beta_counter[[key]]

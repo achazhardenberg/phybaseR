@@ -10,7 +10,7 @@ test_that("phybase_model generates valid JAGS code", {
     # Test model string
     expect_type(model_output$model, "character")
     expect_match(model_output$model, "model \\{")
-    expect_match(model_output$model, "betaX")
+    expect_match(model_output$model, "beta_Y_X")
 
     # Test parameter map
     expect_s3_class(model_output$parameter_map, "data.frame")

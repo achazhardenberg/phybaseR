@@ -73,8 +73,9 @@ test_that("Sequential and parallel produce compatible results", {
     expect_s3_class(fit_par, "phybase")
 
     # Check that parameter estimates are in similar range
-    beta_seq <- fit_seq$summary$statistics["betaX", "Mean"]
-    beta_par <- fit_par$summary$statistics["betaX", "Mean"]
+    # Check that parameter estimates are in similar range
+    beta_seq <- fit_seq$summary$statistics["beta_Y_X", "Mean"]
+    beta_par <- fit_par$summary$statistics["beta_Y_X", "Mean"]
 
     # They won't be identical (different RNG streams), but should be reasonable
     expect_true(beta_seq > -0.5 && beta_seq < 2.0)

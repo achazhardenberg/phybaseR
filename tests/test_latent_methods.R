@@ -66,7 +66,7 @@ fit_explicit <- phybase_run(
 cat("\nParameters monitored (Explicit):\n")
 print(names(fit_explicit$samples[[1]][1, ]))
 
-cat("\nSummary (should show betaX_L, betaY_L):\n")
+cat("\nSummary (should show beta_X_L, beta_Y_L):\n")
 print(summary(fit_explicit))
 
 cat("\n✓ Both methods completed successfully!\n")

@@ -94,7 +94,7 @@ gelman <- gelman.diag(fit_opt$samples)
 print(gelman)
 
 # Focus on key parameters
-key_params <- c("betaX", "lambdaY")
+key_params <- c("beta_Y_X", "lambdaY")
 if (all(key_params %in% rownames(gelman$psrf))) {
     if (all(gelman$psrf[key_params, "Point est."] < 1.1)) {
         cat("✓ Convergence successful for key parameters (R-hat < 1.1)\n")
@@ -104,8 +104,8 @@ if (all(key_params %in% rownames(gelman$psrf))) {
 }
 
 # Check parameter recovery
-if ("betaX" %in% rownames(sum_opt$statistics)) {
-    beta_est <- sum_opt$statistics["betaX", "Mean"]
+if ("beta_Y_X" %in% rownames(sum_opt$statistics)) {
+    beta_est <- sum_opt$statistics["beta_Y_X", "Mean"]
     cat(sprintf("\nTrue beta: %.2f, Estimated: %.2f\n", beta, beta_est))
 }
 
@@ -145,12 +145,12 @@ cat(sprintf("Speedup: %.2fx\n", time_unopt["elapsed"] / time_opt["elapsed"]))
 # Compare estimates
 sum_unopt <- fit_unopt$summary
 if (
-    "betaX" %in%
+    "beta_Y_X" %in%
         rownames(sum_unopt$statistics) &&
-        "betaX" %in% rownames(sum_opt$statistics)
+        "beta_Y_X" %in% rownames(sum_opt$statistics)
 ) {
-    beta_unopt <- sum_unopt$statistics["betaX", "Mean"]
-    beta_opt <- sum_opt$statistics["betaX", "Mean"]
+    beta_unopt <- sum_unopt$statistics["beta_Y_X", "Mean"]
+    beta_opt <- sum_opt$statistics["beta_Y_X", "Mean"]
     cat(sprintf(
         "\nOptimized beta: %.4f, Unoptimized: %.4f\n",
         beta_opt,

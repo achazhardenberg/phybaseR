@@ -11,7 +11,7 @@ test_that("Gaussian distribution generates correct JAGS code", {
     expect_false(grepl("dbern", model_output$model))
 
     # Should have standard beta parameters
-    expect_match(model_output$model, "betaX")
+    expect_match(model_output$model, "beta_Y_X")
 })
 
 test_that("Binomial distribution generates correct JAGS code", {
@@ -30,7 +30,7 @@ test_that("Binomial distribution generates correct JAGS code", {
     expect_match(model_output$model, "logit")
 
     # Should have beta parameters
-    expect_match(model_output$model, "betaX")
+    expect_match(model_output$model, "beta_BinaryOutcome_X")
 })
 
 test_that("Mixed distributions work correctly", {
@@ -78,7 +78,7 @@ test_that("Binomial distribution runs successfully", {
     )
 
     expect_s3_class(fit, "phybase")
-    expect_true("betaX" %in% rownames(fit$summary$statistics))
+    expect_true("beta_Y_X" %in% rownames(fit$summary$statistics))
 })
 
 test_that("Default distribution is Gaussian", {
