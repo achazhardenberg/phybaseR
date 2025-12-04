@@ -207,6 +207,54 @@ summary(fit_multi)
 
 **Note**: The summary will show parameters for each category $k \ge 2$ (e.g., `beta_Multi_X[2]`, `beta_Multi_X[3]`), relative to the reference category $k=1$.
 
+## Ordinal Variables
+
+For **ordered categorical data** (e.g., IUCN Red List categories: LC < NT < VU < EN < CR), use the ordinal distribution. This respects the ordering of categories and is more appropriate than multinomial for such data.
+
+```{r ordinal, eval=FALSE}
+# Simulate IUCN-like conservation status (1=LC, 2=NT, 3=VU, 4=EN, 5=CR)
+# Larger body mass -> lower threat
+eta <- -0.8 * log(abs(X) + 1) # Linear predictor
+cutpoints <- c(-1, 0, 1, 2) # Thresholds between categories
+
+# Calculate probabilities using cumulative logit (proportional odds)
+Q <- matrix(0, nrow = N, ncol = 4)
+for (i in 1:N) {
+    for (k in 1:4) {
+        Q[i, k] <- 1 / (1 + exp(-(cutpoints[k] - eta[i])))
+    }
+}
+
+# Category probabilities
+P <- matrix(0, nrow = N, ncol = 5)
+P[, 1] <- Q[, 1]
+for (k in 2:4) {
+    P[, k] <- Q[, k] - Q[, k - 1]
+}
+P[, 5] <- 1 - Q[, 4]
+
+# Sample ordinal outcome
+IUCN <- apply(P, 1, function(p) sample(1:5, 1, prob = p))
+
+data_ordinal <- list(X = log(abs(X) + 1), IUCN = IUCN, K_IUCN = 5)
+
+fit_ordinal <- phybase_run(
+    data = data_ordinal,
+    tree = tree,
+    equations = list(IUCN ~ X),
+    distribution = c(IUCN = "ordinal")
+)
+
+summary(fit_ordinal)
+```
+
+**Key advantages of ordinal over multinomial**:
+- Respects category ordering (statistical validity)
+- More parsimonious (fewer parameters)
+- Easier interpretation (single $\beta$ coefficient, not $K-1$)
+
+**Note**: You'll see estimated cutpoints in the output (`cutpoint_IUCN[1]`, `cutpoint_IUCN[2]`, etc.), which define the thresholds between adjacent categories.
+
 ## Missing Data
 
 PhyBaSE fully supports missing data (`NA`) in both response and predictor variables. It uses a **Latent Variable (GLMM)** approach to impute missing values while preserving phylogenetic signal.
@@ -248,6 +296,52 @@ fit_multi <- phybase_run(
 )
 
 summary(fit_multi)
+```
+
+## Parallel Execution
+
+Running MCMC chains in parallel can significantly speed up your analysis, especially for complex models or when using many iterations.
+
+### Parallel Chains
+
+To run chains in parallel, simply set `parallel = TRUE` and specify the number of cores with `n.cores`.
+
+```{r parallel, eval=FALSE}
+fit_parallel <- phybase_run(
+    data = data_list,
+    tree = tree,
+    equations = equations,
+    n.iter = 10000,
+    n.chains = 4,
+    parallel = TRUE,
+    n.cores = 4 # Use 4 cores for 4 chains
+)
+```
+
+**Note**: When running in parallel, DIC and WAIC calculation requires a brief model recompilation step (enabled by default with `ic_recompile = TRUE`). This ensures you still get model comparison metrics.
+
+### Parallel Model Comparison
+
+If you have a list of models to compare, you can run them all in parallel using `phybase_compare()`.
+
+```{r parallel_compare, eval=FALSE}
+# Define multiple models
+models <- list(
+    model1 = list(equations = list(Y ~ X)),
+    model2 = list(equations = list(Y ~ 1)) # Null model
+)
+
+# Run all models in parallel
+results <- phybase_compare(
+    models = models,
+    data = data_list,
+    tree = tree,
+    n.iter = 5000,
+    n.cores = 2 # Run 2 models at a time
+)
+
+# Compare WAIC
+print(results$comparison)
 ```
 
 ## Model Comparison (WAIC)

@@ -255,6 +255,96 @@ phybase_model <- function(
           "])"
         )
       )
+    } else if (dist == "ordinal") {
+      # Ordinal: Cumulative Logit (Proportional Odds)
+      # P(Y <= k) = logit^(-1)(cutpoint[k] - eta)
+      # eta = linpred + error
+
+      K_var <- paste0("K_", response)
+      err <- paste0("err_", response, suffix)
+      eta <- paste0("eta_", response, suffix)
+
+      # Linear predictor (eta)
+      # Note: No intercept in eta (intercept is absorbed into cutpoints)
+      linpred_no_int <- "0"
+      for (pred in predictors) {
+        beta_name <- paste0("beta_", response, "_", pred)
+        linpred_no_int <- paste0(
+          linpred_no_int,
+          " + ",
+          beta_name,
+          " * ",
+          pred,
+          "[i]"
+        )
+
+        # Map
+        key <- paste(response, pred, suffix, sep = "_")
+        if (!key %in% names(beta_counter)) {
+          beta_counter[[key]] <- beta_name
+          param_map[[length(param_map) + 1]] <- list(
+            response = response,
+            predictor = pred,
+            parameter = beta_name,
+            equation_index = j
+          )
+        }
+      }
+
+      model_lines <- c(
+        model_lines,
+        paste0("    # Ordinal linear predictor for ", response),
+        paste0("    ", eta, "[i] <- ", linpred_no_int, " + ", err, "[i]"),
+
+        # Cumulative probabilities
+        paste0("    for (k in 1:(", K_var, "-1)) {"),
+        paste0(
+          "      logit(Q_",
+          response,
+          "[i, k]) <- cutpoint_",
+          response,
+          "[k] - ",
+          eta,
+          "[i]"
+        ),
+        "    }",
+
+        # Category probabilities
+        paste0("    p_", response, "[i, 1] <- Q_", response, "[i, 1]"),
+        paste0("    for (k in 2:(", K_var, "-1)) {"),
+        paste0(
+          "      p_",
+          response,
+          "[i, k] <- Q_",
+          response,
+          "[i, k] - Q_",
+          response,
+          "[i, k-1]"
+        ),
+        "    }",
+        paste0(
+          "    p_",
+          response,
+          "[i, ",
+          K_var,
+          "] <- 1 - Q_",
+          response,
+          "[i, ",
+          K_var,
+          "-1]"
+        ),
+
+        # Likelihood
+        paste0(
+          "    ",
+          response,
+          "[i] ~ dcat(p_",
+          response,
+          "[i, 1:",
+          K_var,
+          "])"
+        )
+      )
     } else {
       stop(paste("Unknown distribution:", dist))
     }
@@ -478,6 +568,35 @@ phybase_model <- function(
             "  }"
           )
         }
+      } else if (dist == "ordinal") {
+        # Ordinal error term: err[1:N]
+        # Single phylogenetic effect (unlike multinomial with K-1 effects)
+        err <- paste0("err_", response, suffix)
+
+        # Random Effects Formulation (optimize-only)
+        u_std <- paste0("u_std_", response, suffix)
+        u <- paste0("u_", response, suffix)
+        epsilon <- paste0("epsilon_", response, suffix)
+        tau_u <- paste0("tau_u_", response, suffix)
+        tau_e <- paste0("tau_e_", response, suffix)
+
+        # Handle multi-tree
+        prec_index <- if (multi.tree) {
+          "Prec_phylo_fixed[1:N, 1:N, K]"
+        } else {
+          "Prec_phylo_fixed[1:N, 1:N]"
+        }
+
+        model_lines <- c(
+          model_lines,
+          paste0("  # Random effects for ordinal: ", response),
+          paste0("  ", u_std, "[1:N] ~ dmnorm(zeros[1:N], ", prec_index, ")"),
+          paste0("  for (i in 1:N) {"),
+          paste0("    ", u, "[i] <- ", u_std, "[i] / sqrt(", tau_u, ")"),
+          paste0("    ", epsilon, "[i] ~ dnorm(0, ", tau_e, ")"),
+          paste0("    ", err, "[i] <- ", u, "[i] + ", epsilon, "[i]"),
+          paste0("  }")
+        )
       }
     }
   }
@@ -739,9 +858,9 @@ phybase_model <- function(
       next
     }
 
-    # Skip multinomial (handled separately)
+    # Skip multinomial and ordinal (handled separately)
     dist <- dist_list[[response]] %||% "gaussian"
-    if (dist == "multinomial") {
+    if (dist == "multinomial" || dist == "ordinal") {
       next
     }
 
@@ -860,6 +979,82 @@ phybase_model <- function(
               paste0("  for (k in 2:", K_var, ") {"),
               paste0("    ", beta_name, "[k] ~ dnorm(0, 1.0E-6)"),
               "  }"
+            )
+          }
+        }
+      }
+    }
+  }
+
+  # Priors for ordinal parameters (cutpoints + variance components)
+  for (response in names(response_counter)) {
+    dist <- dist_list[[response]] %||% "gaussian"
+    if (dist == "ordinal") {
+      K_var <- paste0("K_", response)
+
+      # Loop over response instances (if there are repeats)
+      for (k in 1:response_counter[[response]]) {
+        suffix <- if (k == 1) "" else as.character(k)
+
+        model_lines <- c(
+          model_lines,
+          paste0("  # Priors for ", response, suffix, " (Ordinal)"),
+          # Ordered cutpoints using delta transformation
+          paste0("  cutpoint_raw_", response, suffix, "[1] ~ dnorm(0, 0.1)"),
+          paste0(
+            "  cutpoint_",
+            response,
+            suffix,
+            "[1] <- cutpoint_raw_",
+            response,
+            suffix,
+            "[1]"
+          ),
+          paste0("  for (k in 2:(", K_var, "-1)) {"),
+          paste0("    cutpoint_raw_", response, suffix, "[k] ~ dnorm(0, 0.1)"),
+          paste0(
+            "    cutpoint_",
+            response,
+            suffix,
+            "[k] <- cutpoint_",
+            response,
+            suffix,
+            "[k-1] + exp(cutpoint_raw_",
+            response,
+            suffix,
+            "[k])"
+          ),
+          "  }",
+          # Variance components
+          paste0("  tau_u_", response, suffix, " ~ dgamma(1, 1)"),
+          paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)"),
+          # Derived lambda
+          paste0(
+            "  lambda_",
+            response,
+            suffix,
+            " <- (1/tau_u_",
+            response,
+            suffix,
+            ") / ((1/tau_u_",
+            response,
+            suffix,
+            ") + (1/tau_e_",
+            response,
+            suffix,
+            "))"
+          )
+        )
+      }
+
+      # Betas for ordinal predictors
+      for (eq in eq_list) {
+        if (eq$response == response) {
+          for (pred in eq$predictors) {
+            beta_name <- paste0("beta_", response, "_", pred)
+            model_lines <- c(
+              model_lines,
+              paste0("  ", beta_name, " ~ dnorm(0, 1.0E-6)")
             )
           }
         }
