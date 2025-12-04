@@ -345,6 +345,19 @@ phybase_model <- function(
           "])"
         )
       )
+    } else if (dist == "poisson") {
+      # Poisson: log(μ) = linpred + error
+      # Naturally handles overdispersion via epsilon
+
+      err <- paste0("err_", response, suffix)
+      mu <- paste0("mu_", response, suffix)
+
+      model_lines <- c(
+        model_lines,
+        paste0("    # Poisson log link for ", response),
+        paste0("    log(", mu, "[i]) <- ", linpred, " + ", err, "[i]"),
+        paste0("    ", response, "[i] ~ dpois(", mu, "[i])")
+      )
     } else {
       stop(paste("Unknown distribution:", dist))
     }
@@ -590,6 +603,35 @@ phybase_model <- function(
         model_lines <- c(
           model_lines,
           paste0("  # Random effects for ordinal: ", response),
+          paste0("  ", u_std, "[1:N] ~ dmnorm(zeros[1:N], ", prec_index, ")"),
+          paste0("  for (i in 1:N) {"),
+          paste0("    ", u, "[i] <- ", u_std, "[i] / sqrt(", tau_u, ")"),
+          paste0("    ", epsilon, "[i] ~ dnorm(0, ", tau_e, ")"),
+          paste0("    ", err, "[i] <- ", u, "[i] + ", epsilon, "[i]"),
+          paste0("  }")
+        )
+      } else if (dist == "poisson") {
+        # Poisson error term: err[1:N]
+        # Single phylogenetic effect (like ordinal)
+        err <- paste0("err_", response, suffix)
+
+        # Random Effects Formulation (optimize-only)
+        u_std <- paste0("u_std_", response, suffix)
+        u <- paste0("u_", response, suffix)
+        epsilon <- paste0("epsilon_", response, suffix)
+        tau_u <- paste0("tau_u_", response, suffix)
+        tau_e <- paste0("tau_e_", response, suffix)
+
+        # Handle multi-tree
+        prec_index <- if (multi.tree) {
+          "Prec_phylo_fixed[1:N, 1:N, K]"
+        } else {
+          "Prec_phylo_fixed[1:N, 1:N]"
+        }
+
+        model_lines <- c(
+          model_lines,
+          paste0("  # Random effects for Poisson: ", response),
           paste0("  ", u_std, "[1:N] ~ dmnorm(zeros[1:N], ", prec_index, ")"),
           paste0("  for (i in 1:N) {"),
           paste0("    ", u, "[i] <- ", u_std, "[i] / sqrt(", tau_u, ")"),
@@ -858,9 +900,9 @@ phybase_model <- function(
       next
     }
 
-    # Skip multinomial and ordinal (handled separately)
+    # Skip multinomial, ordinal, and poisson (handled separately)
     dist <- dist_list[[response]] %||% "gaussian"
-    if (dist == "multinomial" || dist == "ordinal") {
+    if (dist == "multinomial" || dist == "ordinal" || dist == "poisson") {
       next
     }
 
@@ -1048,6 +1090,59 @@ phybase_model <- function(
       }
 
       # Betas for ordinal predictors
+      for (eq in eq_list) {
+        if (eq$response == response) {
+          for (pred in eq$predictors) {
+            beta_name <- paste0("beta_", response, "_", pred)
+            model_lines <- c(
+              model_lines,
+              paste0("  ", beta_name, " ~ dnorm(0, 1.0E-6)")
+            )
+          }
+        }
+      }
+    }
+  }
+
+  # Priors for Poisson parameters (variance components)
+  for (response in names(response_counter)) {
+    dist <- dist_list[[response]] %||% "gaussian"
+    if (dist == "poisson") {
+      # Loop over response instances (if there are repeats)
+      for (k in 1:response_counter[[response]]) {
+        suffix <- if (k == 1) "" else as.character(k)
+
+        model_lines <- c(
+          model_lines,
+          paste0("  # Priors for ", response, suffix, " (Poisson)"),
+          # Variance components
+          paste0("  tau_u_", response, suffix, " ~ dgamma(1, 1)"),
+          paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)"),
+          # Derived lambda
+          paste0(
+            "  lambda_",
+            response,
+            suffix,
+            " <- (1/tau_u_",
+            response,
+            suffix,
+            ") / ((1/tau_u_",
+            response,
+            suffix,
+            ") + (1/tau_e_",
+            response,
+            suffix,
+            "))"
+          )
+        )
+      }
+
+      # Betas and intercepts for Poisson predictors
+      model_lines <- c(
+        model_lines,
+        paste0("  alpha", response, " ~ dnorm(0, 1.0E-6)")
+      )
+
       for (eq in eq_list) {
         if (eq$response == response) {
           for (pred in eq$predictors) {

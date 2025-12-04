@@ -28,6 +28,8 @@ library(phybaseR)
 library(ape)
 ```
 
+**Note on Tree Standardization**: `phybaseR` automatically standardizes phylogenetic trees to have a maximum branching time of 1.0. This improves numerical stability and convergence. You'll see a message like "Standardizing tree edge lengths (max branching time: 1.27 -> 1.0)" when this occurs. This doesn't affect your results—it's just internal scaling.
+
 ## Basic Usage: Phylogenetic Regression (PGLS)
 
 Let's start with a simple example: a phylogenetic regression of `Y` on `X`. We'll simulate some data for demonstration.
@@ -254,6 +256,35 @@ summary(fit_ordinal)
 - Easier interpretation (single $\beta$ coefficient, not $K-1$)
 
 **Note**: You'll see estimated cutpoints in the output (`cutpoint_IUCN[1]`, `cutpoint_IUCN[2]`, etc.), which define the thresholds between adjacent categories.
+
+## Poisson Variables (Count Data)
+
+For **count data** (e.g., number of species, offspring count, population size), use the Poisson distribution. The random effects formulation naturally handles **overdispersion** via the residual variance component.
+
+```{r poisson, eval=FALSE}
+# Simulate count data (e.g., species richness)
+# Larger area -> more species
+log_area <- rnorm(N)
+log_richness <- 2 + 0.5 * log_area # log(E[Y])
+richness <- rpois(N, lambda = exp(log_richness))
+
+data_poisson <- list(Area = log_area, Richness = richness)
+
+fit_poisson <- phybase_run(
+    data = data_poisson,
+    tree = tree,
+    equations = list(Richness ~ Area),
+    distribution = c(Richness = "poisson")
+)
+
+summary(fit_poisson)
+```
+
+**Overdispersion handling**: Unlike standard Poisson GLMs, the random effects formulation includes `tau_e` (residual precision), which absorbs extra-Poisson variation. This makes it equivalent to a **quasi-Poisson** model without needing an explicit overdispersion parameter.
+
+**When to use Poisson vs. Negative Binomial**:
+- **Poisson**: Default for count data; handles moderate overdispersion
+- **Negative Binomial**: Heavy overdispersion (variance >> mean)
 
 ## Missing Data
 
