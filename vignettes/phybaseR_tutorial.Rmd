@@ -186,13 +186,18 @@ fit_bin <- phybase_run(
     data = data_bin,
     tree = tree,
     equations = list(Bin ~ X),
-    distribution = c(Bin = "binomial") # Specify distribution
+    distribution = c(Bin = "binomial"), # Specify distribution
+    WAIC = TRUE, # Use WAIC for model comparison (recommended for non-Gaussian models)
+    DIC = FALSE # DIC may produce NaN penalty with latent variable models
 )
 
 summary(fit_bin)
 ```
 
+**Note on Model Comparison**: For binomial (and other non-Gaussian) models, DIC may produce `NaN` values for penalty because JAGS's `dic.samples()` doesn't handle latent variable models well. **Use WAIC instead** (`WAIC = TRUE`) for reliable model comparison with binomial, multinomial, ordinal, Poisson, and Negative Binomial distributions.
+
 **Note**: Binomial variables should generally be child nodes (responses) in your DAG.
+
 
 ## Multinomial Variables
 
