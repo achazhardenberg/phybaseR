@@ -105,7 +105,14 @@ phybase_run <- function(
   }
 
   # Ensure data is a list (crucial for adding matrices like VCV)
+  # Preserve attributes (like categorical_vars) which are lost during as.list()
+  data_attrs <- attributes(data)
   data <- as.list(data)
+
+  # Restore categorical_vars if present
+  if ("categorical_vars" %in% names(data_attrs)) {
+    attr(data, "categorical_vars") <- data_attrs$categorical_vars
+  }
 
   # Handle tree(s)
   is_multiple <- inherits(tree, "multiPhylo") ||
@@ -170,6 +177,12 @@ phybase_run <- function(
       data$Prec_phylo_fixed <- solve(VCV)
     }
     data$zeros <- rep(0, N)
+
+    # Remove VCV from data to avoid "Unused variable" warning in JAGS
+    # The optimized model uses Prec_phylo_fixed instead
+    if (!is_multiple) {
+      data$VCV <- NULL
+    }
   }
 
   # Handle multinomial data
@@ -510,7 +523,7 @@ phybase_run <- function(
     combined_map <- NULL
 
     # Define function to run a single d-sep test
-    run_single_dsep_test <- function(i, test_eq) {
+    run_single_dsep_test <- function(i, test_eq, monitor_params) {
       # Run model for this single test
       # We pass dsep=FALSE to treat it as a standard model run
       # We pass parallel=FALSE to avoid nested parallelism
@@ -518,7 +531,7 @@ phybase_run <- function(
         data = data,
         tree = tree,
         equations = list(test_eq), # Pass as list of 1 equation
-        monitor = monitor,
+        monitor = monitor_params,
         n.chains = n.chains,
         n.iter = n.iter,
         n.burnin = n.burnin,
@@ -588,13 +601,94 @@ phybase_run <- function(
         cl,
         seq_along(dsep_tests),
         function(i) {
-          run_single_dsep_test(i, dsep_tests[[i]])
+          test_eq <- dsep_tests[[i]]
+          # Monitor betas for ALL predictors in the d-sep equation
+          # This ensures we capture the relevant test statistic regardless of variable order
+          test_vars <- all.vars(test_eq)
+          response <- as.character(test_eq)[2]
+          predictors <- test_vars[test_vars != response]
+
+          params_to_monitor <- character(0)
+
+          for (predictor in predictors) {
+            # Check if predictor is categorical
+            is_categorical <- FALSE
+            if (!is.null(attr(data, "categorical_vars"))) {
+              cat_vars <- attr(data, "categorical_vars")
+              if (predictor %in% names(cat_vars)) {
+                is_categorical <- TRUE
+                dummies <- cat_vars[[predictor]]$dummies
+                # Monitor all dummy betas
+                # Note: phybase_model uses "beta_Response_Predictor" format
+                params_to_monitor <- c(
+                  params_to_monitor,
+                  paste0("beta_", response, "_", dummies)
+                )
+              }
+            }
+
+            if (!is_categorical) {
+              # Standard continuous predictor
+              params_to_monitor <- c(
+                params_to_monitor,
+                paste0("beta_", response, "_", predictor)
+              )
+            }
+          }
+
+          current_monitor <- c(monitor, params_to_monitor) # Combine with global monitor
+
+          # Run model for this d-sep test
+          if (!quiet) {
+            message(sprintf("  Testing: %s", deparse(test_eq)))
+            message(sprintf(
+              "    Monitoring: %s",
+              paste(params_to_monitor, collapse = ", ")
+            ))
+          }
+          run_single_dsep_test(i, test_eq, current_monitor) # Pass current_monitor
         }
       )
     } else {
       # Sequential execution
       results <- lapply(seq_along(dsep_tests), function(i) {
         test_eq <- dsep_tests[[i]]
+        # Monitor betas for ALL predictors in the d-sep equation
+        # This ensures we capture the relevant test statistic regardless of variable order
+        test_vars <- all.vars(test_eq)
+        response <- as.character(test_eq)[2]
+        predictors <- test_vars[test_vars != response]
+
+        params_to_monitor <- character(0)
+
+        for (predictor in predictors) {
+          # Check if predictor is categorical
+          is_categorical <- FALSE
+          if (!is.null(attr(data, "categorical_vars"))) {
+            cat_vars <- attr(data, "categorical_vars")
+            if (predictor %in% names(cat_vars)) {
+              is_categorical <- TRUE
+              dummies <- cat_vars[[predictor]]$dummies
+              # Monitor all dummy betas
+              # Note: phybase_model uses "beta_Response_Predictor" format
+              params_to_monitor <- c(
+                params_to_monitor,
+                paste0("beta_", response, "_", dummies)
+              )
+            }
+          }
+
+          if (!is_categorical) {
+            # Standard continuous predictor
+            params_to_monitor <- c(
+              params_to_monitor,
+              paste0("beta_", response, "_", predictor)
+            )
+          }
+        }
+
+        current_monitor <- c(monitor, params_to_monitor) # Combine with global monitor
+
         if (!quiet) {
           message(sprintf(
             "  Test %d/%d: %s",
@@ -602,8 +696,12 @@ phybase_run <- function(
             length(dsep_tests),
             deparse(test_eq)
           ))
+          message(sprintf(
+            "    Monitoring: %s",
+            paste(params_to_monitor, collapse = ", ")
+          ))
         }
-        run_single_dsep_test(i, test_eq)
+        run_single_dsep_test(i, test_eq, current_monitor) # Pass current_monitor
       })
     }
 
