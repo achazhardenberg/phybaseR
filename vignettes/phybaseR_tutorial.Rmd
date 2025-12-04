@@ -214,9 +214,27 @@ summary(fit_multi)
 For **ordered categorical data** (e.g., IUCN Red List categories: LC < NT < VU < EN < CR), use the ordinal distribution. This respects the ordering of categories and is more appropriate than multinomial for such data.
 
 ```{r ordinal, eval=FALSE}
-# Simulate IUCN-like conservation status (1=LC, 2=NT, 3=VU, 4=EN, 5=CR)
-# Larger body mass -> lower threat
-eta <- -0.8 * log(abs(X) + 1) # Linear predictor
+# Simulate IUCN-like conservation status with phylogenetic signal
+# (1=LC, 2=NT, 3=VU, 4=EN, 5=CR)
+library(MASS)
+
+# Phylogenetically structured predictor (Body Mass)
+VCV <- ape::vcv.phylo(tree)
+lambda_X <- 0.6
+Sigma_X <- lambda_X * VCV + (1 - lambda_X) * diag(N)
+X <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = Sigma_X))
+
+# Phylogenetically structured error term
+lambda_IUCN <- 0.75
+tau_u <- 1 / 0.5
+tau_e <- 1 / 0.3
+u_std <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = solve(VCV)))
+u <- u_std / sqrt(tau_u)
+epsilon <- rnorm(N, 0, sqrt(1 / tau_e))
+phylo_error <- u + epsilon
+
+# Linear predictor: larger body mass -> lower threat
+eta <- -0.8 * log(abs(X) + 1) + phylo_error
 cutpoints <- c(-1, 0, 1, 2) # Thresholds between categories
 
 # Calculate probabilities using cumulative logit (proportional odds)
@@ -244,10 +262,15 @@ fit_ordinal <- phybase_run(
     data = data_ordinal,
     tree = tree,
     equations = list(IUCN ~ X),
-    distribution = c(IUCN = "ordinal")
+    distribution = c(IUCN = "ordinal"),
+    optimise = TRUE
 )
 
 summary(fit_ordinal)
+
+# Check recovery of phylogenetic signal
+# lambdaIUCN should be ~ 0.75
+fit_ordinal$summary$statistics["lambdaIUCN", ]
 ```
 
 **Key advantages of ordinal over multinomial**:
@@ -262,10 +285,26 @@ summary(fit_ordinal)
 For **count data** (e.g., number of species, offspring count, population size), use the Poisson distribution. The random effects formulation naturally handles **overdispersion** via the residual variance component.
 
 ```{r poisson, eval=FALSE}
-# Simulate count data (e.g., species richness)
-# Larger area -> more species
-log_area <- rnorm(N)
-log_richness <- 2 + 0.5 * log_area # log(E[Y])
+# Simulate count data with phylogenetic signal (e.g., species richness)
+library(MASS)
+
+# Phylogenetically structured predictor (Area)
+VCV <- ape::vcv.phylo(tree)
+lambda_area <- 0.6 # Phylogenetic signal in Area
+Sigma_area <- lambda_area * VCV + (1 - lambda_area) * diag(N)
+log_area <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = Sigma_area))
+
+# Phylogenetically structured error term for richness
+lambda_richness <- 0.7 # True phylogenetic signal in Richness
+tau_u <- 1 / 0.5 # Phylogenetic variance
+tau_e <- 1 / 0.3 # Residual variance
+u_std <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = solve(VCV)))
+u <- u_std / sqrt(tau_u)
+epsilon <- rnorm(N, 0, sqrt(1 / tau_e))
+phylo_error <- u + epsilon
+
+# True model: log(E[Richness]) = 2 + 0.5*Area + phylo_error
+log_richness <- 2 + 0.5 * log_area + phylo_error
 richness <- rpois(N, lambda = exp(log_richness))
 
 data_poisson <- list(Area = log_area, Richness = richness)
@@ -274,10 +313,15 @@ fit_poisson <- phybase_run(
     data = data_poisson,
     tree = tree,
     equations = list(Richness ~ Area),
-    distribution = c(Richness = "poisson")
+    distribution = c(Richness = "poisson"),
+    optimise = TRUE
 )
 
 summary(fit_poisson)
+
+# Check recovery of phylogenetic signal
+# lambdaRichness should be ~ 0.7
+fit_poisson$summary$statistics["lambdaRichness", ]
 ```
 
 **Overdispersion handling**: Unlike standard Poisson GLMs, the random effects formulation includes `tau_e` (residual precision), which absorbs extra-Poisson variation. This makes it equivalent to a **quasi-Poisson** model without needing an explicit overdispersion parameter.
@@ -291,13 +335,28 @@ summary(fit_poisson)
 For **heavily overdispersed count data** where variance far exceeds the mean, use the Negative Binomial distribution. It includes an explicit **size parameter** (`r`) that controls overdispersion.
 
 ```{r negbinomial, eval=FALSE}
-# Simulate heavily overdispersed count data
+# Simulate heavily overdispersed count data with phylogenetic signal
 # (e.g., parasite loads, highly variable population counts)
-log_host_mass <- rnorm(N)
-r_true <- 2 # Size parameter (smaller = more overdispersed)
+library(MASS)
 
-# Simulate overdispersed counts
-log_mu <- 2 + 0.5 * log_host_mass
+# Phylogenetically structured predictor (HostMass)
+VCV <- ape::vcv.phylo(tree)
+lambda_mass <- 0.5
+Sigma_mass <- lambda_mass * VCV + (1 - lambda_mass) * diag(N)
+log_host_mass <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = Sigma_mass))
+
+# Phylogenetically structured error termfor parasites
+lambda_parasites <- 0.8 # True phylogenetic signal
+tau_u <- 1 / 0.6
+tau_e <- 1 / 0.4
+u_std <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = solve(VCV)))
+u <- u_std / sqrt(tau_u)
+epsilon <- rnorm(N, 0, sqrt(1 / tau_e))
+phylo_error <- u + epsilon
+
+# True model with overdispersion
+r_true <- 2 # Size parameter (smaller = more overdispersed)
+log_mu <- 2 + 0.5 * log_host_mass + phylo_error
 mu <- exp(log_mu)
 parasite_count <- rnbinom(N, size = r_true, mu = mu)
 
@@ -307,10 +366,15 @@ fit_nb <- phybase_run(
     data = data_nb,
     tree = tree,
     equations = list(Parasites ~ HostMass),
-    distribution = c(Parasites = "negbinomial")
+    distribution = c(Parasites = "negbinomial"),
+    optimise = TRUE
 )
 
 summary(fit_nb)
+
+# Check recovery of phylogenetic signal
+# lambdaParasites should be ~ 0.8
+fit_nb$summary$statistics["lambdaParasites", ]
 ```
 
 **Understanding the size parameter (`r`)**:
