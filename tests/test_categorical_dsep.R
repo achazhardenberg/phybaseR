@@ -70,10 +70,10 @@ if (length(dsep_results) > 0) {
     cat("\nMonitored parameters:\n")
     print(monitored_params)
 
-    # Verify dummy betas are present
+    # Verify dummy betas are present (allowing for suffix like _1)
     dummies_present <- c(
-        "betaY_Diet_Herbivore" %in% monitored_params,
-        "betaY_Diet_Omnivore" %in% monitored_params
+        any(grepl("betaDiet_Herbivore", monitored_params)),
+        any(grepl("betaDiet_Omnivore", monitored_params))
     )
 
     if (all(dummies_present)) {

@@ -619,10 +619,10 @@ phybase_run <- function(
                 is_categorical <- TRUE
                 dummies <- cat_vars[[predictor]]$dummies
                 # Monitor all dummy betas
-                # Note: phybase_model uses "beta_Response_Predictor" format
+                # For Gaussian: betaPredictor format
                 params_to_monitor <- c(
                   params_to_monitor,
-                  paste0("beta_", response, "_", dummies)
+                  paste0("beta", dummies)
                 )
               }
             }
@@ -631,7 +631,7 @@ phybase_run <- function(
               # Standard continuous predictor
               params_to_monitor <- c(
                 params_to_monitor,
-                paste0("beta_", response, "_", predictor)
+                paste0("beta", predictor)
               )
             }
           }
@@ -670,20 +670,14 @@ phybase_run <- function(
               is_categorical <- TRUE
               dummies <- cat_vars[[predictor]]$dummies
               # Monitor all dummy betas
-              # Note: phybase_model uses "beta_Response_Predictor" format
-              params_to_monitor <- c(
-                params_to_monitor,
-                paste0("beta_", response, "_", dummies)
-              )
+              # For Gaussian: betaPredictor format
+              params_to_monitor <- c(params_to_monitor, paste0("beta", dummies))
             }
           }
 
           if (!is_categorical) {
             # Standard continuous predictor
-            params_to_monitor <- c(
-              params_to_monitor,
-              paste0("beta_", response, "_", predictor)
-            )
+            params_to_monitor <- c(params_to_monitor, paste0("beta", predictor))
           }
         }
 
