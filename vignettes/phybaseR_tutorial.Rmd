@@ -186,13 +186,18 @@ fit_bin <- phybase_run(
     data = data_bin,
     tree = tree,
     equations = list(Bin ~ X),
-    distribution = c(Bin = "binomial") # Specify distribution
+    distribution = c(Bin = "binomial"), # Specify distribution
+    WAIC = TRUE, # Use WAIC for model comparison (recommended for non-Gaussian models)
+    DIC = FALSE # DIC may produce NaN penalty with latent variable models
 )
 
 summary(fit_bin)
 ```
 
+**Note on Model Comparison**: For binomial (and other non-Gaussian) models, DIC may produce `NaN` values for penalty because JAGS's `dic.samples()` doesn't handle latent variable models well. **Use WAIC instead** (`WAIC = TRUE`) for reliable model comparison with binomial, multinomial, ordinal, Poisson, and Negative Binomial distributions.
+
 **Note**: Binomial variables should generally be child nodes (responses) in your DAG.
+
 
 ## Multinomial Variables
 
@@ -365,33 +370,34 @@ summary(fit_dsep$samples)
 
 ## Poisson Variables (Count Data)
 
-For **count data** (e.g., number of species, offspring count, population size), use the Poisson distribution. The random effects formulation naturally handles **overdispersion** via the residual variance component.
+For **count data** (e.g., clutch size, litter size, number of vertebrae), use the Poisson distribution. These **meristic traits** are countable morphological or life-history features that show phylogenetic signal. The random effects formulation naturally handles **overdispersion** via the residual variance component.
 
 ```{r poisson, eval=FALSE}
-# Simulate count data with phylogenetic signal (e.g., species richness)
-# DAG: Temperature -> Richness <- Area
-#      Temperature -> Area
-# Implied independence: Richness ⊥ Temperature | Area
+# Simulate count data with phylogenetic signal
+# Example: Clutch size (number of eggs) in birds
+# DAG: BodyMass -> ClutchSize <- Latitude
+#      BodyMass -> Latitude
+# Implied independence: ClutchSize ⊥ BodyMass | Latitude
 library(MASS)
 
 # Phylogenetically structured predictors
 VCV <- ape::vcv.phylo(tree)
 
-# Temperature (exogenous)
-lambda_temp <- 0.5
-Sigma_temp <- lambda_temp * VCV + (1 - lambda_temp) * diag(N)
-Temperature <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = Sigma_temp))
+# Body mass (log-scale, exogenous)
+lambda_bm <- 0.8
+Sigma_bm <- lambda_bm * VCV + (1 - lambda_bm) * diag(N)
+BodyMass <- as.vector(mvrnorm(1, mu = rep(4, N), Sigma = Sigma_bm))
 
-# Area (caused by temperature)
-lambda_area <- 0.6
-tau_u_area <- 1 / 0.4
-tau_e_area <- 1 / 0.3
-u_std_area <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = solve(VCV)))
-Area <- 2 + 0.6 * Temperature + u_std_area / sqrt(tau_u_area) +
-    rnorm(N, 0, sqrt(1 / tau_e_area))
+# Latitude (caused by body mass - Bergmann's rule proxy)
+lambda_lat <- 0.6
+tau_u_lat <- 1 / 0.4
+tau_e_lat <- 1 / 0.3
+u_std_lat <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = solve(VCV)))
+Latitude <- 30 - 0.4 * BodyMass + u_std_lat / sqrt(tau_u_lat) +
+    rnorm(N, 0, sqrt(1 / tau_e_lat))
 
-# Phylogenetically structured error term for richness
-lambda_richness <- 0.7 # True phylogenetic signal in Richness
+# Phylogenetically structured error term for clutch size
+lambda_clutch <- 0.7 # True phylogenetic signal in clutch size
 tau_u <- 1 / 0.5 # Phylogenetic variance
 tau_e <- 1 / 0.3 # Residual variance
 u_std <- as.vector(mvrnorm(1, mu = rep(0, N), Sigma = solve(VCV)))
@@ -399,15 +405,15 @@ u <- u_std / sqrt(tau_u)
 epsilon <- rnorm(N, 0, sqrt(1 / tau_e))
 phylo_error <- u + epsilon
 
-# True model: log(E[Richness]) = 2 + 0.5*Area + phylo_error
-# Temperature affects richness ONLY through Area
-log_richness <- 2 + 0.5 * Area + phylo_error
-richness <- rpois(N, lambda = exp(log_richness))
+# True model: log(E[ClutchSize]) = 1.5 + 0.03*Latitude + phylo_error
+# Larger clutches at higher latitudes, body mass affects ONLY through latitude
+log_clutch <- 1.5 + 0.03 * Latitude + phylo_error
+ClutchSize <- rpois(N, lambda = exp(log_clutch))
 
 data_poisson <- list(
-    Temperature = Temperature,
-    Area = Area,
-    Richness = richness
+    BodyMass = BodyMass,
+    Latitude = Latitude,
+    ClutchSize = ClutchSize
 )
 
 # Fit the DAG
@@ -415,35 +421,35 @@ fit_poisson <- phybase_run(
     data = data_poisson,
     tree = tree,
     equations = list(
-        Richness ~ Area,
-        Area ~ Temperature
+        ClutchSize ~ Latitude,
+        Latitude ~ BodyMass
     ),
-    distribution = c(Richness = "poisson"),
+    distribution = c(ClutchSize = "poisson"),
     optimise = TRUE
 )
 
 summary(fit_poisson)
 
 # Check recovery of phylogenetic signal
-# lambdaRichness should be ~ 0.7
-fit_poisson$summary$statistics["lambdaRichness", ]
+# lambdaClutchSize should be ~ 0.7
+fit_poisson$summary$statistics["lambdaClutchSize", ]
 
-# Test d-separation: Richness ⊥ Temperature | Area
+# Test d-separation: ClutchSize ⊥ BodyMass | Latitude
 fit_dsep <- phybase_run(
     data = data_poisson,
     tree = tree,
     equations = list(
-        Richness ~ Area,
-        Area ~ Temperature
+        ClutchSize ~ Latitude,
+        Latitude ~ BodyMass
     ),
-    distribution = c(Richness = "poisson"),
+    distribution = c(ClutchSize = "poisson"),
     dsep = TRUE,
     optimise = TRUE
 )
 
-# Check if betaTemperature is close to zero in the d-sep test
+# Check if betaBodyMass is close to zero in the d-sep test
 summary(fit_dsep$samples)
-# If 95% CI of betaTemperature includes zero -> independence supported
+# If 95% CI of betaBodyMass includes zero -> independence supported
 ```
 
 **Overdispersion handling**: Unlike standard Poisson GLMs, the random effects formulation includes `tau_e` (residual precision), which absorbs extra-Poisson variation. This makes it equivalent to a **quasi-Poisson** model without needing an explicit overdispersion parameter.

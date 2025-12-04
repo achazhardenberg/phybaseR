@@ -454,7 +454,7 @@ phybase_run <- function(
               compact_mat[i, seq_along(vals)] <- vals
             }
           }
-          data[[obs_name]] <- compact_mat
+          data[[paste0(var_name, "_obs")]] <- compact_mat
         }
 
         # Ensure var is removed (latent)
