@@ -1064,6 +1064,31 @@ fit_with_latent$WAIC$WAIC  # Lower WAIC → latent structure supported
 - ✅ **MAG vs No latent**: WAIC/DIC comparable  
 - ❌ **Explicit vs MAG/No latent**: WAIC/DIC **not** comparable
 
+### Why WAIC Instead of LOO-CV?
+
+**WAIC (Widely Applicable Information Criterion)** is the recommended approach for model comparison in `phybaseR` rather than LOO-CV (Leave-One-Out Cross-Validation).
+
+**Why?**
+
+In phylogenetic models, observations are **not independent** - they're connected through the phylogenetical covariance matrix. This creates technical challenges for LOO:
+
+1. **Pointwise likelihood is not well-defined**: The likelihood for species `i` depends on ALL other species through phylogenetic correlation
+2. **Conditional likelihoods are complex**: Computing `p(y_i | y_{-i})` requires N separate covariance matrix inversions
+3. **WAIC is already available**: JAGS provides WAIC efficiently via the `dic` module
+
+**Best practice**:
+```r
+# Use WAIC for model comparison
+fit1 <- phybase_run(..., WAIC = TRUE)
+fit2 <- phybase_run(..., WAIC = TRUE)
+
+# Compare
+fit1$WAIC  # Lower is better
+fit2$WAIC
+```
+
+**Note**: LOO-CV functionality may be added in future versions if there's demand for it.
+
 ### Limitations
 
 - MAG approach currently supports **pairwise correlations** only
