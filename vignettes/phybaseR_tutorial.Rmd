@@ -1001,6 +1001,68 @@ When using the **explicit approach**, latent variables have no inherent scale, l
 
 - **Default to MAG (correlations)**: Safer, more interpretable, consistent with d-separation testing
 - **Use explicit sparingly**: Only when you have good reasons and understand the identification constraints
+- **For model comparison**: Use MAG method when comparing models with WAIC/DIC (see below)
+
+### Model Comparison with Latent Variables
+
+> **IMPORTANT**: Do not use WAIC/DIC to compare explicit latent variable models with models that don't include latent variables.
+
+**Why this matters**:
+
+When using `latent_method = "explicit"`, the latent variable values `L[1:N]` (one per species) are treated as **model parameters** in the WAIC/DIC calculation. This means:
+
+```r
+# Model 1: No latent (e.g., BR and BM are independent predictors)
+fit_no_latent <- phybase_run(
+  equations = list(S ~ BM, G ~ BR, L ~ BR),
+  WAIC = TRUE
+)
+# WAIC calculated on observed data: S, G, L
+
+# Model 2: Explicit latent
+fit_explicit <- phybase_run(
+  equations = list(BR ~ Lat, BM ~ Lat, S ~ BM, G ~ BR, L ~ BR),
+  latent = c("Lat"),
+  latent_method = "explicit",
+  WAIC = TRUE
+)
+# WAIC calculated on: S, G, L, BR, BM, + N latent Lat[i] values
+```
+
+**The problem**: Model 2 has effectively **N more "data points"** (the latent values) in its likelihood, making WAIC non-comparable. Lower WAIC doesn't necessarily mean better fit—it might just reflect different effective sample sizes.
+
+**Solution: Use MAG for model comparison**
+
+```r
+# Safe comparison: Both use MAG
+fit_independent <- phybase_run(
+  equations = list(S ~ BM, G ~ BR, L ~ BR),
+  # BR and BM independent
+  WAIC = TRUE
+)
+
+fit_with_latent <- phybase_run(
+  equations = list(BR ~ Lat, BM ~ Lat, S ~ BM, G ~ BR, L ~ BR),
+  latent = c("Lat"),
+  latent_method = "correlations",  # MAG (default)
+  WAIC = TRUE
+)
+
+# Valid comparison!
+fit_independent$WAIC$WAIC  # Higher WAIC
+fit_with_latent$WAIC$WAIC  # Lower WAIC → latent structure supported
+```
+
+**Why MAG works**: The MAG approach marginalizes out latent variables, so WAIC is calculated **only on observed data** (S, G, L, BR, BM) in both models. This makes the information criteria directly comparable.
+
+**When explicit method is appropriate**:
+- Theoretical interest in **specific path coefficients** from latent to observed (e.g., `beta_BR_Lat`)
+- **NOT** for routine model comparison
+
+**Summary**:
+- ✅ **MAG vs MAG**: WAIC/DIC comparable
+- ✅ **MAG vs No latent**: WAIC/DIC comparable  
+- ❌ **Explicit vs MAG/No latent**: WAIC/DIC **not** comparable
 
 ### Limitations
 

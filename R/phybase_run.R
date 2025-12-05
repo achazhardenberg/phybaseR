@@ -57,6 +57,10 @@
 #'     \item \code{"explicit"}: Model latent variables as JAGS nodes and estimate structural
 #'           paths from latents to observed variables.
 #'   }
+#' @param standardize_latent Logical; if \code{TRUE} and \code{latent_method = "explicit"},
+#'   adds standardized priors (\code{N(0,1)}) to latent variables to identify scale and location.
+#'   This improves convergence and makes regression coefficients interpretable as standardized effects.
+#'   Only applicable when using explicit latent variable modeling (default = TRUE).
 #' @param parallel Logical; if \code{TRUE}, run MCMC chains in parallel (default = FALSE).
 #'   Note: Requires \code{n.cores > 1} to take effect.
 #' @param n.cores Integer; number of CPU cores to use for parallel chains (default = 1).
@@ -95,6 +99,7 @@ phybase_run <- function(
   distribution = NULL,
   latent = NULL,
   latent_method = c("correlations", "explicit"),
+  standardize_latent = TRUE,
   parallel = FALSE,
   n.cores = 1,
   cl = NULL,
@@ -955,6 +960,7 @@ phybase_run <- function(
     vars_with_na = response_vars_with_na,
     induced_correlations = induced_cors,
     latent = latent,
+    standardize_latent = standardize_latent,
     optimise = optimise
   )
 
@@ -1011,8 +1017,15 @@ phybase_run <- function(
         all.vars(formula(eq)[[2]])
       }))
 
+      # Get variables that have induced correlations (MAG exogenous variables)
+      # These are like auxiliary predictors - their intercepts are not interpretable
+      mag_exogenous_vars <- character(0)
+      if (!is.null(induced_cors) && length(induced_cors) > 0) {
+        mag_exogenous_vars <- unique(unlist(induced_cors))
+      }
+
       # Include:
-      # - Alphas for RESPONSE variables only (exclude auxiliary predictor alphas)
+      # - Alphas for RESPONSE variables only, EXCLUDING MAG exogenous variables
       # - All betas (regression coefficients)
       # - Lambdas for RESPONSE variables only (exclude auxiliary predictor lambdas)
       # - Rhos (induced correlations)
@@ -1020,14 +1033,17 @@ phybase_run <- function(
       # - All taus (variance components)
       # - Lambdas for predictor-only variables
       # - Alphas for predictor-only variables (implicit X ~ 1 equations)
+      # - Alphas for MAG exogenous variables (e.g., BR, BM in BR <-> BM)
 
       monitor <- all_params[
         (grepl("^alpha", all_params) &
-          gsub("^alpha", "", all_params) %in% response_vars) | # Response intercepts only
+          gsub("^alpha", "", all_params) %in% response_vars &
+          !gsub("^alpha", "", all_params) %in% mag_exogenous_vars) | # Response intercepts, excluding MAG exogenous
           grepl("^beta", all_params) | # All regression coefficients
           grepl("^rho", all_params) | # Induced correlations
           (grepl("^lambda", all_params) &
-            gsub("^lambda", "", all_params) %in% response_vars) # Response lambdas only
+            gsub("^lambda", "", all_params) %in% response_vars &
+            !gsub("^lambda", "", all_params) %in% mag_exogenous_vars) # Response lambdas, excluding MAG exogenous
       ]
     } else {
       # monitor_mode == "all" or NULL: include everything
