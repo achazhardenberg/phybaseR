@@ -1,7 +1,14 @@
 #' Run a Phylogenetic Bayesian Structural Equation model (PhyBaSE)
 #'
 #' @param data A named list of data for JAGS.
-#' @param tree A single phylogenetic tree of class \code{"phylo"} or a list of trees of class \code{"multiPhylo"} (i.e., a list of \code{"phylo"} objects). If multiple trees are provided, phylogenetic uncertainty is incorporated by sampling among them during model fitting.
+#' @param tree (Deprecated alias for \code{structure}). A single phylogenetic tree of class \code{"phylo"} or a list of trees. Use \code{structure} instead for new code.
+#' @param structure The covariance structure for the model. Accepts:
+#'   \itemize{
+#'     \item \code{"phylo"} object: Phylogenetic tree (Standard PGLS/PhyloSEM).
+#'     \item \code{"multiPhylo"} object: List of trees (incorporates phylogenetic uncertainty).
+#'     \item \code{NULL}: Independent model (Standard SEM, no covariance structure).
+#'     \item \code{matrix}: Custom covariance or precision matrix (e.g., spatial connectivity, kinship).
+#'   }
 #' @param equations A list of model formulas describing the structural equation model.
 #' @param monitor Parameter monitoring mode. Options:
 #'   \itemize{
@@ -13,16 +20,16 @@
 #'     \item \code{NULL}: Auto-detect based on model structure (equivalent to "interpretable").
 #'   }
 #' @param n.chains Number of MCMC chains (default = 3).
-#' @param n.iter Total number of MCMC iterations (default = 2000).
-#' @param n.burnin Number of burn-in iterations (default = n.iter / 2).
-#' @param n.thin Thinning rate (default = max(1, floor((n.iter - n.burnin) / 1000))).
+#' @param n.iter Total number of MCMC iterations (default = 12500).
+#' @param n.burnin Number of burn-in iterations (default = n.iter / 5).
+#' @param n.thin Thinning rate (default = 10).
 #' @param DIC Logical; whether to compute DIC using \code{dic.samples()} (default = TRUE).
 #'   **Note**: DIC penalty will be inflated for models with measurement error or repeated measures
 #'   because latent variables are counted as parameters (penalty ≈ structural parameters + N).
 #'   For model comparison, use WAIC or compare mean deviance across models with similar structure.
 #' @param WAIC Logical; whether to sample values for WAIC and deviance (default = FALSE).
 #'   WAIC is generally more appropriate than DIC for hierarchical models with latent variables.
-#' @param n.adapt Number of adaptation iterations (default = 1000).
+#' @param n.adapt Number of adaptation iterations (default = n.iter / 5).
 #' @param quiet Logical; suppress JAGS output (default = FALSE).
 #' @param dsep Logical; if \code{TRUE}, monitor only the first beta in each structural equation (used for d-separation testing).
 #' @param variability Optional specification for variables with measurement error or within-species variability.
@@ -83,16 +90,17 @@
 #' @import coda
 phybase_run <- function(
   data,
-  tree,
   equations,
+  structure = NULL,
+  tree = NULL,
   monitor = NULL,
   n.chains = 3,
-  n.iter = 13000,
-  n.burnin = 3000,
+  n.iter = 12500,
+  n.burnin = n.iter / 5,
   n.thin = 10,
   DIC = TRUE,
   WAIC = FALSE,
-  n.adapt = 5000,
+  n.adapt = n.iter / 5,
   quiet = FALSE,
   dsep = FALSE,
   variability = NULL,
@@ -106,12 +114,31 @@ phybase_run <- function(
   ic_recompile = TRUE,
   optimise = TRUE
 ) {
+  # Handle 'structure' alias
+  if (is.null(tree) && !is.null(structure)) {
+    tree <- structure
+  }
+
+  # Check if both are missing (tree is NULL, structure is NULL)
+  # This implies Independent Model (tree = NULL is valid for that)
+  # But we want to be explicit?
+  # If both are NULL, we run as independent model.
+
+  if (is.null(tree)) {
+    if (!quiet) {
+      message(
+        "No structure/tree provided. Running standard (non-phylogenetic) SEM."
+      )
+    }
+  }
+
+  # Validate inputs
   # Input validation
   if (is.null(data)) {
     stop("Argument 'data' must be provided.")
   }
-  if (is.null(tree)) {
-    stop("Argument 'tree' must be provided.")
+  if (is.null(tree) && !quiet) {
+    message("No tree provided. Running standard (non-phylogenetic) SEM.")
   }
   if (is.null(equations)) {
     stop("Argument 'equations' must be provided.")
@@ -127,55 +154,99 @@ phybase_run <- function(
     attr(data, "categorical_vars") <- data_attrs$categorical_vars
   }
 
-  # Handle tree(s)
+  # Handle tree validation and type detection
   is_multiple <- inherits(tree, "multiPhylo") ||
     (is.list(tree) && all(sapply(tree, inherits, "phylo")))
 
-  # Standardize tree edge lengths to max branching time
-  # This ensures lambda is scaled 0-1 for proper interpretation
-  standardize_tree <- function(phylo_tree) {
-    max_bt <- max(ape::branching.times(phylo_tree))
-    # Check if already standardized (max branching time ≈ 1)
-    if (abs(max_bt - 1.0) > 0.01) {
-      if (!quiet) {
-        message(sprintf(
-          "Standardizing tree edge lengths (max branching time: %.2f -> 1.0)",
-          max_bt
-        ))
-      }
-      phylo_tree$edge.length <- phylo_tree$edge.length / max_bt
-    }
-    return(phylo_tree)
-  }
+  # Determine N and covariance structure
+  if (is.null(tree)) {
+    # CASE 1: Independent Data (Standard SEM)
+    is_spatial <- FALSE
+    is_phylo <- FALSE
 
-  if (is_multiple) {
-    # Standardize each tree
-    tree <- lapply(tree, standardize_tree)
-    # Create multi-tree VCV array
-    K <- length(tree)
-    N <- length(tree[[1]]$tip.label)
-    multiVCV <- array(0, dim = c(N, N, K))
-    for (k in 1:K) {
-      multiVCV[,, k] <- ape::vcv.phylo(tree[[k]])
+    # Determine N from data
+    # Find a vector in data to get length
+    potential_vectors <- Filter(function(x) is.vector(x) || is.factor(x), data)
+    if (length(potential_vectors) > 0) {
+      N <- length(potential_vectors[[1]])
+    } else {
+      stop(
+        "Could not determine N (sample size) from data. Please provide a tree or ensure data contains vectors."
+      )
     }
-    data$multiVCV <- multiVCV
-    data$Ntree <- K
-    VCV <- multiVCV[,, 1] # Use first for ID dimension
+
+    # No VCV or Prec needed
+    VCV <- NULL
     ID <- diag(N)
+  } else if (is.matrix(tree)) {
+    # CASE 2: Custom Covariance Matrix (Spatial/Animal Model)
+    is_spatial <- TRUE # Treat as generic "spatial/structured"
+    is_phylo <- FALSE
+
+    if (nrow(tree) != ncol(tree)) {
+      stop("Custom covariance matrix must be square.")
+    }
+
+    N <- nrow(tree)
+    VCV <- tree
+    ID <- diag(N)
+
+    if (!quiet) message(sprintf("Using custom covariance matrix (N = %d)", N))
+
+    # If matrix is precision (sparse or dense), we might need to invert it back to VCV for some logic?
+    # For now assume it is Covariance (VCV).
   } else {
-    # Standardize single tree
-    tree <- standardize_tree(tree)
-    VCV <- ape::vcv.phylo(tree)
-    ID <- diag(nrow(VCV))
-    N <- nrow(VCV)
-    data$VCV <- VCV
+    # CASE 3: Phylogenetic Tree (Original Behavior)
+    is_spatial <- FALSE
+    is_phylo <- TRUE
+
+    # Standardize tree edge lengths to max branching time
+    # This ensures lambda is scaled 0-1 for proper interpretation
+    standardize_tree <- function(phylo_tree) {
+      max_bt <- max(ape::branching.times(phylo_tree))
+      # Check if already standardized (max branching time ≈ 1)
+      if (abs(max_bt - 1.0) > 0.01) {
+        if (!quiet) {
+          message(sprintf(
+            "Standardizing tree edge lengths (max branching time: %.2f -> 1.0)",
+            max_bt
+          ))
+        }
+        phylo_tree$edge.length <- phylo_tree$edge.length / max_bt
+      }
+      return(phylo_tree)
+    }
+
+    if (is_multiple) {
+      # Standardize each tree
+      tree <- lapply(tree, standardize_tree)
+      # Create multi-tree VCV array
+      K <- length(tree)
+      N <- length(tree[[1]]$tip.label)
+      multiVCV <- array(0, dim = c(N, N, K))
+      for (k in 1:K) {
+        multiVCV[,, k] <- ape::vcv.phylo(tree[[k]])
+      }
+      data$multiVCV <- multiVCV
+      data$Ntree <- K
+      VCV <- multiVCV[,, 1] # Use first for ID dimension
+      ID <- diag(N)
+    } else {
+      # Standardize single tree
+      tree <- standardize_tree(tree)
+      VCV <- ape::vcv.phylo(tree)
+      ID <- diag(nrow(VCV))
+      N <- nrow(VCV)
+      data$VCV <- VCV
+    }
   }
 
   data$ID <- ID
   data$N <- N
 
   # Pre-compute inverse VCV for optimized random effects model
-  if (optimise) {
+  # Only if we have a structure (is_phylo or is_spatial)
+  if (optimise && (is_phylo || is_spatial)) {
     if (is_multiple) {
       # For multiple trees, we need an array of precision matrices
       # Dimension: [N, N, K]
@@ -186,7 +257,7 @@ phybase_run <- function(
       }
       data$Prec_phylo_fixed <- Prec_phylo_fixed
     } else {
-      # Single tree
+      # Single structure (tree or matrix)
       data$Prec_phylo_fixed <- solve(VCV)
     }
     data$zeros <- rep(0, N)
@@ -995,7 +1066,8 @@ phybase_run <- function(
     induced_correlations = induced_cors,
     latent = latent,
     standardize_latent = standardize_latent,
-    optimise = optimise
+    optimise = optimise,
+    independent = (!is_phylo && !is_spatial)
   )
 
   model_string <- model_output$model
