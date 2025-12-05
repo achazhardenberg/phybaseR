@@ -1229,9 +1229,16 @@ phybase_run <- function(
       # Explicitly load rjags to ensure modules are available
       loadNamespace("rjags")
       # Compile model for this chain
+      # Explicitly set RNG seed to ensure chains are different
+      inits_list <- list(
+        .RNG.name = "base::Wichmann-Hill",
+        .RNG.seed = 12345 + chain_id
+      )
+
       model <- jags.model(
         model_file,
         data = data,
+        inits = inits_list,
         n.chains = 1,
         n.adapt = n.adapt,
         quiet = quiet
@@ -1320,17 +1327,55 @@ phybase_run <- function(
   if (n.chains > 1) {
     tryCatch(
       {
-        # Use autoburnin=FALSE to avoid discarding half the chain (we already burned in)
-        # Use transform=TRUE generally helps, but can be problematic for constant vars
-        gelman_diag <- coda::gelman.diag(
-          samples,
-          multivariate = FALSE,
-          autoburnin = FALSE
-        )
-        psrf <- gelman_diag$psrf
-        print("DEBUG: gelman.diag PSRF head:")
-        print(head(psrf))
+        # Manual R-hat calculation to avoid coda::gelman.diag issues
+        # with parallel chains and R scoping problems
+        n_chains <- length(samples)
 
+        # Use base R colnames to get parameter names
+        first_chain <- as.matrix(samples[[1]])
+        pnames <- colnames(first_chain)
+        n_params <- length(pnames)
+
+        psrf <- matrix(NA, nrow = n_params, ncol = 2)
+        rownames(psrf) <- pnames
+        colnames(psrf) <- c("Point est.", "Upper C.I.")
+
+        # Convert chains to matrices ONCE outside the loop
+        chain_matrices <- lapply(samples, as.matrix)
+
+        for (idx in seq_len(n_params)) {
+          # Extract column idx from each chain matrix
+          vals <- do.call(cbind, lapply(chain_matrices, function(m) m[, idx]))
+
+          # Check for constant chains (variance 0)
+          # Use explicit variance calculation to avoid R scoping issues
+          chain_vars <- numeric(ncol(vals))
+          for (col_idx in seq_len(ncol(vals))) {
+            chain_vars[col_idx] <- stats::var(vals[, col_idx])
+          }
+
+          if (any(chain_vars < 1e-10)) {
+            psrf[idx, 1] <- 1.0 # If constant, Rhat is 1
+            next
+          }
+
+          # Calculate B/W (Gelman-Rubin statistic)
+          n_samples <- nrow(vals)
+          chain_means <- colMeans(vals)
+
+          # Between-chain variance
+          B <- n_samples * stats::var(chain_means)
+
+          # Within-chain variance
+          W <- mean(chain_vars)
+
+          # Estimated variance
+          var_plus <- (n_samples - 1) / n_samples * W + B / n_samples
+
+          # R-hat
+          rhat <- sqrt(var_plus / W)
+          psrf[idx, 1] <- rhat
+        }
         # Add R-hat to summary statistics
         # summary(samples) returns a list with 'statistics' and 'quantiles'
         # We want to add R-hat to the statistics matrix
@@ -1343,10 +1388,19 @@ phybase_run <- function(
 
         if (length(common_params) > 0) {
           sum_stats$statistics <- cbind(sum_stats$statistics, Rhat = NA)
+          rhat_col_idx <- which(colnames(sum_stats$statistics) == "Rhat")
 
-          # Using name-based indexing is safer than match() indices if ordering differs
-          for (param in common_params) {
-            sum_stats$statistics[param, "Rhat"] <- psrf[param, "Point est."]
+          # Use numeric indexing to avoid any strange symbol evaluation
+          for (j in seq_along(common_params)) {
+            p <- common_params[j]
+            row_idx <- which(rownames(sum_stats$statistics) == p)
+            psrf_row_idx <- which(rownames(psrf) == p)
+            if (length(row_idx) == 1 && length(psrf_row_idx) == 1) {
+              sum_stats$statistics[row_idx, rhat_col_idx] <- psrf[
+                psrf_row_idx,
+                1
+              ]
+            }
           }
         }
       },
