@@ -1095,3 +1095,53 @@ fit2$WAIC
 - Explicit approach requires constraints for identification with complex latent structures
 
 
+## Generalized Covariance Structures
+
+While PhyBaSE was originally designed for phylogenetic models, `phybaseR` now supports arbitrary covariance structures. You can specify the covariance structure using the `structure` argument (which replaces `tree` in newer versions).
+
+### 1. Independent SEMs (Non-Phylogenetic)
+
+To run a standard Bayesian SEM without any phylogenetic or spatial structure, simply set `structure = NULL`. This is the default if `structure` or `tree` are not provided.
+
+```{r independent, eval=FALSE}
+fit_indep <- phybase_run(
+    data = data_list,
+    structure = NULL, # Independent model
+    equations = equations
+)
+```
+
+In this mode, `phybaseR` assumes independent residuals for all variables (Gaussian, Binomial, Multinomial, etc.).
+
+### 2. Spatial or Custom Covariance
+
+You can provide a custom covariance or precision matrix (e.g., spatial connectivity) via the `structure` argument. The matrix must be $N \times N$ with row/column names matching your data.
+
+```{r spatial, eval=FALSE}
+# Create a spatial precision matrix
+spatial_prec <- solve(exp(-dist_matrix / range))
+
+fit_spatial <- phybase_run(
+    data = data_list,
+    structure = spatial_prec, # Pass matrix directly
+    equations = equations
+)
+```
+
+### 3. Animal Models (Pedigree)
+
+For quantitative genetics (Animal Models), you can pass the inverse additive genetic relationship matrix ($A^{-1}$) derived from a pedigree.
+
+```{r animal, eval=FALSE}
+# Using MCMCglmm to get A-inverse
+library(MCMCglmm)
+inv_A <- inverseA(pedigree)$Ainv
+
+fit_animal <- phybase_run(
+    data = data_list,
+    structure = as.matrix(inv_A),
+    equations = equations
+)
+```
+
+

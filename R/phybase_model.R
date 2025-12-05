@@ -62,7 +62,8 @@ phybase_model <- function(
   induced_correlations = NULL,
   latent = NULL,
   standardize_latent = TRUE,
-  optimise = TRUE
+  optimise = TRUE,
+  independent = FALSE
 ) {
   # Helper: returns b if a is NULL or if a is a list element that doesn't exist
   `%||%` <- function(a, b) {
@@ -433,7 +434,28 @@ phybase_model <- function(
             paste0("  }")
           )
         } else {
-          if (optimise) {
+          if (independent) {
+            # Independent Model (No random effects)
+            # Y[i] ~ dnorm(mu[i], tau)
+            # Note: We use tau_e for consistency with optimized model naming if desired,
+            # but tau is standard for simple normal. Let's use tau_e to distinguish from matrix TAU
+            tau_e <- paste0("tau_e_", response, suffix)
+
+            model_lines <- c(
+              model_lines,
+              paste0("  for (i in 1:N) {"),
+              paste0(
+                "    ",
+                response_var,
+                "[i] ~ dnorm(",
+                mu,
+                "[i], ",
+                tau_e,
+                ")"
+              ),
+              paste0("  }")
+            )
+          } else if (optimise) {
             # Optimized Random Effects Formulation (4.6x faster)
             # u_std ~ dmnorm(0, Prec_phylo_fixed)
             # u = u_std / sqrt(tau_u)
@@ -495,7 +517,21 @@ phybase_model <- function(
         # For binomial, the error term has the phylogenetic structure
         err <- paste0("err_", response, suffix)
 
-        if (optimise) {
+        if (independent) {
+          # Independent Binomial: Just error term (epsilon)
+          # err[i] ~ dnorm(0, tau_e)
+          epsilon <- paste0("epsilon_", response, suffix)
+          tau_e <- paste0("tau_e_", response, suffix)
+
+          model_lines <- c(
+            model_lines,
+            paste0("  # Independent residual error for binomial: ", response),
+            paste0("  for (i in 1:N) {"),
+            paste0("    ", epsilon, "[i] ~ dnorm(0, ", tau_e, ")"),
+            paste0("    ", err, "[i] <- ", epsilon, "[i]"),
+            paste0("  }")
+          )
+        } else if (optimise) {
           # Random Effects Formulation
           u_std <- paste0("u_std_", response, suffix)
           u <- paste0("u_", response, suffix)
@@ -534,7 +570,25 @@ phybase_model <- function(
         err <- paste0("err_", response, suffix)
         K_var <- paste0("K_", response)
 
-        if (optimise) {
+        if (independent) {
+          # Define variables for independent mode
+          epsilon <- paste0("epsilon_", response, suffix)
+          tau_e <- paste0("tau_e_", response, suffix)
+
+          model_lines <- c(
+            model_lines,
+            paste0(
+              "  # Independent residual error for multinomial: ",
+              response
+            ),
+            paste0("  for (k in 2:", K_var, ") {"),
+            paste0("    for (i in 1:N) {"),
+            paste0("      ", epsilon, "[i, k] ~ dnorm(0, ", tau_e, "[k])"),
+            paste0("      ", err, "[i, k] <- ", epsilon, "[i, k]"),
+            paste0("    }"),
+            paste0("  }")
+          )
+        } else if (optimise) {
           # Optimised Random Effects Formulation for Multinomial
           u_std <- paste0("u_std_", response, suffix)
           u <- paste0("u_", response, suffix)
@@ -605,36 +659,65 @@ phybase_model <- function(
         # Single phylogenetic effect (unlike multinomial with K-1 effects)
         err <- paste0("err_", response, suffix)
 
-        # Random Effects Formulation (optimise-only)
-        u_std <- paste0("u_std_", response, suffix)
-        u <- paste0("u_", response, suffix)
-        epsilon <- paste0("epsilon_", response, suffix)
-        tau_u <- paste0("tau_u_", response, suffix)
-        tau_e <- paste0("tau_e_", response, suffix)
+        if (independent) {
+          # Independent Ordinal: Just error term (epsilon)
+          epsilon <- paste0("epsilon_", response, suffix)
+          tau_e <- paste0("tau_e_", response, suffix)
 
-        # Handle multi-tree
-        prec_index <- if (multi.tree) {
-          "Prec_phylo_fixed[1:N, 1:N, K]"
+          model_lines <- c(
+            model_lines,
+            paste0("  # Independent residual error for ordinal: ", response),
+            paste0("  for (i in 1:N) {"),
+            paste0("    ", epsilon, "[i] ~ dnorm(0, ", tau_e, ")"),
+            paste0("    ", err, "[i] <- ", epsilon, "[i]"),
+            paste0("  }")
+          )
         } else {
-          "Prec_phylo_fixed[1:N, 1:N]"
-        }
+          # Random Effects Formulation (Default/Optimised)
+          # Note: Ordinal currently only supports optimized formulation in this codebase structure
+          u_std <- paste0("u_std_", response, suffix)
+          u <- paste0("u_", response, suffix)
+          epsilon <- paste0("epsilon_", response, suffix)
+          tau_u <- paste0("tau_u_", response, suffix)
+          tau_e <- paste0("tau_e_", response, suffix)
 
-        model_lines <- c(
-          model_lines,
-          paste0("  # Random effects for ordinal: ", response),
-          paste0("  ", u_std, "[1:N] ~ dmnorm(zeros[1:N], ", prec_index, ")"),
-          paste0("  for (i in 1:N) {"),
-          paste0("    ", u, "[i] <- ", u_std, "[i] / sqrt(", tau_u, ")"),
-          paste0("    ", epsilon, "[i] ~ dnorm(0, ", tau_e, ")"),
-          paste0("    ", err, "[i] <- ", u, "[i] + ", epsilon, "[i]"),
-          paste0("  }")
-        )
+          # Handle multi-tree
+          prec_index <- if (multi.tree) {
+            "Prec_phylo_fixed[1:N, 1:N, K]"
+          } else {
+            "Prec_phylo_fixed[1:N, 1:N]"
+          }
+
+          model_lines <- c(
+            model_lines,
+            paste0("  # Random effects for ordinal: ", response),
+            paste0("  ", u_std, "[1:N] ~ dmnorm(zeros[1:N], ", prec_index, ")"),
+            paste0("  for (i in 1:N) {"),
+            paste0("    ", u, "[i] <- ", u_std, "[i] / sqrt(", tau_u, ")"),
+            paste0("    ", epsilon, "[i] ~ dnorm(0, ", tau_e, ")"),
+            paste0("    ", err, "[i] <- ", u, "[i] + ", epsilon, "[i]"),
+            paste0("  }")
+          )
+        }
       } else if (dist == "poisson") {
         # Poisson error term: err[1:N]
         # Single phylogenetic effect (like ordinal)
         err <- paste0("err_", response, suffix)
 
-        if (optimise) {
+        if (independent) {
+          # Independent Poisson: Just error term (epsilon/overdispersion)
+          epsilon <- paste0("epsilon_", response, suffix)
+          tau_e <- paste0("tau_e_", response, suffix)
+
+          model_lines <- c(
+            model_lines,
+            paste0("  # Independent residual error for Poisson: ", response),
+            paste0("  for (i in 1:N) {"),
+            paste0("    ", epsilon, "[i] ~ dnorm(0, ", tau_e, ")"),
+            paste0("    ", err, "[i] <- ", epsilon, "[i]"),
+            paste0("  }")
+          )
+        } else if (optimise) {
           u_std <- paste0("u_std_", response, suffix)
           u <- paste0("u_", response, suffix)
           epsilon <- paste0("epsilon_", response, suffix)
@@ -978,7 +1061,23 @@ phybase_model <- function(
       # Only generate lambda/tau priors if NOT using GLMM (missing data)
       # For GLMM, we generate specific priors in the covariance section
       if (is.null(vars_with_na) || !response %in% vars_with_na) {
-        if (optimise) {
+        if (independent) {
+          # Independent Priors (only tau_e)
+          # We can also generate sigma for monitoring convenience
+          model_lines <- c(
+            model_lines,
+            paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)"),
+            paste0(
+              "  sigma",
+              response,
+              suffix,
+              " <- 1/sqrt(tau_e_",
+              response,
+              suffix,
+              ")"
+            )
+          )
+        } else if (optimise) {
           # Random Effects Priors (tau_u, tau_e)
           model_lines <- c(
             model_lines,
@@ -1039,7 +1138,16 @@ phybase_model <- function(
     dist <- dist_list[[response]] %||% "gaussian"
     if (dist == "multinomial") {
       K_var <- paste0("K_", response)
-      if (optimise) {
+      if (independent) {
+        model_lines <- c(
+          model_lines,
+          paste0("  # Independent Priors for ", response, " (Multinomial)"),
+          paste0("  for (k in 2:", K_var, ") {"),
+          paste0("    alpha_", response, "[k] ~ dnorm(0, 1.0E-6)"),
+          paste0("    tau_e_", response, "[k] ~ dgamma(1, 1)"),
+          "  }"
+        )
+      } else if (optimise) {
         model_lines <- c(
           model_lines,
           paste0("  # Priors for ", response, " (Multinomial)"),
@@ -1130,24 +1238,35 @@ phybase_model <- function(
           ),
           "  }",
           # Variance components
-          paste0("  tau_u_", response, suffix, " ~ dgamma(1, 1)"),
-          paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)"),
-          # Derived lambda
-          paste0(
-            "  lambda_",
-            response,
-            suffix,
-            " <- (1/tau_u_",
-            response,
-            suffix,
-            ") / ((1/tau_u_",
-            response,
-            suffix,
-            ") + (1/tau_e_",
-            response,
-            suffix,
-            "))"
-          )
+          if (independent) {
+            # Independent: Only tau_e
+            c(
+              paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)"),
+              paste0("  # No tau_u or lambda for independent model")
+            )
+          } else {
+            # Structured: tau_u and tau_e and lambda
+            c(
+              paste0("  tau_u_", response, suffix, " ~ dgamma(1, 1)"),
+              paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)"),
+              # Derived lambda
+              paste0(
+                "  lambda_",
+                response,
+                suffix,
+                " <- (1/tau_u_",
+                response,
+                suffix,
+                ") / ((1/tau_u_",
+                response,
+                suffix,
+                ") + (1/tau_e_",
+                response,
+                suffix,
+                "))"
+              )
+            )
+          }
         )
       }
 
@@ -1178,24 +1297,32 @@ phybase_model <- function(
           model_lines,
           paste0("  # Priors for ", response, suffix, " (Poisson)"),
           # Variance components
-          paste0("  tau_u_", response, suffix, " ~ dgamma(1, 1)"),
-          paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)"),
-          # Derived lambda
-          paste0(
-            "  lambda_",
-            response,
-            suffix,
-            " <- (1/tau_u_",
-            response,
-            suffix,
-            ") / ((1/tau_u_",
-            response,
-            suffix,
-            ") + (1/tau_e_",
-            response,
-            suffix,
-            "))"
-          )
+          if (independent) {
+            c(
+              paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)")
+            )
+          } else {
+            c(
+              paste0("  tau_u_", response, suffix, " ~ dgamma(1, 1)"),
+              paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)"),
+              # Derived lambda
+              paste0(
+                "  lambda_",
+                response,
+                suffix,
+                " <- (1/tau_u_",
+                response,
+                suffix,
+                ") / ((1/tau_u_",
+                response,
+                suffix,
+                ") + (1/tau_e_",
+                response,
+                suffix,
+                "))"
+              )
+            )
+          }
         )
       }
 
@@ -1231,24 +1358,32 @@ phybase_model <- function(
           model_lines,
           paste0("  # Priors for ", response, suffix, " (Negative Binomial)"),
           # Variance components
-          paste0("  tau_u_", response, suffix, " ~ dgamma(1, 1)"),
-          paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)"),
-          # Derived lambda
-          paste0(
-            "  lambda_",
-            response,
-            suffix,
-            " <- (1/tau_u_",
-            response,
-            suffix,
-            ") / ((1/tau_u_",
-            response,
-            suffix,
-            ") + (1/tau_e_",
-            response,
-            suffix,
-            "))"
-          ),
+          if (independent) {
+            c(
+              paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)")
+            )
+          } else {
+            c(
+              paste0("  tau_u_", response, suffix, " ~ dgamma(1, 1)"),
+              paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)"),
+              # Derived lambda
+              paste0(
+                "  lambda_",
+                response,
+                suffix,
+                " <- (1/tau_u_",
+                response,
+                suffix,
+                ") / ((1/tau_u_",
+                response,
+                suffix,
+                ") + (1/tau_e_",
+                response,
+                suffix,
+                "))"
+              )
+            )
+          },
           # Size parameter (controls overdispersion)
           paste0(
             "  r_",
@@ -1286,6 +1421,25 @@ phybase_model <- function(
 
   # Priors for regression coefficients
   unique_betas <- unique(unlist(beta_counter))
+
+  # Exclude multinomial betas (arrays)
+  multinomial_betas <- c()
+  for (response in names(response_counter)) {
+    if ((dist_list[[response]] %||% "gaussian") == "multinomial") {
+      for (eq in eq_list) {
+        if (eq$response == response) {
+          for (pred in eq$predictors) {
+            multinomial_betas <- c(
+              multinomial_betas,
+              paste0("beta_", response, "_", pred)
+            )
+          }
+        }
+      }
+    }
+  }
+  unique_betas <- setdiff(unique_betas, multinomial_betas)
+
   for (beta in unique_betas) {
     model_lines <- c(model_lines, paste0("  ", beta, " ~ dnorm(0, 1.0E-6)"))
   }
@@ -1661,7 +1815,20 @@ phybase_model <- function(
       paste0("  }")
     )
 
-    if (optimise) {
+    if (independent) {
+      # Independent imputation (i.i.d normal)
+      # Unless latent & standardized (handled below)
+      if (is_latent && standardize_latent) {
+        # Use N(0,1) prior handled in the standardized block
+      } else {
+        model_lines <- c(
+          model_lines,
+          paste0("  for (i in 1:N) {"),
+          paste0("    ", var, "[i] ~ dnorm(mu", var, "[i], tau_e_", var, ")"),
+          paste0("  }")
+        )
+      }
+    } else if (optimise) {
       # Optimized Random Effects Formulation for Predictors
       u_std <- paste0("u_std_", var)
       u <- paste0("u_", var)
@@ -1779,7 +1946,14 @@ phybase_model <- function(
         )
       )
     } else {
-      if (optimise) {
+      if (independent) {
+        # Independent Predictor Prior
+        model_lines <- c(
+          model_lines,
+          paste0("  tau_e_", var, " ~ dgamma(1, 1)"),
+          paste0("  sigma", var, " <- 1/sqrt(tau_e_", var, ")")
+        )
+      } else if (optimise) {
         model_lines <- c(
           model_lines,
           paste0("  lambda", var, " ~ dunif(0, 1)"),
