@@ -506,6 +506,29 @@ phybase_run <- function(
   induced_cors <- NULL
 
   if (dsep) {
+    # Auto-detect latent variables: variables in equations but not in data
+    if (is.null(latent)) {
+      vars_in_equations <- unique(unlist(lapply(equations, all.vars)))
+      vars_in_data <- names(data)
+
+      # Find variables that appear in equations but not in data
+      potential_latents <- setdiff(vars_in_equations, vars_in_data)
+
+      if (length(potential_latents) > 0) {
+        # Auto-detect latent variables
+        latent <- potential_latents
+
+        if (!quiet) {
+          message(
+            "Auto-detected latent variable(s): ",
+            paste(latent, collapse = ", "),
+            "\n(Variables in equations but not in data will be treated as latent.)\n",
+            "Generating m-separation tests for MAG..."
+          )
+        }
+      }
+    }
+
     if (!quiet) {
       if (!is.null(latent)) {
         message("Generating m-separation tests (MAG with latent variables)...")
