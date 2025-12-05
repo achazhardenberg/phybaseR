@@ -1328,6 +1328,8 @@ phybase_run <- function(
           autoburnin = FALSE
         )
         psrf <- gelman_diag$psrf
+        print("DEBUG: gelman.diag PSRF head:")
+        print(head(psrf))
 
         # Add R-hat to summary statistics
         # summary(samples) returns a list with 'statistics' and 'quantiles'
@@ -1340,15 +1342,12 @@ phybase_run <- function(
         )
 
         if (length(common_params) > 0) {
-          # Create a new column for R-hat
-          rhat_col <- rep(NA, nrow(sum_stats$statistics))
+          sum_stats$statistics <- cbind(sum_stats$statistics, Rhat = NA)
 
-          # Match by parameter name
-          param_indices <- match(common_params, rownames(sum_stats$statistics))
-          rhat_col[param_indices] <- psrf[common_params, "Point est."]
-
-          # Add to statistics matrix
-          sum_stats$statistics <- cbind(sum_stats$statistics, Rhat = rhat_col)
+          # Using name-based indexing is safer than match() indices if ordering differs
+          for (param in common_params) {
+            sum_stats$statistics[param, "Rhat"] <- psrf[param, "Point est."]
+          }
         }
       },
       error = function(e) {
