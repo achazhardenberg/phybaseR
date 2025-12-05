@@ -406,8 +406,8 @@ phybase_model <- function(
         tau_scalar <- paste0("tau", response, suffix)
 
         # Check if this variable has missing data
-        if (!is.null(vars_with_na) && response %in% vars_with_na) {
-          # Use Latent Variable (GLMM) approach for missing data
+        if (!is.null(vars_with_na) && response %in% vars_with_na && !optimise) {
+          # Use Latent Variable (GLMM) approach for missing data (Only if optimisation disabled)
           # Y[i] ~ dnorm(mu[i] + err[i], tau_res)
           # err[1:N] ~ dmnorm(0, tau_phylo * inv(VCV))
 
@@ -1081,7 +1081,9 @@ phybase_model <- function(
 
       # Only generate lambda/tau priors if NOT using GLMM (missing data)
       # For GLMM, we generate specific priors in the covariance section
-      if (is.null(vars_with_na) || !response %in% vars_with_na) {
+      # Only generate lambda/tau priors if NOT using GLMM (missing data),
+      # UNLESS we are optimizing (which uses standard priors even for missing data)
+      if (is.null(vars_with_na) || !response %in% vars_with_na || optimise) {
         if (independent) {
           # Independent Priors (only tau_e)
           # We can also generate sigma for monitoring convenience
@@ -1558,7 +1560,10 @@ phybase_model <- function(
       dist <- dist_list[[response]] %||% "gaussian"
 
       # Skip TAU matrix for variables with missing data (using element-wise) or binomial error terms
-      use_glmm <- (!is.null(vars_with_na) && response %in% vars_with_na)
+      # Only use legacy GLMM blocking if optimisation implies marginal approach (i.e. optimise=FALSE)
+      use_glmm <- (!is.null(vars_with_na) &&
+        response %in% vars_with_na &&
+        !optimise)
 
       if (dist == "gaussian" && !use_glmm) {
         if (!optimise) {
