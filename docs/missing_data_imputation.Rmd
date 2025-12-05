@@ -1,0 +1,67 @@
+---
+title: "Missing Data Imputation in phybaseR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Missing Data Imputation in phybaseR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+    collapse = TRUE,
+    comment = "#>"
+)
+```
+
+# Missing Data Imputation in Phylogenetic Comparative Analyses: A Comparison of Approaches
+
+## The `phybaseR` Approach: Joint Bayesian Imputation
+
+`phybaseR` employs a **Joint Bayesian Imputation** strategy. In this framework, missing data points are not treated as nuisances to be removed or pre-filled, but as **latent parameters** (stochastic nodes) to be estimated.
+
+When a trait $Y$ has missing values, `phybaseR` treats the missing $Y_{miss}$ as unknown variables that are estimated simultaneously with the structural parameters (regression coefficients $\beta$, phylogenetic signal $\lambda$, etc.). The estimate for a missing value is informed by two distinct sources of information:
+
+1.  **The Structural Equation (Predictors):** The value is constrained by its causal parents in the DAG. For example, if $Y \sim \beta X$, the missing $Y_i$ is informed by $\beta X_i$.
+2.  **The Phylogeny (Relatives):** The value is constrained by the values of phylogenetically related species via the phylogenetic covariance matrix ($V$).
+
+### Mathematical Formulation
+In the JAGS model, a missing value $y_i$ is drawn from the same conditional distribution as the observed data:
+
+$$ y_i \sim \mathcal{N}(\mu_i, \Sigma) $$
+
+Where $\mu_i$ is the predicted mean from the regression equation, and the variance structure $\Sigma$ accounts for phylogenetic correlation. This means the posterior distribution of a missing value reflects both the trend line (regression) and the phylogenetic position (residuals of relatives).
+
+## Comparison with Other Approaches
+
+### 1. Complete Case Analysis (CCA)
+*   **Method:** Simply discarding any species with missing data.
+*   **Comparison:** CCA is the default in many frequentist packages (e.g., `pgls` in `caper` or `gls` in `ape`).
+*   **Drawbacks:** It drastically reduces statistical power and, more critically, leads to **biased parameter estimates** if the data are not Missing Completely At Random (MCAR). For instance, if larger species are more likely to be missing a trait, excluding them biases the evolutionary inference (Nakagawa & Freckleton, 2008). `phybaseR` avoids this bias by utilizing all available information under the Missing At Random (MAR) assumption.
+
+### 2. Single Imputation (e.g., `Rphylopars`)
+*   **Method:** Using a dedicated package like `Rphylopars` (Goolsby et al., 2017) to impute missing values *before* analysis, then running PGLS on the filled dataset.
+*   **Comparison:** While `Rphylopars` uses a sophisticated phylogenetic covariance model similar to `phybaseR` to predict values, doing this in two stages (Impute $\rightarrow$ Analyze) treats the imputed values as "known truth."
+*   **Drawbacks:** This **underestimates the uncertainty** (standard errors) of the downstream regression coefficients because it ignores the error variance associated with the imputation itself. `phybaseR` propagates this uncertainty fully: if a missing value is uncertain, the posterior of the regression slope $\beta$ will naturally be wider.
+
+### 3. Multiple Imputation (e.g., `mice`, `amelia`)
+*   **Method:** Generating $m$ imputed datasets, analyzing each separately, and pooling the results (Rubin's rules).
+*   **Comparison:** This is the "gold standard" frequentist alternative to Bayesian imputation.
+*   **Drawbacks:** Standard imputation packages (like `mice`) often assume independent data rows and **do not account for phylogeny** by default, leading to biologically unrealistic imputations (e.g., imputing a primate trait value for a missing rodent data point). While phylogenetic information can be added as eigenvectors (PVR), it is cumbersome. `phybaseR` achieves the same goal as multiple imputation but more elegantly within a single integrated model run.
+
+## Summary Table
+
+| Feature | Complete Case (e.g. `caper`) | Single Imputation (`Rphylopars` $\rightarrow$ PGLS) | Multiple Imputation (`mice`) | `phybaseR` (Joint Bayesian) |
+| :--- | :---: | :---: | :---: | :---: |
+| **Retains Sample Size** | ❌ No | ✅ Yes | ✅ Yes | ✅ Yes |
+| **Uses Phylogeny** | N/A | ✅ Yes | ⚠️ Rarely | ✅ Yes |
+| **Uses Predictors** | N/A | ✅ Yes | ✅ Yes | ✅ Yes |
+| **Propagates Uncertainty** | N/A | ❌ No | ✅ Yes | ✅ Yes |
+| **Simultaneous Estimation**| N/A | ❌ No | ❌ No | ✅ Yes |
+
+## References
+
+1.  **Goolsby, E. W., et al. (2017).** Rphylopars: fast multivariate phylogenetic comparative methods for missing data and within-species variation. *Methods in Ecology and Evolution*, 8(1), 22-27.
+2.  **Hadfield, J. D. (2010).** MCMC methods for multi-response generalized linear mixed models: the MCMCglmm R package. *Journal of Statistical Software*, 33(2), 1-22. (Uses a similar joint Bayesian approach).
+3.  **Nakagawa, S., & Freckleton, R. P. (2008).** Missing inaction: the dangers of ignoring missing data. *Trends in Ecology & Evolution*, 23(11), 592-596.
+4.  **Little, R. J., & Rubin, D. B. (2019).** *Statistical analysis with missing data*. John Wiley & Sons.

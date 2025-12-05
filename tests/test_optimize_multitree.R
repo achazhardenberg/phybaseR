@@ -83,12 +83,12 @@ cat(sprintf("✓ Optimized multi-tree model finished in %.2f seconds\n", time_op
 # 3. Verify Output
 cat("\nChecking parameter estimates:\n")
 sum_opt <- fit_opt$summary
-print(sum_opt$statistics[c("betaX", "lambdaY"), c("Mean", "SD")])
+print(sum_opt$statistics[c("beta_Y_X", "lambdaY"), c("Mean", "SD")])
 
 # Check convergence
 cat("\nChecking convergence (R-hat):\n")
 gelman <- gelman.diag(fit_opt$samples)
-key_params <- c("betaX", "lambdaY")
+key_params <- c("beta_Y_X", "lambdaY")
 print(gelman$psrf[key_params, ])
 
 if (all(gelman$psrf[key_params, "Point est."] < 1.1)) {
@@ -99,7 +99,7 @@ if (all(gelman$psrf[key_params, "Point est."] < 1.1)) {
 
 # Check parameter recovery
 cat("\nParameter Recovery:\n")
-beta_est <- sum_opt$statistics["betaX", "Mean"]
+beta_est <- sum_opt$statistics["beta_Y_X", "Mean"]
 lambda_est <- sum_opt$statistics["lambdaY", "Mean"]
 cat(sprintf("  beta: True=%.2f, Est=%.2f\n", beta, beta_est))
 cat(sprintf("  lambda: True=%.2f, Est=%.2f\n", lambda, lambda_est))
@@ -124,7 +124,7 @@ cat(sprintf("Speedup: %.2fx\n", time_unopt["elapsed"] / time_opt["elapsed"]))
 
 # Compare estimates
 sum_unopt <- fit_unopt$summary
-beta_unopt <- sum_unopt$statistics["betaX", "Mean"]
+beta_unopt <- sum_unopt$statistics["beta_Y_X", "Mean"]
 lambda_unopt <- sum_unopt$statistics["lambdaY", "Mean"]
 
 cat("\nComparing estimates (Optimized vs Unoptimized):\n")

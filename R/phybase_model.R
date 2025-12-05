@@ -61,6 +61,7 @@ phybase_model <- function(
   vars_with_na = NULL,
   induced_correlations = NULL,
   latent = NULL,
+  standardize_latent = TRUE,
   optimise = TRUE
 ) {
   # Helper: returns b if a is NULL or if a is a list element that doesn't exist
@@ -136,9 +137,8 @@ phybase_model <- function(
     for (pred in predictors) {
       key <- paste(response, pred, suffix, sep = "_")
       if (!key %in% names(beta_counter)) {
-        base <- paste0("beta", pred)
-        count <- sum(grepl(paste0("^", base), unlist(beta_counter)))
-        beta_name <- if (count == 0) base else paste0(base, count + 1)
+        # Use consistent naming: beta_Response_Predictor
+        beta_name <- paste0("beta_", response, suffix, "_", pred)
         beta_counter[[key]] <- beta_name
       }
       beta_name <- beta_counter[[key]]
@@ -801,7 +801,14 @@ phybase_model <- function(
           " and ",
           var2
         ),
-        paste0("  rho_", var1, "_", var2, " ~ dunif(-1, 1)"),
+        paste0(
+          "  z_",
+          var1,
+          "_",
+          var2,
+          " ~ dnorm(0, 1)  # Fisher Z transformation"
+        ),
+        paste0("  rho_", var1, "_", var2, " <- tanh(z_", var1, "_", var2, ")"),
         paste0("  tau_res_", var1, " ~ dgamma(1, 1)"),
         paste0("  tau_res_", var2, " ~ dgamma(1, 1)"),
         paste0("  sigma_res_", var1, " <- 1/sqrt(tau_res_", var1, ")"),
@@ -1668,51 +1675,79 @@ phybase_model <- function(
         "Prec_phylo_fixed[1:N, 1:N]"
       }
 
-      model_lines <- c(
-        model_lines,
-        paste0(
-          "  ",
-          u_std,
-          "[1:N] ~ dmnorm(zeros[1:N], ",
-          prec_index,
-          ")"
-        ),
-        paste0("  for (i in 1:N) {"),
-        paste0("    ", u, "[i] <- ", u_std, "[i] / sqrt(", tau_u, ")"),
-        paste0(
-          "    ",
-          var,
-          "[i] ~ dnorm(mu",
-          var,
-          "[i] + ",
-          u,
-          "[i], ",
-          tau_e,
-          ")"
-        ),
-        paste0("  }")
-      )
+      # If latent variable with standardize_latent = TRUE, use simple N(0,1) prior
+      if (is_latent && standardize_latent) {
+        model_lines <- c(
+          model_lines,
+          paste0("  for (i in 1:N) {"),
+          paste0(
+            "    ",
+            var,
+            "[i] ~ dnorm(0, 1)  # Standardized latent variable"
+          ),
+          paste0("  }")
+        )
+      } else {
+        # Standard random effects formulation
+        model_lines <- c(
+          model_lines,
+          paste0(
+            "  ",
+            u_std,
+            "[1:N] ~ dmnorm(zeros[1:N], ",
+            prec_index,
+            ")"
+          ),
+          paste0("  for (i in 1:N) {"),
+          paste0("    ", u, "[i] <- ", u_std, "[i] / sqrt(", tau_u, ")"),
+          paste0(
+            "    ",
+            var,
+            "[i] ~ dnorm(mu",
+            var,
+            "[i] + ",
+            u,
+            "[i], ",
+            tau_e,
+            ")"
+          ),
+          paste0("  }")
+        )
+      }
     } else {
       # Standard MVN (Marginal)
-      model_lines <- c(
-        model_lines,
-        paste0(
-          "  ",
-          var,
-          "[1:N] ~ dmnorm(mu",
-          var,
-          "[1:N], TAU",
-          tolower(var),
-          ")"
+      # If latent variable with standardize_latent = TRUE, use simple N(0,1) prior
+      if (is_latent && standardize_latent) {
+        model_lines <- c(
+          model_lines,
+          paste0("  for (i in 1:N) {"),
+          paste0(
+            "    ",
+            var,
+            "[i] ~ dnorm(0, 1)  # Standardized latent variable"
+          ),
+          paste0("  }")
         )
-      )
+      } else {
+        model_lines <- c(
+          model_lines,
+          paste0(
+            "  ",
+            var,
+            "[1:N] ~ dmnorm(mu",
+            var,
+            "[1:N], TAU",
+            tolower(var),
+            ")"
+          )
+        )
+      }
     }
 
     # For latent variables, fix tau = 1 (standardize)
     # For observed predictors, estimate tau
-    # For latent variables, fix tau = 1 (standardize)
-    # For observed predictors, estimate tau
-    if (is_latent) {
+    # Skip if standardize_latent = TRUE (variance already set in N(0,1) prior)
+    if (is_latent && !standardize_latent) {
       if (optimise) {
         model_lines <- c(
           model_lines,
@@ -1735,6 +1770,14 @@ phybase_model <- function(
           paste0("  sigma", var, " <- 1/sqrt(tau", var, ")")
         )
       }
+    } else if (is_latent && standardize_latent) {
+      # No variance parameters needed - already specified in N(0,1) prior
+      model_lines <- c(
+        model_lines,
+        paste0(
+          "  # Latent variable: fully standardized with N(0,1) prior (no variance parameters)"
+        )
+      )
     } else {
       if (optimise) {
         model_lines <- c(

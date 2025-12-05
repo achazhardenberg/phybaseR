@@ -31,5 +31,6 @@ Suggests:
     knitr,
     rmarkdown,
     testthat (>= 3.0.0),
-    MASS
+    MASS,
+    loo
 VignetteBuilder: knitr, rmarkdown

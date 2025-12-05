@@ -34,12 +34,12 @@ test_that("Full workflow: simple model parameter recovery", {
 
     # Check parameter recovery (should be close to 0.8)
     # We allow a relatively wide tolerance due to small sample size and MCMC noise
-    beta_mean <- fit$summary$statistics["betaX", "Mean"]
+    beta_mean <- fit$summary$statistics["beta_Y_X", "Mean"]
     expect_true(beta_mean > 0.4 && beta_mean < 1.2)
 
     # Check that 95% CI includes true value (0.8)
-    lower <- fit$summary$quantiles["betaX", "2.5%"]
-    upper <- fit$summary$quantiles["betaX", "97.5%"]
+    lower <- fit$summary$quantiles["beta_Y_X", "2.5%"]
+    upper <- fit$summary$quantiles["beta_Y_X", "97.5%"]
     expect_true(lower < 0.8 && upper > 0.8)
 })
 
@@ -78,6 +78,6 @@ test_that("Full workflow: missing data handling", {
     # Let's check if the model ran without error, which implies imputation worked.
 
     # Also check that beta is reasonable despite missing data
-    beta_mean <- fit$summary$statistics["betaX", "Mean"]
+    beta_mean <- fit$summary$statistics["beta_Y_X", "Mean"]
     expect_true(beta_mean > 0.0 && beta_mean < 1.0)
 })

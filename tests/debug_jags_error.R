@@ -10,18 +10,18 @@ Y <- rnorm(N)
 X <- rnorm(N)
 
 data <- list(
-    Y = Y,
-    X = X,
-    N = N,
-    VCV = VCV,
-    ID = ID
+  Y = Y,
+  X = X,
+  N = N,
+  VCV = VCV,
+  ID = ID
 )
 
 model_string <- "
 model {
   # Structural equations
   for (i in 1:N) {
-    muY[i] <- alphaY + betaX*X[i]
+    muY[i] <- alphaY + beta_Y_X*X[i]
   }
   # Multivariate normal likelihoods
   Y[1:N] ~ dmnorm(muY[], TAUy)
@@ -29,7 +29,7 @@ model {
   alphaY ~ dnorm(0, 1.0E-6)
   lambdaY ~ dunif(0, 1)
   tauY ~ dgamma(1, 1)
-  betaX ~ dnorm(0, 1.0E-6)
+  beta_Y_X ~ dnorm(0, 1.0E-6)
   
   # Covariance structure for responses
   MlamY <- lambdaY*VCV + (1-lambdaY)*ID

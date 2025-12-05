@@ -29,10 +29,10 @@ test_that("Regression test: simple Gaussian model", {
 
     # Test parameter recovery (should be close to 0.7)
     # Allow wide tolerance since this is a small sample
-    beta_mean <- fit$summary$statistics["betaX", "Mean"]
+    beta_mean <- fit$summary$statistics["beta_Y_X", "Mean"]
     expect_true(
         beta_mean > 0.3 && beta_mean < 1.1,
-        info = paste("betaX mean was", round(beta_mean, 3))
+        info = paste("beta_Y_X mean was", round(beta_mean, 3))
     )
 })
 
@@ -70,10 +70,10 @@ test_that("Regression test: binomial model", {
     expect_s3_class(fit, "phybase")
 
     # Check that logit coefficient exists
-    expect_true("betaX" %in% rownames(fit$summary$statistics))
+    expect_true("beta_Y_X" %in% rownames(fit$summary$statistics))
 
     # Coefficient should be positive (we simulated positive relationship)
-    beta_mean <- fit$summary$statistics["betaX", "Mean"]
+    beta_mean <- fit$summary$statistics["beta_Y_X", "Mean"]
     expect_true(beta_mean > 0)
 })
 
@@ -106,9 +106,9 @@ test_that("Regression test: model with missing data", {
     expect_s3_class(fit, "phybase")
 
     # Should have estimated parameters despite missing data
-    expect_true("betaX" %in% rownames(fit$summary$statistics))
+    expect_true("beta_Y_X" %in% rownames(fit$summary$statistics))
 
     # Parameter should be in reasonable range
-    beta_mean <- fit$summary$statistics["betaX", "Mean"]
+    beta_mean <- fit$summary$statistics["beta_Y_X", "Mean"]
     expect_true(beta_mean > 0.2 && beta_mean < 1.0)
 })
