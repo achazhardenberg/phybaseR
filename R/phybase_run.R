@@ -1,7 +1,22 @@
 #' Run a Phylogenetic Bayesian Structural Equation model (PhyBaSE)
 #'
-#' @param data A named list of data for JAGS.
-#' @param tree (Deprecated alias for \code{structure}). A single phylogenetic tree of class \code{"phylo"} or a list of trees. Use \code{structure} instead for new code.
+#' @param data Data for the model. Accepts:
+#'   \itemize{
+#'     \item \code{data.frame}: A data frame with variables as columns. Variables needed
+#'           for the model are automatically extracted from the equations. Extra columns
+#'           are ignored.
+#'     \item \code{list}: A named list where each element is a vector of values
+#'           (traditional format for backward compatibility).
+#'   }
+#' @param equations A list of model formulas describing the structural equation model.
+#' @param id_col Character string specifying the column name in a data.frame containing
+#'   unit identifiers (species, individuals, sites, etc.). This is used to:
+#'   \itemize{
+#'     \item Match data rows to tree tip labels (for phylogenetic models)
+#'     \item Handle repeated measures (multiple rows per unit share the same covariance)
+#'   }
+#'   If \code{NULL} (default): uses meaningful row names if available.
+#'   Ignored when \code{data} is already a list.
 #' @param structure The covariance structure for the model. Accepts:
 #'   \itemize{
 #'     \item \code{"phylo"} object: Phylogenetic tree (Standard PGLS/PhyloSEM).
@@ -9,7 +24,8 @@
 #'     \item \code{NULL}: Independent model (Standard SEM, no covariance structure).
 #'     \item \code{matrix}: Custom covariance or precision matrix (e.g., spatial connectivity, kinship).
 #'   }
-#' @param equations A list of model formulas describing the structural equation model.
+#' @param tree (Deprecated alias for \code{structure}). A single phylogenetic tree of class
+#'   \code{"phylo"} or a list of trees. Use \code{structure} instead for new code.
 #' @param monitor Parameter monitoring mode. Options:
 #'   \itemize{
 #'     \item \code{"interpretable"} (default): Monitor only scientifically meaningful parameters:
@@ -91,6 +107,7 @@
 phybase_run <- function(
   data,
   equations,
+  id_col = NULL,
   structure = NULL,
   tree = NULL,
   monitor = NULL,
@@ -144,10 +161,97 @@ phybase_run <- function(
     stop("Argument 'equations' must be provided.")
   }
 
-  # Ensure data is a list (crucial for adding matrices like VCV)
-  # Preserve attributes (like categorical_vars) which are lost during as.list()
-  data_attrs <- attributes(data)
-  data <- as.list(data)
+  # --- Data Frame Preprocessing ---
+  # If data is a data.frame, convert to list format expected by the model
+  original_data <- data
+  if (is.data.frame(data)) {
+    # Extract all variable names from equations
+    eq_vars <- unique(unlist(lapply(equations, all.vars)))
+
+    # Check which variables are in the data frame
+    available_vars <- intersect(eq_vars, colnames(data))
+    missing_vars <- setdiff(eq_vars, colnames(data))
+
+    # Some "missing" vars might be latent - that's OK
+    if (!is.null(latent)) {
+      missing_vars <- setdiff(missing_vars, latent)
+    }
+
+    if (length(missing_vars) > 0 && length(available_vars) == 0) {
+      stop(
+        "None of the variables in equations found in data frame. ",
+        "Missing: ",
+        paste(missing_vars, collapse = ", ")
+      )
+    }
+
+    if (length(missing_vars) > 0 && !quiet) {
+      message(
+        "Note: Variables not in data (may be latent/derived): ",
+        paste(missing_vars, collapse = ", ")
+      )
+    }
+
+    # Handle id_col for matching to tree/structure
+    row_ids <- NULL
+    if (!is.null(id_col)) {
+      if (!id_col %in% colnames(data)) {
+        stop("id_col '", id_col, "' not found in data frame columns.")
+      }
+      row_ids <- data[[id_col]]
+      # Remove id_col from variables to include (it's metadata, not a model variable)
+      available_vars <- setdiff(available_vars, id_col)
+    } else {
+      # Try to use row names if they're meaningful (not just 1, 2, 3...)
+      rn <- rownames(data)
+      if (!is.null(rn) && !all(rn == as.character(seq_len(nrow(data))))) {
+        row_ids <- rn
+      }
+    }
+
+    # Also check for variability-related columns (X_se, X_obs patterns)
+    se_cols <- grep("_se$", colnames(data), value = TRUE)
+    obs_cols <- grep("_obs$", colnames(data), value = TRUE)
+    extra_cols <- c(se_cols, obs_cols)
+
+    # Convert to list format
+    data_list <- list()
+    for (var in c(available_vars, extra_cols)) {
+      if (var %in% colnames(original_data)) {
+        data_list[[var]] <- original_data[[var]]
+      }
+    }
+
+    # Set names on vectors if we have row_ids
+    if (!is.null(row_ids)) {
+      for (var in names(data_list)) {
+        if (
+          is.vector(data_list[[var]]) &&
+            length(data_list[[var]]) == length(row_ids)
+        ) {
+          names(data_list[[var]]) <- row_ids
+        }
+      }
+    }
+
+    # Preserve any existing attributes
+    data_attrs <- attributes(original_data)
+    data <- data_list
+
+    if (!quiet) {
+      message(
+        "Converted data.frame to list with ",
+        length(data),
+        " variables: ",
+        paste(names(data), collapse = ", ")
+      )
+    }
+  } else {
+    # Ensure data is a list (crucial for adding matrices like VCV)
+    # Preserve attributes (like categorical_vars) which are lost during as.list()
+    data_attrs <- attributes(data)
+    data <- as.list(data)
+  }
 
   # Restore categorical_vars if present
   if ("categorical_vars" %in% names(data_attrs)) {
