@@ -1320,7 +1320,13 @@ phybase_run <- function(
   if (n.chains > 1) {
     tryCatch(
       {
-        gelman_diag <- coda::gelman.diag(samples, multivariate = FALSE)
+        # Use autoburnin=FALSE to avoid discarding half the chain (we already burned in)
+        # Use transform=TRUE generally helps, but can be problematic for constant vars
+        gelman_diag <- coda::gelman.diag(
+          samples,
+          multivariate = FALSE,
+          autoburnin = FALSE
+        )
         psrf <- gelman_diag$psrf
 
         # Add R-hat to summary statistics
