@@ -506,6 +506,17 @@ phybase_run <- function(
   induced_cors <- NULL
 
   if (dsep) {
+    # Force WAIC and DIC off for d-separation testing (not needed for conditional independence tests)
+    if (WAIC || DIC) {
+      if (!quiet) {
+        message(
+          "Note: WAIC and DIC are not computed for d-separation tests (not needed for conditional independence testing)."
+        )
+      }
+      WAIC <- FALSE
+      DIC <- FALSE
+    }
+
     # Auto-detect latent variables: variables in equations but not in data
     if (is.null(latent)) {
       vars_in_equations <- unique(unlist(lapply(equations, all.vars)))
