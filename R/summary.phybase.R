@@ -192,6 +192,30 @@ summary.phybase <- function(object, ...) {
             combined <- cbind(combined, n.eff = eff_aligned)
         }
 
+        # Round output for cleaner display
+        # Mean, SD, SE, quantiles: 3 decimal places
+        # Rhat: 3 decimal places
+        # n.eff: 0 decimal places (integer)
+        cols_to_round_3 <- intersect(
+            colnames(combined),
+            c(
+                "Mean",
+                "SD",
+                "Naive SE",
+                "Time-series SE",
+                "2.5%",
+                "50%",
+                "97.5%",
+                "Rhat"
+            )
+        )
+        for (col in cols_to_round_3) {
+            combined[, col] <- round(combined[, col], 3)
+        }
+        if ("n.eff" %in% colnames(combined)) {
+            combined[, "n.eff"] <- round(combined[, "n.eff"], 0)
+        }
+
         print(combined)
 
         if (!is.null(object$DIC)) {
