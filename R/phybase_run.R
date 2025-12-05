@@ -154,120 +154,132 @@ phybase_run <- function(
     attr(data, "categorical_vars") <- data_attrs$categorical_vars
   }
 
-  # Handle tree validation and type detection
-  is_multiple <- inherits(tree, "multiPhylo") ||
-    (is.list(tree) && all(sapply(tree, inherits, "phylo")))
+  # --- Structure Processing ---
+  structures <- list()
+  is_multiple <- FALSE
+  N <- NULL
 
-  # Determine N and covariance structure
+  # 1. Normalize Input to List
   if (is.null(tree)) {
-    # CASE 1: Independent Data (Standard SEM)
-    is_spatial <- FALSE
-    is_phylo <- FALSE
+    # Independent
+  } else if (
+    inherits(tree, "multiPhylo") ||
+      (is.list(tree) && all(sapply(tree, inherits, "phylo")))
+  ) {
+    structures[["phylo"]] <- tree
+    is_multiple <- TRUE
+  } else if (inherits(tree, "phylo")) {
+    structures[["phylo"]] <- tree
+  } else if (is.matrix(tree)) {
+    structures[["custom"]] <- tree
+  } else if (is.list(tree)) {
+    structures <- tree
+    # Safety Check for list
+    if (any(sapply(structures, inherits, "multiPhylo"))) is_multiple <- TRUE
+  } else {
+    stop("Unknown structure format. Must be tree, matrix, or list of them.")
+  }
 
-    # Determine N from data
-    # Find a vector in data to get length
+  structure_names <- names(structures)
+  if (is.null(structure_names) && length(structures) > 0) {
+    structure_names <- paste0("Struct", seq_along(structures))
+    names(structures) <- structure_names
+  }
+
+  # 2. Process Structures
+  if (length(structures) == 0) {
+    # Independent Logic: Determine N from data
     potential_vectors <- Filter(function(x) is.vector(x) || is.factor(x), data)
     if (length(potential_vectors) > 0) {
       N <- length(potential_vectors[[1]])
     } else {
       stop(
-        "Could not determine N (sample size) from data. Please provide a tree or ensure data contains vectors."
+        "Could not determine N from data. Please provide structure or vector data."
       )
     }
-
-    # No VCV or Prec needed
-    VCV <- NULL
-    ID <- diag(N)
-  } else if (is.matrix(tree)) {
-    # CASE 2: Custom Covariance Matrix (Spatial/Animal Model)
-    is_spatial <- TRUE # Treat as generic "spatial/structured"
-    is_phylo <- FALSE
-
-    if (nrow(tree) != ncol(tree)) {
-      stop("Custom covariance matrix must be square.")
-    }
-
-    N <- nrow(tree)
-    VCV <- tree
-    ID <- diag(N)
-
-    if (!quiet) message(sprintf("Using custom covariance matrix (N = %d)", N))
-
-    # If matrix is precision (sparse or dense), we might need to invert it back to VCV for some logic?
-    # For now assume it is Covariance (VCV).
   } else {
-    # CASE 3: Phylogenetic Tree (Original Behavior)
-    is_spatial <- FALSE
-    is_phylo <- TRUE
+    # Structured Logic
 
-    # Standardize tree edge lengths to max branching time
-    # This ensures lambda is scaled 0-1 for proper interpretation
+    # Helper to standardize tree
     standardize_tree <- function(phylo_tree) {
       max_bt <- max(ape::branching.times(phylo_tree))
-      # Check if already standardized (max branching time ≈ 1)
       if (abs(max_bt - 1.0) > 0.01) {
         if (!quiet) {
-          message(sprintf(
-            "Standardizing tree edge lengths (max branching time: %.2f -> 1.0)",
-            max_bt
-          ))
+          message(sprintf("Standardizing tree (max_bt: %.2f -> 1.0)", max_bt))
         }
         phylo_tree$edge.length <- phylo_tree$edge.length / max_bt
       }
       return(phylo_tree)
     }
 
-    if (is_multiple) {
-      # Standardize each tree
-      tree <- lapply(tree, standardize_tree)
-      # Create multi-tree VCV array
-      K <- length(tree)
-      N <- length(tree[[1]]$tip.label)
-      multiVCV <- array(0, dim = c(N, N, K))
-      for (k in 1:K) {
-        multiVCV[,, k] <- ape::vcv.phylo(tree[[k]])
-      }
-      data$multiVCV <- multiVCV
-      data$Ntree <- K
-      VCV <- multiVCV[,, 1] # Use first for ID dimension
-      ID <- diag(N)
-    } else {
-      # Standardize single tree
-      tree <- standardize_tree(tree)
-      VCV <- ape::vcv.phylo(tree)
-      ID <- diag(nrow(VCV))
-      N <- nrow(VCV)
-      data$VCV <- VCV
-    }
-  }
+    for (s_name in structure_names) {
+      obj <- structures[[s_name]]
 
-  data$ID <- ID
-  data$N <- N
+      if (is_multiple && s_name == "phylo") {
+        # Multi-Tree (Legacy)
+        obj <- lapply(obj, standardize_tree)
+        K_tree <- length(obj)
+        N_tree <- length(obj[[1]]$tip.label)
 
-  # Pre-compute inverse VCV for optimized random effects model
-  # Only if we have a structure (is_phylo or is_spatial)
-  if (optimise && (is_phylo || is_spatial)) {
-    if (is_multiple) {
-      # For multiple trees, we need an array of precision matrices
-      # Dimension: [N, N, K]
-      K <- length(tree)
-      Prec_phylo_fixed <- array(0, dim = c(N, N, K))
-      for (k in 1:K) {
-        Prec_phylo_fixed[,, k] <- solve(ape::vcv.phylo(tree[[k]]))
+        if (is.null(N)) {
+          N <- N_tree
+        } else if (N != N_tree) {
+          stop("Dimension mismatch in multi-tree")
+        }
+
+        # Compute Array of Precisions
+        Prec_array <- array(0, dim = c(N, N, K_tree))
+        for (k in 1:K_tree) {
+          Prec_array[,, k] <- solve(ape::vcv.phylo(obj[[k]]))
+        }
+
+        data[[paste0("Prec_", s_name)]] <- Prec_array
+        data$Ntree <- K_tree
+
+        # Legacy VCV/multiVCV required for some logic?
+        # If 'optimise=FALSE', phybase_model might use VCV.
+        # But we are moving towards requiring optimise=TRUE for multiple structures.
+        # For legacy single multi-tree, we might want to keep 'multiVCV' for safe Measure.
+        if (length(structures) == 1) {
+          multiVCV <- array(0, dim = c(N, N, K_tree))
+          for (k in 1:K_tree) {
+            multiVCV[,, k] <- ape::vcv.phylo(obj[[k]])
+          }
+          data$multiVCV <- multiVCV
+        }
+      } else if (inherits(obj, "phylo")) {
+        obj <- standardize_tree(obj)
+        V <- ape::vcv.phylo(obj)
+        P <- solve(V)
+        data[[paste0("Prec_", s_name)]] <- P
+
+        if (is.null(N)) {
+          N <- nrow(V)
+        } else if (nrow(V) != N) {
+          stop(paste("Dimension mismatch in", s_name))
+        }
+
+        if (length(structures) == 1 && optimise == FALSE) {
+          data$VCV <- V
+        }
+      } else if (is.matrix(obj)) {
+        V <- obj
+        P <- solve(V)
+        data[[paste0("Prec_", s_name)]] <- P
+
+        if (is.null(N)) {
+          N <- nrow(V)
+        } else if (nrow(V) != N) {
+          stop(paste("Dimension mismatch in", s_name))
+        }
       }
-      data$Prec_phylo_fixed <- Prec_phylo_fixed
-    } else {
-      # Single structure (tree or matrix)
-      data$Prec_phylo_fixed <- solve(VCV)
     }
+
     data$zeros <- rep(0, N)
-
-    # Remove VCV from data to avoid "Unused variable" warning in JAGS
-    # The optimized model uses Prec_phylo_fixed instead
-    if (!is_multiple) {
-      data$VCV <- NULL
-    }
   }
+
+  data$ID <- diag(N)
+  data$N <- N
 
   # Handle multinomial and ordinal data
   if (!is.null(distribution)) {
@@ -1067,7 +1079,7 @@ phybase_run <- function(
     latent = latent,
     standardize_latent = standardize_latent,
     optimise = optimise,
-    independent = (!is_phylo && !is_spatial)
+    structure_names = structure_names
   )
 
   model_string <- model_output$model
@@ -1110,7 +1122,8 @@ phybase_run <- function(
       extract_names("^\\s*alpha"),
       extract_names("^\\s*lambda"),
       extract_names("^\\s*tau"),
-      extract_names("^\\s*rho")
+      extract_names("^\\s*rho"),
+      extract_names("^\\s*sigma")
     ))
 
     # Remove tau_obs_* (deterministic constants, not stochastic parameters)
@@ -1146,6 +1159,8 @@ phybase_run <- function(
           gsub("^alpha", "", all_params) %in% response_vars &
           !gsub("^alpha", "", all_params) %in% mag_exogenous_vars) | # Response intercepts, excluding MAG exogenous
           grepl("^beta", all_params) | # All regression coefficients
+          grepl("^rho", all_params) | # Induced correlations
+          grepl("^sigma", all_params) | # Variance components
           grepl("^rho", all_params) | # Induced correlations
           (grepl("^lambda", all_params) &
             gsub("^lambda", "", all_params) %in% response_vars &

@@ -90,3 +90,14 @@ fit <- phybase_run(data, tree, equations = eqs, n.iter = 1000, optimize = TRUE)
 3. **Tests** (not started)
    - Create `tests/test_optimize_simple.R`
    - Create `tests/test_optimize_sem8.R`
+
+## Multiple Covariance Support (2025-12-05)
+### Completed
+- ✅ Refactored `phybase_run.R` to process lists of covariance structures (Phylo, Spatial, Custom).
+- ✅ Updated `phybase_model.R` Gaussian likelihood to model additive random effects (`u_phylo + u_spatial`).
+- ✅ Implemented variance partitioning: estimated separate variance components (`sigma_phylo`, `sigma_spatial`) instead of aggregated lambda.
+- ✅ Updated parameter monitoring to include `sigma` parameters.
+- ✅ Verified with `tests/test_multiple_covariance.R`: Successfully recovered simulated parameters for Phylo + Spatial model.
+
+### Pending
+- ⚠️ Non-Gaussian families (Binomial/Multinomial) currently rely on single-structure logic. Need updates to support multiple additive effects.
