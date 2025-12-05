@@ -1336,8 +1336,10 @@ phybase_run <- function(
         if (length(common_params) > 0) {
           # Create a new column for R-hat
           rhat_col <- rep(NA, nrow(sum_stats$statistics))
-          names(rhat_col) <- rownames(sum_stats$statistics)
-          rhat_col[common_params] <- psrf[common_params, "Point est."]
+
+          # Match by parameter name
+          param_indices <- match(common_params, rownames(sum_stats$statistics))
+          rhat_col[param_indices] <- psrf[common_params, "Point est."]
 
           # Add to statistics matrix
           sum_stats$statistics <- cbind(sum_stats$statistics, Rhat = rhat_col)
