@@ -8,17 +8,38 @@
 #' @param n.thin Thinning interval. Default is 10.
 #'
 #' @return A named vector containing:
-#' \item{waic}{The calculated WAIC value.}
+#' \item{waic}{The WAIC value (lower is better for model comparison).}
 #' \item{p_waic}{The effective number of parameters (penalty term).}
 #'
 #' @details
-#' This function uses the \code{dic} module in JAGS to monitor \code{WAIC} and \code{deviance}.
-#' The WAIC is calculated as: \code{WAIC = mean(deviance) + p_waic}.
+#' This function uses the \code{dic} module in JAGS to monitor deviance and what JAGS
+#' calls "WAIC" (which is actually p_waic, the effective number of parameters).
+#'
+#' The true WAIC is calculated as:
+#' \deqn{WAIC = \bar{D} + p_{WAIC}}
+#' where \eqn{\bar{D}} is the mean deviance and \eqn{p_{WAIC}} is the effective number
+#' of parameters (computed as the variance of the log-likelihood across MCMC samples).
+#'
+#' **What you get**:
+#' \itemize{
+#'   \item \code{waic}: The full WAIC for model comparison (lower is better)
+#'   \item \code{p_waic}: Effective number of parameters (useful for understanding model complexity)
+#' }
+#'
+#' **Note**: JAGS's "WAIC" monitor name is misleading - it returns p_waic, not full WAIC.
+#' This function correctly computes the full WAIC by combining deviance and p_waic.
 #'
 #' @examples
 #' \dontrun{
-#'   fit <- phybase_run(data, tree, equations)
-#'   waic_res <- phybase_waic(fit, n.iter = 1000)
+#'   fit <- phybase_run(data, tree, equations, WAIC = TRUE)
+#'
+#'   # Access WAIC results
+#'   fit$WAIC
+#'   #    waic  p_waic
+#'   # 1234.5    45.2
+#'
+#'   # Or recompute with different settings
+#'   waic_res <- phybase_waic(fit, n.iter = 5000)
 #'   print(waic_res)
 #' }
 #'
