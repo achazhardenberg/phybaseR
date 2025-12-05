@@ -786,7 +786,7 @@ phybase_run <- function(
               # Standard continuous predictor
               params_to_monitor <- c(
                 params_to_monitor,
-                paste0("beta", predictor)
+                paste0("beta_", response, "_", predictor)
               )
             }
           }
@@ -832,7 +832,10 @@ phybase_run <- function(
 
           if (!is_categorical) {
             # Standard continuous predictor
-            params_to_monitor <- c(params_to_monitor, paste0("beta", predictor))
+            params_to_monitor <- c(
+              params_to_monitor,
+              paste0("beta_", response, "_", predictor)
+            )
           }
         }
 
