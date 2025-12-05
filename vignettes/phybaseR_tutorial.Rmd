@@ -1144,4 +1144,24 @@ fit_animal <- phybase_run(
 )
 ```
 
+### 4. Multiple Additive Structures (Phylo + Spatial)
+
+You can model multiple additive random effects (e.g., Phylogenetic + Spatial) by passing a named list to `structure`. The model will estimate separate variance components (`sigma_phylo`, `sigma_spatial`) for each structure.
+
+```{r multi_struct, eval=FALSE}
+fit_multi <- phybase_run(
+    data = data_list,
+    structure = list(
+        phylo = tree,
+        spatial = spatial_cov_matrix
+    ),
+    equations = equations
+)
+```
+
+> **Note:** Currently, support for multiple additive structures is optimized for **Gaussian** response variables and predictor imputation. 
+> 
+> **Limitation:** Non-Gaussian families (Binomial, Multinomial, Ordinal) currently support only a **single** covariance structure. If you need to use these families, please ensure `structure` contains only one element (e.g., the phylogeny). Support for multiple structures in non-Gaussian models is planned for a future release.
+
+
 
