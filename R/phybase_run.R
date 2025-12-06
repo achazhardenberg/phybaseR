@@ -736,7 +736,7 @@ phybase_run <- function(
       }
     }
 
-    dsep_result <- phybase_dsep(equations, latent = latent)
+    dsep_result <- phybase_dsep(equations, latent = latent, quiet = !dsep)
 
     # Extract tests and correlations
     if (!is.null(latent)) {
@@ -1063,7 +1063,7 @@ phybase_run <- function(
       # MAG approach: marginalize latents, use induced correlations
       # If not already computed by dsep, compute now
       if (is.null(induced_cors)) {
-        dsep_result <- phybase_dsep(equations, latent = latent)
+        dsep_result <- phybase_dsep(equations, latent = latent, quiet = !dsep)
         induced_cors <- dsep_result$correlations
       }
 

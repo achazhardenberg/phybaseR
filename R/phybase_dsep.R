@@ -53,21 +53,22 @@
 #' result <- phybase_dsep(equations_latent, latent = "Quality")
 #' # result$tests: m-separation tests
 #' # result$correlations: induced correlation between X and Y
-#'
+#' @param quiet Logical; if FALSE (default), print the basis set and MAG structure.
+#'   If TRUE, suppress informational output.
 #' @export
 #' @importFrom stats formula terms as.formula
-phybase_dsep <- function(equations, latent = NULL) {
+phybase_dsep <- function(equations, latent = NULL, quiet = FALSE) {
   # If no latents, use standard DAG d-separation
   if (is.null(latent)) {
-    return(dsep_standard(equations))
+    return(dsep_standard(equations, quiet = quiet))
   }
 
   # With latents: use MAG m-separation
-  return(dsep_with_latents(equations, latent))
+  return(dsep_with_latents(equations, latent, quiet = quiet))
 }
 
 # Standard d-separation for DAGs (original logic)
-dsep_standard <- function(equations) {
+dsep_standard <- function(equations, quiet = FALSE) {
   # Parse equations to extract parent-child relationships
   parents <- list()
   children <- list()
@@ -100,17 +101,17 @@ dsep_standard <- function(equations) {
         parents_var1 <- parents[[var1]]
         parents_var2 <- parents[[var2]]
 
-        # Combine the parents of both variables
-        conditioning_vars <- unique(c(parents_var1, parents_var2))
+        # Determine the conditioning set
+        if (!is.null(parents_var1) && !is.null(parents_var2)) {
+          conditioning_vars <- intersect(parents_var1, parents_var2)
+        } else {
+          conditioning_vars <- NULL
+        }
 
-        # Ensure that if a variable has no parents, it always goes on the right-hand side
+        # Create the regression formula
         if (length(parents_var1) == 0 && length(parents_var2) == 0) {
-          # If both have no parents, put both on the right-hand side
-          reg_formula <- paste(
-            var1,
-            "~",
-            paste(c(var2, conditioning_vars), collapse = " + ")
-          )
+          # If both variables have no parents, put var2 on the right-hand side
+          reg_formula <- paste(var1, "~", var2)
         } else if (length(parents_var1) == 0) {
           # If var1 has no parents, put var1 on the right-hand side
           reg_formula <- paste(
@@ -170,19 +171,54 @@ dsep_standard <- function(equations) {
     }
   }
 
+  # Print basis set if not quiet
+  if (!quiet) {
+    cat("Basis Set for DAG:", "\n")
+    cat(
+      "I(X,Y|Z) means X is d-separated from Y given the set Z in the DAG",
+      "\n"
+    )
+    if (length(cond_indep_regressions) == 0) {
+      cat("No elements in the basis set", "\n")
+    } else {
+      for (test in cond_indep_regressions) {
+        cat(format_dsep_test(test), "\n")
+      }
+    }
+  }
+
   return(cond_indep_regressions)
 }
 
 # M-separation for MAGs (with latent variables)
-dsep_with_latents <- function(equations, latent) {
+dsep_with_latents <- function(equations, latent, quiet = FALSE) {
   # Convert equations to ggm DAG format
   dag <- equations_to_dag(equations)
 
-  # Call Shipley's DAG.to.MAG (suppressing verbose output)
-  mag <- suppressMessages(DAG.to.MAG(dag, latents = latent))
+  # Call local DAG.to.MAG (suppress cat output when quiet=TRUE)
+  if (quiet) {
+    # Capture printed output and assign the result to 'mag'
+    invisible(capture.output(
+      {
+        mag <- suppressMessages(DAG.to.MAG(dag, latents = latent))
+      },
+      type = "output"
+    ))
+  } else {
+    mag <- suppressMessages(DAG.to.MAG(dag, latents = latent))
+  }
 
-  # Extract basis set from MAG
-  basis <- suppressMessages(basiSet.mag(mag))
+  # Extract basis set from MAG (suppress cat output when quiet=TRUE)
+  if (quiet) {
+    invisible(capture.output(
+      {
+        basis <- suppressMessages(basiSet.mag(mag))
+      },
+      type = "output"
+    ))
+  } else {
+    basis <- suppressMessages(basiSet.mag(mag))
+  }
 
   # Convert to formula format
   tests <- mag_basis_to_formulas(basis)
@@ -190,9 +226,43 @@ dsep_with_latents <- function(equations, latent) {
   # Extract bidirected edges (induced correlations)
   correlations <- extract_bidirected_edges(mag)
 
+  # Print basis set if not quiet (our own formatted version)
+  if (!quiet) {
+    cat("Basis Set for MAG:", "\n")
+    cat(
+      "I(X,Y|Z) means X is m-separated from Y given the set Z in the MAG",
+      "\n"
+    )
+    if (length(tests) == 0) {
+      cat("No elements in the basis set", "\n")
+    } else {
+      for (test in tests) {
+        cat(format_dsep_test(test), "\n")
+      }
+    }
+  }
+
   return(list(
     tests = tests,
     correlations = correlations,
     mag = mag # Include MAG for reference
   ))
+}
+
+# Helper to format a d-sep test for printing
+format_dsep_test <- function(test) {
+  # Extract variables from formula
+  vars <- all.vars(test)
+  response <- as.character(test)[2]
+  predictors <- setdiff(vars, response)
+
+  if (length(predictors) == 1) {
+    # No conditioning set
+    return(paste0("I( ", response, " , ", predictors[1], " | ", " )"))
+  } else {
+    # First predictor is the test variable, rest are conditioning
+    test_var <- predictors[1]
+    cond_set <- paste(predictors[-1], collapse = ", ")
+    return(paste0("I( ", response, " , ", test_var, " | ", cond_set, " )"))
+  }
 }
