@@ -6,11 +6,27 @@
     GNU Fortran (GCC) 14.2.0
 * running under: macOS Sequoia 15.6
 * using session charset: UTF-8
-* using option ‘--no-manual’
+* using option ‘--as-cran’
 * checking for file ‘phybaseR/DESCRIPTION’ ... OK
 * checking extension type ... Package
-* this is package ‘phybaseR’ version ‘0.1.0’
+* this is package ‘phybaseR’ version ‘1.0’
 * package encoding: UTF-8
+* checking CRAN incoming feasibility ... [2s/13s] NOTE
+Maintainer: ‘Achaz von Hardenberg <achaz.hardenberg@unipv.it>’
+
+New submission
+
+Found the following (possibly) invalid URLs:
+  URL: http://mcmc-jags.sourceforge.net (moved to https://mcmc-jags.sourceforge.io/)
+    From: README.md
+    Status: 200
+    Message: OK
+
+The Title field starts with the package name.
+The Title field should be in title case. Current version is:
+  ‘phybaseR: An R package to easily create and run PhyBaSE models’
+In title case that is:
+  ‘phybaseR: An R Package to Easily Create and Run PhyBaSE Models’
 * checking package namespace information ... OK
 * checking package dependencies ... OK
 * checking if this is a source package ... OK
@@ -22,8 +38,12 @@
 * checking whether package ‘phybaseR’ can be installed ... OK
 * checking installed package size ... OK
 * checking package directory ... OK
+* checking for future file timestamps ... OK
+* checking ‘build’ directory ... OK
 * checking DESCRIPTION meta-information ... OK
-* checking top-level files ... OK
+* checking top-level files ... NOTE
+Non-standard files/directories found at top level:
+  ‘IMPLEMENTATION_PROGRESS.md’ ‘docs’ ‘jags_func_test.bug’
 * checking for left-over files ... OK
 * checking index information ... OK
 * checking package subdirectories ... OK
@@ -34,32 +54,109 @@
 * checking whether the package can be unloaded cleanly ... OK
 * checking whether the namespace can be loaded with stated dependencies ... OK
 * checking whether the namespace can be unloaded cleanly ... OK
+* checking use of S3 registration ... OK
 * checking dependencies in R code ... OK
 * checking S3 generic/method consistency ... OK
 * checking replacement functions ... OK
 * checking foreign function calls ... OK
-* checking R code for possible problems ... OK
+* checking R code for possible problems ... NOTE
+dsep_with_latents: no visible global function definition for
+  ‘capture.output’
+phybase_run: no visible global function definition for ‘start’
+phybase_waic: no visible binding for global variable ‘var’
+phybase_waic: no visible global function definition for ‘var’
+Undefined global functions or variables:
+  capture.output start var
+Consider adding
+  importFrom("stats", "start", "var")
+  importFrom("utils", "capture.output")
+to your NAMESPACE file.
 * checking Rd files ... OK
 * checking Rd metadata ... OK
+* checking Rd line widths ... OK
 * checking Rd cross-references ... OK
 * checking for missing documentation entries ... OK
-* checking for code/documentation mismatches ... OK
-* checking Rd \usage sections ... OK
+* checking for code/documentation mismatches ... WARNING
+Codoc mismatches from Rd file 'phybase_dsep.Rd':
+phybase_dsep
+  Code: function(equations, latent = NULL, quiet = FALSE)
+  Docs: function(equations, latent = NULL)
+  Argument names in code not in docs:
+    quiet
+
+Codoc mismatches from Rd file 'phybase_model.Rd':
+phybase_model
+  Code: function(equations, multi.tree = FALSE, variability = NULL,
+                 distribution = NULL, vars_with_na = NULL,
+                 induced_correlations = NULL, latent = NULL,
+                 standardize_latent = TRUE, optimise = TRUE,
+                 structure_names = NULL)
+  Docs: function(equations, multi.tree = FALSE, variability = NULL,
+                 distribution = NULL, vars_with_na = NULL,
+                 induced_correlations = NULL, latent = NULL)
+  Argument names in code not in docs:
+    standardize_latent optimise structure_names
+
+Codoc mismatches from Rd file 'phybase_run.Rd':
+phybase_run
+  Code: function(data, equations, id_col = NULL, structure = NULL, tree
+                 = NULL, monitor = NULL, n.chains = 3, n.iter = 12500,
+                 n.burnin = n.iter/5, n.thin = 10, DIC = TRUE, WAIC =
+                 FALSE, n.adapt = n.iter/5, quiet = FALSE, dsep =
+                 FALSE, variability = NULL, distribution = NULL, latent
+                 = NULL, latent_method = c("correlations", "explicit"),
+                 standardize_latent = TRUE, parallel = FALSE, n.cores =
+                 1, cl = NULL, ic_recompile = TRUE, optimise = TRUE)
+  Docs: function(data, tree, equations, monitor = NULL, n.chains = 3,
+                 n.iter = 2000, n.burnin = floor(n.iter/2), n.thin =
+                 max(1, floor((n.iter - n.burnin)/1000)), DIC = TRUE,
+                 WAIC = FALSE, n.adapt = 1000, quiet = FALSE, dsep =
+                 FALSE, variability = NULL, distribution = NULL, latent
+                 = NULL, latent_method = c("correlations", "explicit"),
+                 parallel = FALSE, n.cores = 1, cl = NULL, ic_recompile
+                 = TRUE)
+  Argument names in code not in docs:
+    id_col structure standardize_latent optimise
+  Mismatches in argument names (first 3):
+    Position: 2 Code: equations Docs: tree
+    Position: 3 Code: id_col Docs: equations
+    Position: 4 Code: structure Docs: monitor
+  Mismatches in argument default values (first 3):
+    Name: 'tree' Code: NULL Docs: 
+    Name: 'n.iter' Code: 12500 Docs: 2000
+    Name: 'n.burnin' Code: n.iter/5 Docs: floor(n.iter/2)
+
+Codoc mismatches from Rd file 'phybase_waic.Rd':
+phybase_waic
+  Code: function(model)
+  Docs: function(model, n.iter = 2000, n.burnin = 500, n.thin = 10)
+  Argument names in docs not in code:
+    n.iter n.burnin n.thin
+
+* checking Rd \usage sections ... WARNING
+Undocumented arguments in Rd file 'phybase_model.Rd'
+  ‘latent’
+
+Functions with \usage entries need to have the appropriate \alias
+entries, and all their arguments documented.
+The \usage entries must correspond to syntactically valid R code.
+See chapter ‘Writing R documentation files’ in the ‘Writing R
+Extensions’ manual.
 * checking Rd contents ... OK
 * checking for unstated dependencies in examples ... OK
 * checking contents of ‘data’ directory ... OK
 * checking data for non-ASCII characters ... OK
 * checking LazyData ... OK
 * checking data for ASCII and uncompressed saves ... OK
-* checking files in ‘vignettes’ ... WARNING
-Files in the 'vignettes' directory but no files in 'inst/doc':
-  ‘phybaseR_tutorial.Rmd’
+* checking installed files from ‘inst/doc’ ... OK
+* checking files in ‘vignettes’ ... OK
 * checking examples ... OK
-* checking for unstated dependencies in vignettes ... OK
-* checking package vignettes ... WARNING
-Directory 'inst/doc' does not exist.
-Package vignette without corresponding single PDF/HTML:
-  ‘phybaseR_tutorial.Rmd’
-* checking re-building of vignette outputs ... OK
-* DONE
-Status: 2 WARNINGs
+* checking for unstated dependencies in ‘tests’ ... WARNING
+Warning: parse error in file 'test_optimize_multitree.R':
+140:40: unexpected '='
+139: 
+140: cat("\n=== Multi-Tree Test Complete" ===
+                                            ^
+'::' or ':::' import not declared from: ‘devtools’
+'library' or 'require' call not declared from: ‘nimble’
+* checking tests ...

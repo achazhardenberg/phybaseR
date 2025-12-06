@@ -15,11 +15,17 @@ phybase_run(
   n.thin = max(1, floor((n.iter - n.burnin)/1000)),
   DIC = TRUE,
   WAIC = FALSE,
-  n.adapt = 100,
+  n.adapt = 1000,
   quiet = FALSE,
   dsep = FALSE,
   variability = NULL,
-  distribution = NULL
+  distribution = NULL,
+  latent = NULL,
+  latent_method = c("correlations", "explicit"),
+  parallel = FALSE,
+  n.cores = 1,
+  cl = NULL,
+  ic_recompile = TRUE
 )
 }
 \arguments{
@@ -39,27 +45,60 @@ phybase_run(
 
 \item{n.thin}{Thinning rate (default = max(1, floor((n.iter - n.burnin) / 1000))).}
 
-\item{DIC}{Logical; whether to compute DIC using \code{dic.samples()} (default = TRUE).}
+\item{DIC}{Logical; whether to compute DIC using \code{dic.samples()} (default = TRUE).
+**Note**: DIC penalty will be inflated for models with measurement error or repeated measures
+because latent variables are counted as parameters (penalty ≈ structural parameters + N).
+For model comparison, use WAIC or compare mean deviance across models with similar structure.}
 
-\item{WAIC}{Logical; whether to sample values for WAIC and deviance (default = FALSE).}
+\item{WAIC}{Logical; whether to sample values for WAIC and deviance (default = FALSE).
+WAIC is generally more appropriate than DIC for hierarchical models with latent variables.}
 
-\item{n.adapt}{Number of adaptation iterations (default = 100).}
+\item{n.adapt}{Number of adaptation iterations (default = 1000).}
 
 \item{quiet}{Logical; suppress JAGS output (default = FALSE).}
 
 \item{dsep}{Logical; if \code{TRUE}, monitor only the first beta in each structural equation (used for d-separation testing).}
 
-\item{variability}{Optional character vector or named character vector of variable names that have measurement error or within-species variability.
-If named, the names should be the variable names and the values should be the type of variability: "se" (for mean and standard error) or "reps" (for repeated measures).
-If unnamed, the function attempts to infer the type from the data:
-\itemize{
-  \item If \code{Var_se} exists in data, type is "se".
-  \item If \code{Var} is a matrix or \code{Var_obs} exists, type is "reps".
-}}
+\item{variability}{Optional specification for variables with measurement error or within-species variability.
+  **AUTO-DETECTION**: If a variable \code{X} has a corresponding column \code{X_se} (standard errors),
+  \code{X_obs} (repeated measures), or is provided as a matrix, variability is automatically detected.
+
+  **Manual specification** (for non-standard column names):
+  \itemize{
+    \item Simple: \code{list(X = "se", Y = "reps")} - uses standard \code{X_se}/\code{Y_obs} naming
+    \item Custom columns: \code{list(X = list(type = "se", se_col = "X_SD"))} - specify custom column names
+    \item For SE: \code{se_col} (SE column), \code{mean_col} (mean column, optional)
+    \item For reps: \code{obs_col} (observations matrix column)
+  }}
 
 \item{distribution}{Optional named character vector specifying the distribution for response variables.
 Default is "gaussian" for all variables. Supported values: "gaussian", "binomial".
 Example: \code{distribution = c(Gregarious = "binomial")}.}
+
+\item{latent}{Optional character vector of latent (unmeasured) variable names.
+If specified, the model will account for induced correlations among observed
+variables that share these latent common causes.}
+
+\item{latent_method}{Method for handling latent variables (default = "correlations").
+\itemize{
+  \item \code{"correlations"}: MAG approach - marginalize latent variables and estimate
+        induced correlations (\code{rho}) between observed variables that share latent parents.
+  \item \code{"explicit"}: Model latent variables as JAGS nodes and estimate structural
+        paths from latents to observed variables.
+}}
+
+\item{parallel}{Logical; if \code{TRUE}, run MCMC chains in parallel (default = FALSE).
+Note: Requires \code{n.cores > 1} to take effect.}
+
+\item{n.cores}{Integer; number of CPU cores to use for parallel chains (default = 1).
+Only used when \code{parallel = TRUE}.}
+
+\item{cl}{Optional; a cluster object created by \code{parallel::makeCluster()}.
+If \code{NULL}, a cluster will be created and destroyed automatically.}
+
+\item{ic_recompile}{Logical; if \code{TRUE} and \code{parallel = TRUE}, recompile the model
+after parallel chains to compute DIC/WAIC (default = TRUE).
+This adds a small sequential overhead but enables information criteria calculation.}
 }
 \value{
 A list of class \code{"phybase"} with model output and diagnostics.

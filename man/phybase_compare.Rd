@@ -2,47 +2,51 @@
 % Please edit documentation in R/phybase_compare.R
 \name{phybase_compare}
 \alias{phybase_compare}
-\title{Compare Multiple PhyBaSE Models in Parallel}
+\title{Compare PhyBaSE Models using WAIC}
 \usage{
-phybase_compare(model_specs, data, tree, n.cores = 1, cl = NULL, ...)
+phybase_compare(..., models = NULL, sort = TRUE)
 }
 \arguments{
-\item{model_specs}{A named list where each element is a list containing the
-\code{equations} argument for \code{\link{phybase_run}}.
-Example: \code{list(m1 = list(equations = list(Y ~ X)), m2 = list(equations = list(Y ~ X + Z)))}}
+\item{...}{Fitted model objects of class \code{"phybase"}.}
 
-\item{data}{A list containing the data for the models.}
+\item{models}{Optional list of models. If provided, \code{...} is ignored.}
 
-\item{tree}{A phylo object or list of phylo objects.}
-
-\item{n.cores}{Number of cores to use for parallel execution. Default is 1.}
-
-\item{cl}{Optional cluster object created by \code{parallel::makeCluster()}.
-If \code{NULL} and \code{n.cores > 1}, a cluster is created and stopped automatically.}
-
-\item{...}{Additional arguments passed to \code{\link{phybase_run}} (e.g., \code{n.iter}, \code{n.burnin}).
-Note: \code{parallel} will be forced to \code{FALSE} for individual runs to avoid nested parallelism.}
+\item{sort}{Logical. If \code{TRUE} (default), sort models by WAIC (lowest to highest).}
 }
 \value{
-A list containing:
-  \item{results}{A list of fitted \code{phybase} objects.}
-  \item{comparison}{A data frame comparing models by WAIC and DIC (if computed).}
+A class \code{"phybase_comparison"} object containing a data frame with:
+  \item{WAIC}{The WAIC value (lower is better).}
+  \item{SE}{Standard error of WAIC.}
+  \item{p_waic}{Effective number of parameters.}
+  \item{dWAIC}{Difference in WAIC relative to the best model.}
+  \item{dSE}{Standard error of the difference relative to the best model.}
+  \item{weight}{Akaike-like weight (probability that this model is the best among the set).}
 }
 \description{
-Fits multiple PhyBaSE models in parallel and returns a comparison table
-based on WAIC and DIC.
+Compares multiple fitted PhyBaSE models using the Widely Applicable Information Criterion (WAIC).
+Models are ranked from best (lowest WAIC) to worst.
+}
+\details{
+The function extracts WAIC results from each model. If a model does not have
+WAIC calculated, it gives a warning and excludes it or tries to calculate it
+(currently assumes WAIC is present).
+
+The standard error of the difference (\code{dSE}) is calculated as:
+\code{sqrt(n * var(pointwise_waic_diff))}.
+
+Weights are calculated as:
+\code{exp(-0.5 * dWAIC) / sum(exp(-0.5 * dWAIC))}.
 }
 \examples{
 \dontrun{
-  # Define models
-  models <- list(
-    m1 = list(equations = list(Y ~ X)),
-    m2 = list(equations = list(Y ~ X + Z))
-  )
+  fit1 <- phybase_run(..., WAIC = TRUE)
+  fit2 <- phybase_run(..., WAIC = TRUE)
 
-  # Run comparison
-  comp <- phybase_compare(models, data, tree, n.cores = 2, n.iter = 1000)
-  print(comp$comparison)
+  comp <- phybase_compare(fit1, fit2)
+  print(comp)
 }
-
+}
+\references{
+Vehtari, A., Gelman, A. & Gabry, J. (2017). Practical Bayesian model evaluation
+using leave-one-out cross-validation and WAIC. Statistics and Computing, 27(5), 1413-1432.
 }

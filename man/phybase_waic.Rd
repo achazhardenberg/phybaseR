@@ -2,36 +2,67 @@
 % Please edit documentation in R/phybase_waic.R
 \name{phybase_waic}
 \alias{phybase_waic}
-\title{Calculate WAIC for a PhyBaSE Model}
+\title{Calculate WAIC with Standard Errors for a PhyBaSE Model}
 \usage{
-phybase_waic(model, n.iter = 2000, n.burnin = 500, n.thin = 10)
+phybase_waic(model)
 }
 \arguments{
-\item{model}{A fitted model object of class \code{"phybase"} returned by \code{\link{phybase_run}}.}
-
-\item{n.iter}{Number of iterations for WAIC calculation. Default is 2000.}
-
-\item{n.burnin}{Number of burn-in iterations. Default is 500.}
-
-\item{n.thin}{Thinning interval. Default is 10.}
+\item{model}{A fitted model object of class \code{"phybase"} returned by \code{\link{phybase_run}}
+with \code{WAIC = TRUE}.}
 }
 \value{
-A named vector containing:
-\item{waic}{The calculated WAIC value.}
-\item{p_waic}{The effective number of parameters (penalty term).}
+A data frame with columns \code{Estimate} and \code{SE} containing:
+\item{elpd_waic}{Expected log pointwise predictive density (higher is better)}
+\item{p_waic}{Effective number of parameters}
+\item{waic}{The WAIC value (lower is better for model comparison)}
+
+The returned object also has a \code{pointwise} attribute containing individual
+observation contributions for model comparison.
 }
 \description{
-Calculates the Widely Applicable Information Criterion (WAIC) for a fitted PhyBaSE model.
+Calculates the Widely Applicable Information Criterion (WAIC) with standard errors
+for a fitted PhyBaSE model using pointwise log-likelihoods.
 }
 \details{
-This function uses the \code{dic} module in JAGS to monitor \code{WAIC} and \code{deviance}.
-The WAIC is calculated as: \code{WAIC = mean(deviance) + p_waic}.
+This function implements WAIC following Vehtari et al. (2017). It requires that
+the model was run with \code{WAIC = TRUE} to monitor pointwise log-likelihoods.
+
+**WAIC Algorithm**:
+\enumerate{
+  \item \strong{lpd} (log pointwise predictive density): For each observation \eqn{i},
+    compute \eqn{\log(\text{mean}(\exp(\text{log_lik}_i)))} across MCMC samples
+  \item \strong{p_waic}: For each observation \eqn{i}, compute
+    \eqn{\text{var}(\text{log_lik}_i)} across MCMC samples
+  \item \strong{elpd_waic}: \eqn{\text{lpd}_i - \text{p_waic}_i} for each observation
+  \item \strong{waic}: \eqn{-2 \times \sum \text{elpd_waic}_i}
+}
+
+**Standard Errors**:
+\deqn{SE(\text{WAIC}) = \sqrt{N \times \text{var}(\text{waic}_i)}}
+where \eqn{N} is the number of observations and \eqn{\text{waic}_i = -2 \times \text{elpd_waic}_i}.
 }
 \examples{
 \dontrun{
-  fit <- phybase_run(data, tree, equations)
-  waic_res <- phybase_waic(fit, n.iter = 1000)
-  print(waic_res)
+  # Fit model with WAIC monitoring
+  fit <- phybase_run(data, tree, equations, WAIC = TRUE)
+
+  # View WAIC with standard errors
+  fit$WAIC
+  #             Estimate   SE
+  # elpd_waic   -617.3   12.4
+  # p_waic        12.3    3.1
+  # waic        1234.5   24.8
+
+  # Compare two models
+  fit1$WAIC
+  fit2$WAIC
+  # Model with lower WAIC is preferred
+  # Difference is significant if |WAIC1 - WAIC2| > 2 * sqrt(SE1^2 + SE2^2)
 }
 
+}
+\references{
+Vehtari, A., Gelman, A., & Gabry, J. (2017). Practical Bayesian model
+evaluation using leave-one-out cross-validation and WAIC.
+\emph{Statistics and Computing}, 27(5), 1413-1432.
 }

@@ -1,5 +1,7 @@
+phybase_compare         Compare Multiple PhyBaSE Models in Parallel
 phybase_dsep            Extract d-separation statements from a
                         structural equation model
+phybase_format_data     Format Data for PhyBaSE Analysis
 phybase_model           Generate a JAGS model string for Phylogenetic
                         Bayesian SEM (PhyBaSE)
 phybase_run             Run a Phylogenetic Bayesian Structural Equation
@@ -7,3 +9,4 @@ phybase_run             Run a Phylogenetic Bayesian Structural Equation
 phybase_waic            Calculate WAIC for a PhyBaSE Model
 rhino.dat               Rhinograd life-history data
 rhino.tree              Rhinograd phylogenetic tree
+summary.phybase         Summary for PhyBaSE Model

@@ -1,0 +1,88 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin20
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(rjags)
+Loading required package: coda
+Linked to JAGS 4.3.2
+Loaded modules: basemod,bugs
+> library(ape)
+> 
+> set.seed(123)
+> N <- 50
+> tree <- rtree(N)
+> VCV <- vcv(tree)
+> ID <- diag(N)
+> Y <- rnorm(N)
+> X <- rnorm(N)
+> 
+> data <- list(
++   Y = Y,
++   X = X,
++   N = N,
++   VCV = VCV,
++   ID = ID
++ )
+> 
+> model_string <- "
++ model {
++   # Structural equations
++   for (i in 1:N) {
++     muY[i] <- alphaY + beta_Y_X*X[i]
++   }
++   # Multivariate normal likelihoods
++   Y[1:N] ~ dmnorm(muY[], TAUy)
++   # Priors for structural parameters
++   alphaY ~ dnorm(0, 1.0E-6)
++   lambdaY ~ dunif(0, 1)
++   tauY ~ dgamma(1, 1)
++   beta_Y_X ~ dnorm(0, 1.0E-6)
++   
++   # Covariance structure for responses
++   MlamY <- lambdaY*VCV + (1-lambdaY)*ID
++   TAUy <- tauY*inverse(MlamY)
++   
++   # Predictor priors for imputation (X)
++   for (i in 1:N) {
++     muX[i] <- 0
++   }
++   X[1:N] ~ dmnorm(muX[], TAUx)
++   lambdaX ~ dunif(0, 1)
++   tauX ~ dgamma(1, 1)
++   MlamX <- lambdaX*VCV + (1 - lambdaX)*ID
++   TAUx <- tauX*inverse(MlamX)
++ }
++ "
+> 
+> cat("Compiling model...\n")
+Compiling model...
+> model <- jags.model(textConnection(model_string), data = data, n.chains = 1)
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 2
+   Unobserved stochastic nodes: 6
+   Total graph size: 5178
+
+Initializing model
+
+> cat("Success!\n")
+Success!
+> 
+> proc.time()
+   user  system elapsed 
+  4.714   0.062   5.117 

@@ -1,0 +1,171 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin20
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(phybaseR)
+> library(nimble)
+nimble version 1.3.0 is loaded.
+For more information on NIMBLE and a User Manual,
+please visit https://R-nimble.org.
+
+Note for advanced users who have written their own MCMC samplers:
+  As of version 0.13.0, NIMBLE's protocol for handling posterior
+  predictive nodes has changed in a way that could affect user-defined
+  samplers in some situations. Please see Section 15.5.1 of the User Manual.
+
+Attaching package: 'nimble'
+
+The following object is masked from 'package:stats':
+
+    simulate
+
+The following object is masked from 'package:base':
+
+    declare
+
+> 
+> # Load rhino data
+> data("rhino.dat")
+> data("rhino.tree")
+> 
+> data_list <- list(
++     BM = rhino.dat$BM,
++     NL = rhino.dat$NL,
++     DD = rhino.dat$DD
++ )
+> 
+> equations <- list(
++     NL ~ BM,
++     DD ~ NL
++ )
+> 
+> cat("\n=== JAGS vs NIMBLE Performance Benchmark ===\n\n")
+
+=== JAGS vs NIMBLE Performance Benchmark ===
+
+> 
+> # ============================================================================
+> # 1. Run with JAGS
+> # ============================================================================
+> cat("--- Running JAGS (2000 iterations) ---\n")
+--- Running JAGS (2000 iterations) ---
+> time_jags <- system.time({
++     fit_jags <- phybase_run(
++         data = data_list,
++         tree = rhino.tree,
++         equations = equations,
++         n.iter = 2000,
++         n.burnin = 500,
++         n.thin = 5,
++         parallel = FALSE,
++         WAIC = FALSE,
++         DIC = TRUE,
++         quiet = TRUE
++     )
++ })
+Warning message:
+In rjags::jags.model(model_file, data = data, n.chains = n.chains,  :
+  Unused variable "ID2" in data
+> 
+> cat(sprintf("JAGS Time: %.2f seconds\n", time_jags["elapsed"]))
+JAGS Time: 36.82 seconds
+> 
+> # ============================================================================
+> # 2. Build NIMBLE model
+> # ============================================================================
+> cat("\n--- Building NIMBLE Model ---\n")
+
+--- Building NIMBLE Model ---
+> 
+> N <- length(rhino.tree$tip.label)
+> vcv_tree <- ape::vcv(rhino.tree)
+> Prec_phylo <- solve(vcv_tree)
+> 
+> nimble_code <- nimbleCode({
++     for (i in 1:N) {
++         mu_phylo_BM[i] <- alphaBM
++         mu_phylo_NL[i] <- alphaNL + betaBM * BM[i]
++     }
++ 
++     BM_phylo[1:N] ~ dmnorm(mu_phylo_BM[1:N], prec = Prec_phylo_BM[1:N, 1:N])
++     NL_phylo[1:N] ~ dmnorm(mu_phylo_NL[1:N], prec = Prec_phylo_NL[1:N, 1:N])
++ 
++     for (i in 1:N) {
++         BM[i] ~ dnorm(BM_phylo[i], tau_res_BM)
++         NL[i] ~ dnorm(NL_phylo[i], tau_res_NL)
++ 
++         mu_DD[i] <- alphaDD + betaNL * NL[i]
++         DD_phylo[i] ~ dnorm(mu_DD[i], tau_phylo_DD)
++         DD[i] ~ dnorm(DD_phylo[i], tau_res_DD)
++     }
++ 
++     alphaBM ~ dnorm(0, 0.001)
++     alphaNL ~ dnorm(0, 0.001)
++     alphaDD ~ dnorm(0, 0.001)
++     betaBM ~ dnorm(0, 0.001)
++     betaNL ~ dnorm(0, 0.001)
++ 
++     tau_phylo_BM ~ dgamma(0.001, 0.001)
++     tau_phylo_NL ~ dgamma(0.001, 0.001)
++     tau_phylo_DD ~ dgamma(0.001, 0.001)
++     tau_res_BM ~ dgamma(0.001, 0.001)
++     tau_res_NL ~ dgamma(0.001, 0.001)
++     tau_res_DD ~ dgamma(0.001, 0.001)
++ })
+> 
+> time_compile <- system.time({
++     nimble_model <- nimbleModel(
++         code = nimble_code,
++         constants = list(
++             N = N,
++             Prec_phylo_BM = Prec_phylo,
++             Prec_phylo_NL = Prec_phylo
++         ),
++         data = data_list,
++         inits = list(
++             alphaBM = 0,
++             alphaNL = 0,
++             alphaDD = 0,
++             betaBM = 0,
++             betaNL = 0,
++             tau_phylo_BM = 1,
++             tau_phylo_NL = 1,
++             tau_phylo_DD = 1,
++             tau_res_BM = 1,
++             tau_res_NL = 1,
++             tau_res_DD = 1,
++             BM_phylo = rep(0, N),
++             NL_phylo = rep(0, N),
++             DD_phylo = rep(0, N)
++         )
++     )
++     c_nimble <- compileNimble(nimble_model)
++     mcmc_conf <- configureMCMC(nimble_model, print = FALSE)
++     mcmc <- buildMCMC(mcmc_conf)
++     c_mcmc <- compileNimble(mcmc, project = nimble_model)
++ })
+Defining model
+Building model
+Setting data and initial values
+Running calculate on model
+  [Note] Any error reports that follow may simply reflect missing values in model variables.
+Checking model sizes and dimensions
+Compiling
+  [Note] This may take a minute.
+  [Note] Use 'showCompilerOutput = TRUE' to see C++ compilation details.
+Error: Failed to create the shared library. Run 'printErrors()' to see the compilation errors.
+Timing stopped at: 7.325 0.242 7.936
+Execution halted

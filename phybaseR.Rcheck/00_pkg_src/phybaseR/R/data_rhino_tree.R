@@ -8,16 +8,16 @@
 #' The tree has been scaled so that the root age is 1.0.
 #'
 #' @details
-#' Rhinograds (nasobames) are hypothetical mammals used as examples in
+#' Rhinograds  are hypothetical mammals used as examples in
 #' phylogenetic comparative methods. This simulated tree represents the
 #' evolutionary relationships among 100 Rhinograd species.
 #'
-#' @source Simulated data for von Hardenberg and Gonzalez-Voyer (2025)
+#' @source Simulated data for Gonzalez-Voyer and von Hardenberg (2014)
 #'
 #' @references
-#' von Hardenberg, A. and Gonzalez-Voyer, A. (2025).
-#' PhyBaSE: A Bayesian approach to Phylogenetic Structural Equation Models.
-#' Methods in Ecology and Evolution. https://doi.org/10.1111/2041-210X.70044
+#' Gonzalez-Voyer, A., & von Hardenberg, A. (2014). An introduction to
+#' phylogenetic path analysis. In: Modern phylogenetic comparative methods
+#' and their application in evolutionary biology (pp. 201–229). Springer.
 #'
 #' @examples
 #' data(rhino.tree)
