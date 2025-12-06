@@ -1642,6 +1642,14 @@ phybase_run <- function(
     )
   }
 
+  # Filter internal parameters (log_lik) from summary parameters
+  # We keep them in samples for WAIC calculation but hide them from the summary output
+  if (!is.null(sum_stats)) {
+    rows_to_keep <- !grepl("^log_lik", rownames(sum_stats$statistics))
+    sum_stats$statistics <- sum_stats$statistics[rows_to_keep, , drop = FALSE]
+    sum_stats$quantiles <- sum_stats$quantiles[rows_to_keep, , drop = FALSE]
+  }
+
   # Initialize result object
   result <- list(
     model = model,
