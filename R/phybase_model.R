@@ -1858,6 +1858,12 @@ phybase_model <- function(
     # Check if this is a latent variable
     is_latent <- !is.null(latent) && var %in% latent
 
+    # Skip fully observed predictors (not latent and no missing data)
+    # Only generate imputation for: latent variables OR variables with missing data
+    if (!is_latent && (is.null(vars_with_na) || !var %in% vars_with_na)) {
+      next # Skip this predictor - it's fully observed data
+    }
+
     model_lines <- c(
       model_lines,
       paste0("  for (i in 1:N) {"),
