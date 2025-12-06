@@ -62,6 +62,7 @@ phybase_model <- function(
   latent_method = "correlations",
   structure_names = "phylo",
   random_structure_names = NULL,
+  random_terms = list(),
   vars_with_na = NULL,
   induced_correlations = NULL,
   latent = NULL,
@@ -557,50 +558,70 @@ phybase_model <- function(
 
             # Random Effects (Grouped)
             for (r_name in random_structure_names) {
-              s_suffix <- paste0("_", r_name)
+              # Check relevance using random_terms mapping
+              is_relevant <- TRUE
+              if (length(random_terms) > 0) {
+                matches <- Filter(
+                  function(x) x$response == response && x$group == r_name,
+                  random_terms
+                )
+                if (length(matches) == 0) is_relevant <- FALSE
+              }
 
-              u_std <- paste0("u_std_", response, suffix, s_suffix)
-              u <- paste0("u_", response, suffix, s_suffix)
-              tau_u <- paste0("tau_u_", response, suffix, s_suffix)
+              if (is_relevant) {
+                s_suffix <- paste0("_", r_name)
 
-              n_groups <- paste0("N_", r_name)
-              group_idx <- paste0("group_", r_name)
-              prec_name <- paste0("Prec_", r_name)
-              zeros_name <- paste0("zeros_", r_name)
+                u_std <- paste0("u_std_", response, suffix, s_suffix)
+                u <- paste0("u_", response, suffix, s_suffix)
+                tau_u <- paste0("tau_u_", response, suffix, s_suffix)
 
-              model_lines <- c(
-                model_lines,
-                paste0(
-                  "  ",
-                  u_std,
-                  "[1:",
-                  n_groups,
-                  "] ~ dmnorm(",
-                  zeros_name,
-                  "[1:",
-                  n_groups,
-                  "], ",
-                  prec_name,
-                  "[1:",
-                  n_groups,
-                  ", 1:",
-                  n_groups,
-                  "])"
-                ),
-                paste0("  for (g in 1:", n_groups, ") {"),
-                paste0("    ", u, "[g] <- ", u_std, "[g] / sqrt(", tau_u, ")"),
-                paste0("  }")
-              )
+                n_groups <- paste0("N_", r_name)
+                group_idx <- paste0("group_", r_name)
+                prec_name <- paste0("Prec_", r_name)
+                zeros_name <- paste0("zeros_", r_name)
 
-              additive_terms <- paste0(
-                additive_terms,
-                " + ",
-                u,
-                "[",
-                group_idx,
-                "[i]]"
-              )
-            }
+                model_lines <- c(
+                  model_lines,
+                  paste0(
+                    "  ",
+                    u_std,
+                    "[1:",
+                    n_groups,
+                    "] ~ dmnorm(",
+                    zeros_name,
+                    "[1:",
+                    n_groups,
+                    "], ",
+                    prec_name,
+                    "[1:",
+                    n_groups,
+                    ", 1:",
+                    n_groups,
+                    "])"
+                  ),
+                  paste0("  for (g in 1:", n_groups, ") {"),
+                  paste0(
+                    "    ",
+                    u,
+                    "[g] <- ",
+                    u_std,
+                    "[g] / sqrt(",
+                    tau_u,
+                    ")"
+                  ),
+                  paste0("  }")
+                )
+
+                additive_terms <- paste0(
+                  additive_terms,
+                  " + ",
+                  u,
+                  "[",
+                  group_idx,
+                  "[i]]"
+                )
+              }
+            } # End relevant check
 
             tau_e <- paste0("tau_e_", response, suffix)
 

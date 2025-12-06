@@ -1285,9 +1285,11 @@ phybase_run <- function(
     induced_correlations = induced_cors,
     latent = latent,
     standardize_latent = standardize_latent,
+
     optimise = optimise,
     structure_names = structure_names,
-    random_structure_names = names(random_structures)
+    random_structure_names = names(random_structures),
+    random_terms = random_terms
   )
 
   model_string <- model_output$model
@@ -1655,6 +1657,9 @@ phybase_run <- function(
     induced_correlations = induced_cors
   )
 
+  # Assign class immediately (needed for print/summary/waic methods)
+  class(result) <- "phybase"
+
   # Add DIC and WAIC
   # For parallel runs, recompile the model if ic_recompile=TRUE
   if (
@@ -1683,9 +1688,11 @@ phybase_run <- function(
     }
 
     # Compute WAIC using pointwise log-likelihoods
-    if (WAIC) {
-      result$WAIC <- phybase_waic(result)
-    }
+    # Note: WAIC calculation generally uses the posterior samples already collected.
+    # We defer WAIC calculation to the common block at the end to ensure consistency.
+    # if (WAIC) {
+    #   result$WAIC <- phybase_waic(result)
+    # }
   } else if ((DIC || WAIC) && parallel && n.cores > 1 && n.chains > 1) {
     # Parallel without recompilation - warn user
     if (DIC) {
@@ -1696,7 +1703,8 @@ phybase_run <- function(
     }
     if (WAIC) {
       # WAIC can be computed from pointwise log-likelihoods even with parallel chains
-      result$WAIC <- phybase_waic(result)
+      # Defer to common block
+      # result$WAIC <- phybase_waic(result)
     }
   } else {
     # Sequential execution - use standard approach
@@ -1707,7 +1715,8 @@ phybase_run <- function(
   }
 
   # Assign class before WAIC computation (phybase_waic needs this)
-  class(result) <- "phybase"
+  # Already assigned earlier
+  # class(result) <- "phybase"
 
   # Compute WAIC if requested (must be after class assignment)
   if (WAIC) {

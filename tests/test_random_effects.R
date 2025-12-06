@@ -195,6 +195,53 @@ test_that("Multiple Random Effects Run Successfully", {
     expect_true(abs(sum_stats["sigma_Y_B", "Mean"] - 0.5) < 0.8)
 })
 
+test_that("Parallel Execution with Global Random Effects and WAIC", {
+    skip_on_cran()
+
+    set.seed(789)
+    N <- 100
+    n_groups <- 10
+    groups <- sample(LETTERS[1:n_groups], N, replace = TRUE)
+    u_true <- rnorm(n_groups, 0, 1.0)
+    names(u_true) <- LETTERS[1:n_groups]
+    beta <- 0.5
+
+    X <- rnorm(N)
+    Y <- 1 + beta * X + u_true[groups] + rnorm(N, 0, 0.5)
+
+    data_df <- data.frame(Y = Y, X = X, Group = as.factor(groups), ID = 1:N)
+
+    # Run with parallel = TRUE and WAIC = TRUE and global Random
+    # Expectation: Should run without error and return valid phybase object with WAIC
+    fit_par <- phybase_run(
+        equations = list(Y ~ X),
+        data = data_df,
+        random = ~ (1 | Group),
+        parallel = TRUE,
+        n.chains = 2,
+        n.iter = 1000,
+        n.burnin = 200,
+        n.cores = 2,
+        WAIC = TRUE,
+        quiet = TRUE
+    )
+
+    expect_s3_class(fit_par, "phybase")
+    expect_false(is.null(fit_par$WAIC))
+
+    # Check Model Code for Random Effects
+    # Should contain u_Y_Group or u_Group
+    model_code <- fit_par$model_code
+    has_random_term <- grepl("u_Group", model_code) ||
+        grepl("u_.*Group", model_code)
+    expect_true(has_random_term)
+    expect_true(grepl("group_Group", model_code))
+
+    # Check Sigma for Group in Summary
+    sum_stats <- fit_par$summary$statistics
+    expect_true("sigma_Y_Group" %in% rownames(sum_stats))
+})
+
 test_that("Global Random Argument & d-separation work correctly", {
     skip_on_cran()
 
