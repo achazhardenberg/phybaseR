@@ -824,58 +824,72 @@ phybase_model <- function(
       tau_res_matrix <- paste0("TAU_res_", var1, "_", var2)
       cov_matrix <- paste0("cov_", var1, "_", var2)
 
-      # Define Residual Precision/Sigma Parameters (Deduplicated)
-      # sigma_res_var is shared across all pairs involving var
-      for (v in c(var1, var2)) {
-        if (!(v %in% processed_params)) {
-          model_lines <- c(
-            model_lines,
-            paste0("  tau_res_", v, " ~ dgamma(1, 1)"),
-            paste0("  sigma_res_", v, " <- 1/sqrt(tau_res_", v, ")")
-          )
-          processed_params <- c(processed_params, v)
-        }
-      }
-
-      # Define Correlation and Covariance Matrix
+      # Define Wishart Prior for Precision Matrix
+      # This estimates the joint covariance structure directly, ensuring positive definiteness
+      # and improving convergence compared to manual sigma/rho construction.
       model_lines <- c(
         model_lines,
-        paste0("  # Correlated residuals between ", var1, " and ", var2),
         paste0(
-          "  z_",
+          "  # Correlated residuals between ",
           var1,
-          "_",
+          " and ",
           var2,
-          " ~ dnorm(0, 1)  # Fisher Z transformation"
+          " (Wishart Prior)"
         ),
-        paste0("  rho_", var1, "_", var2, " <- tanh(z_", var1, "_", var2, ")"),
-        # Restore Diagonal Elements
-        paste0("  ", cov_matrix, "[1, 1] <- 1/tau_res_", var1),
-        paste0("  ", cov_matrix, "[2, 2] <- 1/tau_res_", var2),
-        paste0(
-          "  ",
-          cov_matrix,
-          "[1, 2] <- rho_",
-          var1,
-          "_",
-          var2,
-          " * sigma_res_",
-          var1,
-          " * sigma_res_",
-          var2
-        ),
-        paste0("  ", cov_matrix, "[2, 1] <- ", cov_matrix, "[1, 2]"),
+        paste0("  ", tau_res_matrix, "[1:2, 1:2] ~ dwish(ID2[1:2, 1:2], 3)"),
 
-        # Calculate Precision Matrix
+        # Recover parameters for monitoring
         paste0(
           "  ",
-          tau_res_matrix,
-          "[1:2, 1:2] <- inverse(",
           cov_matrix,
+          "[1:2, 1:2] <- inverse(",
+          tau_res_matrix,
           "[1:2, 1:2])"
         ),
 
-        # Generate correlated error terms from MVN
+        # Pair-specific residual standard deviations
+        paste0(
+          "  sigma_res_",
+          var1,
+          "_",
+          var2,
+          " <- sqrt(",
+          cov_matrix,
+          "[1, 1])"
+        ),
+        paste0(
+          "  sigma_res_",
+          var2,
+          "_",
+          var1,
+          " <- sqrt(",
+          cov_matrix,
+          "[2, 2])"
+        ),
+
+        # Correlation
+        paste0(
+          "  rho_",
+          var1,
+          "_",
+          var2,
+          " <- ",
+          cov_matrix,
+          "[1, 2] / (sigma_res_",
+          var1,
+          "_",
+          var2,
+          " * sigma_res_",
+          var2,
+          "_",
+          var1,
+          ")"
+        )
+      )
+
+      # Generate correlated error terms from MVN
+      model_lines <- c(
+        model_lines,
         paste0("  for (i in 1:N) {"),
         paste0(
           "    ",

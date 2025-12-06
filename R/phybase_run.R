@@ -383,6 +383,7 @@ phybase_run <- function(
   }
 
   data$ID <- diag(N)
+  data$ID2 <- diag(2)
   data$N <- N
 
   # Handle multinomial and ordinal data
