@@ -24,6 +24,7 @@ vignette: >
     - Negative Binomial (overdispersed count data)
 *   **Categorical Predictors**: Automatic handling of factor variables with dummy coding.
 *   **Optimized Performance**: Fast random effects formulation (4.6× speedup) for large datasets.
+*   **Flexible Data Input**: Pass data as a `data.frame` (recommended) or a named `list`. When using a data.frame, you can specify an `id_col` to match observations to tree tips (supporting repeated measures).
 
 This tutorial will guide you through the main features of the package.
 
@@ -53,22 +54,25 @@ set.seed(123)
 N <- 50
 tree <- rtree(N)
 
-# Simulate traits
-X <- rTraitCont(tree, model = "BM", sigma = 1)
-Y <- 0.5 + 0.8 * X + rTraitCont(tree, model = "BM", sigma = 0.5)
-
-data_list <- list(X = X, Y = Y)
+# Simulate traits and create a data.frame
+my_data <- data.frame(
+    species = tree$tip.label,
+    X = rTraitCont(tree, model = "BM", sigma = 1),
+    Y = 0.5 + 0.8 * rTraitCont(tree, model = "BM", sigma = 1) +
+        rTraitCont(tree, model = "BM", sigma = 0.5)
+)
 ```
 
-To run the model, we define the structural equations and pass them to `phybase_run()`.
+To run the model, we define the structural equations and pass them to `phybase_run()`. Note that we can pass a data.frame directly—phybaseR will automatically extract the needed variables from your equations:
 
 ```{r basic_run, eval=FALSE}
 # Define equations
 equations <- list(Y ~ X)
 
-# Run model
+# Run model - pass the data.frame directly!
 fit <- phybase_run(
-    data = data_list,
+    data = my_data,
+    id_col = "species", # Column with species names
     tree = tree,
     equations = equations,
     n.iter = 5000,
@@ -86,11 +90,17 @@ PhyBaSE shines at testing causal paths, such as mediation: `X -> M -> Y`.
 
 ```{r mediation_sim}
 # Simulate mediator M
-M <- 0.3 + 0.6 * X + rTraitCont(tree, model = "BM", sigma = 0.5)
+M <- 0.3 + 0.6 * my_data$X + rTraitCont(tree, model = "BM", sigma = 0.5)
 # Simulate Y affected by both X and M
-Y_med <- 0.5 + 0.4 * X + 0.5 * M + rTraitCont(tree, model = "BM", sigma = 0.5)
+Y_med <- 0.5 + 0.4 * my_data$X + 0.5 * M + rTraitCont(tree, model = "BM", sigma = 0.5)
 
-data_med <- list(X = X, M = M, Y = Y_med)
+# Create data.frame with all variables
+med_data <- data.frame(
+    species = tree$tip.label,
+    X = my_data$X,
+    M = M,
+    Y = Y_med
+)
 ```
 
 ```{r mediation_run, eval=FALSE}
@@ -101,7 +111,8 @@ equations_med <- list(
 )
 
 fit_med <- phybase_run(
-    data = data_med,
+    data = med_data,
+    id_col = "species",
     tree = tree,
     equations = equations_med
 )
@@ -292,7 +303,7 @@ summary(fit_reps)
 
 # PhyBaSE automatically handles the NAs and counts valid replicates per species.
 ```
-m
+
 ## Binomial Variables
 
 You can model binary traits (binomial) using a phylogenetic logistic regression framework.
@@ -854,7 +865,10 @@ A <- rTraitCont(tree)
 B <- 0.5 + 0.8 * A + rTraitCont(tree)
 C <- 0.5 + 0.8 * B + rTraitCont(tree)
 
-data_dsep <- list(A = A, B = B, C = C)
+dsep_data <- data.frame(
+    species = tree$tip.label,
+    A = A, B = B, C = C
+)
 
 equations_dsep <- list(
     B ~ A,
@@ -863,20 +877,14 @@ equations_dsep <- list(
 
 # Run d-separation tests by setting dsep = TRUE
 fit_dsep <- phybase_run(
-    data = data_dsep,
+    data = dsep_data,
+    id_col = "species",
     tree = tree,
     equations = equations_dsep,
     dsep = TRUE # <--- This triggers d-sep testing
 )
 
 # The summary will show the conditional independence tests
-fit_dsep <- phybase_run(
-    data = data_dsep,
-    tree = tree,
-    equations = equations_dsep,
-    dsep = TRUE
-)
-
 summary(fit_dsep)
 ```
 
