@@ -1043,17 +1043,43 @@ phybase_model <- function(
       phylo_term <- ""
       if (length(structure_names) > 0) {
         err_phylo <- paste0("err_phylo_", var)
-        model_lines <- c(
-          model_lines,
-          paste0("  tau_phylo_", var, " ~ dgamma(1, 1)"),
-          paste0(
-            "  ",
-            err_phylo,
-            "[1:N] ~ dmnorm(zero_vec[], TAU_phylo_",
-            var,
-            ")"
+
+        if (optimise) {
+          # Optimised: use Prec_phylo (for MAG/induced correlations)
+          prec_index <- if (multi.tree) {
+            "Prec_phylo[1:N, 1:N, K]"
+          } else {
+            "Prec_phylo[1:N, 1:N]"
+          }
+
+          model_lines <- c(
+            model_lines,
+            paste0("  tau_phylo_", var, " ~ dgamma(1, 1)"),
+            paste0(
+              "  ",
+              err_phylo,
+              "[1:N] ~ dmnorm(zero_vec[], ",
+              "tau_phylo_",
+              var,
+              " * ",
+              prec_index,
+              ")"
+            )
           )
-        )
+        } else {
+          # Non-optimised: use TAU_phylo (defined later with inverse(VCV))
+          model_lines <- c(
+            model_lines,
+            paste0("  tau_phylo_", var, " ~ dgamma(1, 1)"),
+            paste0(
+              "  ",
+              err_phylo,
+              "[1:N] ~ dmnorm(zero_vec[], TAU_phylo_",
+              var,
+              ")"
+            )
+          )
+        }
         phylo_term <- paste0(" + ", err_phylo, "[i]")
       }
 
@@ -1641,15 +1667,18 @@ phybase_model <- function(
   # Priors for regression coefficients
   unique_betas <- unique(unlist(beta_counter))
 
-  # Exclude multinomial betas (arrays)
-  multinomial_betas <- c()
+  # Exclude betas that are defined in distribution-specific sections
+  # (multinomial, ordinal, poisson, negbinomial all define their own betas)
+  excluded_betas <- c()
+
   for (response in names(response_counter)) {
-    if ((dist_list[[response]] %||% "gaussian") == "multinomial") {
+    dist <- dist_list[[response]] %||% "gaussian"
+    if (dist %in% c("multinomial", "ordinal", "poisson", "negbinomial")) {
       for (eq in eq_list) {
         if (eq$response == response) {
           for (pred in eq$predictors) {
-            multinomial_betas <- c(
-              multinomial_betas,
+            excluded_betas <- c(
+              excluded_betas,
               paste0("beta_", response, "_", pred)
             )
           }
@@ -1657,7 +1686,8 @@ phybase_model <- function(
       }
     }
   }
-  unique_betas <- setdiff(unique_betas, multinomial_betas)
+
+  unique_betas <- setdiff(unique_betas, excluded_betas)
 
   for (beta in unique_betas) {
     model_lines <- c(model_lines, paste0("  ", beta, " ~ dnorm(0, 1.0E-6)"))
