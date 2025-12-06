@@ -801,110 +801,46 @@ phybase_model <- function(
   if (!is.null(induced_correlations)) {
     model_lines <- c(model_lines, "  # Induced Correlations (Latent Variables)")
 
-    # Process each pair
+    # Track variables and their error terms
+    # vars_error_terms[[var]] <- c("term1", "term2", ...)
+    vars_error_terms <- list()
+    processed_params <- c() # Track tau_res/sigma_res/tau_phylo/tau_obs definitions
+
+    # 1. Process pairs to generate correlated error terms
     for (pair in induced_correlations) {
       var1 <- pair[1]
       var2 <- pair[2]
 
-      # We assume only one instance of each variable for now (no repeated measures logic for latents yet)
-      suffix1 <- if ((response_counter[[var1]] %||% 0) > 1) "1" else ""
-      suffix2 <- if ((response_counter[[var2]] %||% 0) > 1) "1" else ""
+      # Initialize lists if needed
+      if (is.null(vars_error_terms[[var1]])) {
+        vars_error_terms[[var1]] <- c()
+      }
+      if (is.null(vars_error_terms[[var2]])) {
+        vars_error_terms[[var2]] <- c()
+      }
 
-      # We model this using the GLMM approach:
-      # var = mu + phylo_err + res_err
-      # phylo_err is independent (standard phylo model)
-      # res_err is correlated between var1 and var2
-
-      # 1. Phylogenetic errors (independent)
-      err_phylo1 <- paste0("err_phylo_", var1)
-      err_phylo2 <- paste0("err_phylo_", var2)
-
-      model_lines <- c(
-        model_lines,
-        paste0(
-          "  ",
-          err_phylo1,
-          "[1:N] ~ dmnorm(zero_vec[], TAU_phylo_",
-          var1,
-          ")"
-        ),
-        paste0(
-          "  ",
-          err_phylo2,
-          "[1:N] ~ dmnorm(zero_vec[], TAU_phylo_",
-          var2,
-          ")"
-        )
-      )
-
-      # 2. Correlated residual errors
-      # We need a loop for this as it's i.i.d across species but correlated within species
+      # Define pair-specific names
       res_err <- paste0("err_res_", var1, "_", var2)
       tau_res_matrix <- paste0("TAU_res_", var1, "_", var2)
+      cov_matrix <- paste0("cov_", var1, "_", var2)
 
+      # Define Residual Precision/Sigma Parameters (Deduplicated)
+      # sigma_res_var is shared across all pairs involving var
+      for (v in c(var1, var2)) {
+        if (!(v %in% processed_params)) {
+          model_lines <- c(
+            model_lines,
+            paste0("  tau_res_", v, " ~ dgamma(1, 1)"),
+            paste0("  sigma_res_", v, " <- 1/sqrt(tau_res_", v, ")")
+          )
+          processed_params <- c(processed_params, v)
+        }
+      }
+
+      # Define Correlation and Covariance Matrix
       model_lines <- c(
         model_lines,
-        paste0("  for (i in 1:N) {"),
-        paste0(
-          "    ",
-          res_err,
-          "[i, 1:2] ~ dmnorm(zero_vec_2[], ",
-          tau_res_matrix,
-          "[1:2, 1:2])"
-        ),
-
-        # 3. Observation model
-        # var[i] ~ dnorm(mu[i] + phylo[i] + res[i], high_precision)
-        # Note: If variables have measurement error, we should use that precision.
-        # For now, assuming "perfect" observation of the sum components (standard GLMM)
-        # But JAGS needs stochastic node for data.
-        # Standard trick: var[i] ~ dnorm(mean, tau_obs)
-        # Here mean = mu + phylo + res
-
-        # For var1
-        paste0(
-          "    ",
-          var1,
-          "[i] ~ dnorm(mu",
-          var1,
-          suffix1,
-          "[i] + ",
-          err_phylo1,
-          "[i] + ",
-          res_err,
-          "[i, 1], tau_obs_",
-          var1,
-          ")"
-        ),
-
-        # For var2
-        paste0(
-          "    ",
-          var2,
-          "[i] ~ dnorm(mu",
-          var2,
-          suffix2,
-          "[i] + ",
-          err_phylo2,
-          "[i] + ",
-          res_err,
-          "[i, 2], tau_obs_",
-          var2,
-          ")"
-        ),
-        paste0("  }")
-      )
-
-      # Priors for the correlated residuals
-      # Construct 2x2 precision matrix from variances and correlation
-      model_lines <- c(
-        model_lines,
-        paste0(
-          "  # Priors for correlated residuals between ",
-          var1,
-          " and ",
-          var2
-        ),
+        paste0("  # Correlated residuals between ", var1, " and ", var2),
         paste0(
           "  z_",
           var1,
@@ -913,19 +849,12 @@ phybase_model <- function(
           " ~ dnorm(0, 1)  # Fisher Z transformation"
         ),
         paste0("  rho_", var1, "_", var2, " <- tanh(z_", var1, "_", var2, ")"),
-        paste0("  tau_res_", var1, " ~ dgamma(1, 1)"),
-        paste0("  tau_res_", var2, " ~ dgamma(1, 1)"),
-        paste0("  sigma_res_", var1, " <- 1/sqrt(tau_res_", var1, ")"),
-        paste0("  sigma_res_", var2, " <- 1/sqrt(tau_res_", var2, ")"),
-
-        # Covariance matrix construction
-        paste0("  cov_", var1, "_", var2, "[1, 1] <- 1/tau_res_", var1),
-        paste0("  cov_", var1, "_", var2, "[2, 2] <- 1/tau_res_", var2),
+        # Restore Diagonal Elements
+        paste0("  ", cov_matrix, "[1, 1] <- 1/tau_res_", var1),
+        paste0("  ", cov_matrix, "[2, 2] <- 1/tau_res_", var2),
         paste0(
-          "  cov_",
-          var1,
-          "_",
-          var2,
+          "  ",
+          cov_matrix,
           "[1, 2] <- rho_",
           var1,
           "_",
@@ -935,53 +864,91 @@ phybase_model <- function(
           " * sigma_res_",
           var2
         ),
-        paste0(
-          "  cov_",
-          var1,
-          "_",
-          var2,
-          "[2, 1] <- cov_",
-          var1,
-          "_",
-          var2,
-          "[1, 2]"
-        ),
+        paste0("  ", cov_matrix, "[2, 1] <- ", cov_matrix, "[1, 2]"),
 
+        # Calculate Precision Matrix
         paste0(
           "  ",
           tau_res_matrix,
-          "[1:2, 1:2] <- inverse(cov_",
-          var1,
-          "_",
-          var2,
+          "[1:2, 1:2] <- inverse(",
+          cov_matrix,
           "[1:2, 1:2])"
+        ),
+
+        # Generate correlated error terms from MVN
+        paste0("  for (i in 1:N) {"),
+        paste0(
+          "    ",
+          res_err,
+          "[i, 1:2] ~ dmnorm(zero_vec[1:2], ",
+          tau_res_matrix,
+          "[1:2, 1:2])"
+        ),
+        paste0("  }")
+      )
+
+      # Record error terms for each variable
+      # Usage: err_res_var1_var2[i, 1] for var1, [i, 2] for var2
+      vars_error_terms[[var1]] <- c(
+        vars_error_terms[[var1]],
+        paste0(res_err, "[i, 1]")
+      )
+      vars_error_terms[[var2]] <- c(
+        vars_error_terms[[var2]],
+        paste0(res_err, "[i, 2]")
+      )
+    }
+
+    # 2. Generate Likelihood for each variable (summing error terms)
+    for (var in names(vars_error_terms)) {
+      err_terms <- vars_error_terms[[var]]
+      suffix <- if ((response_counter[[var]] %||% 0) > 1) "1" else ""
+
+      # Define Phylogenetic Error (if structure exists)
+      phylo_term <- ""
+      if (length(structure_names) > 0) {
+        err_phylo <- paste0("err_phylo_", var)
+        model_lines <- c(
+          model_lines,
+          paste0("  tau_phylo_", var, " ~ dgamma(1, 1)"),
+          paste0(
+            "  ",
+            err_phylo,
+            "[1:N] ~ dmnorm(zero_vec[], TAU_phylo_",
+            var,
+            ")"
+          )
         )
-      )
+        phylo_term <- paste0(" + ", err_phylo, "[i]")
+      }
 
-      # Priors for phylogenetic errors (standard)
+      # Define Observation Precision (Constant High Precision)
       model_lines <- c(
         model_lines,
-        paste0("  tau_phylo_", var1, " ~ dgamma(1, 1)"),
-        paste0("  tau_phylo_", var2, " ~ dgamma(1, 1)")
+        paste0("  tau_obs_", var, " <- 10000")
       )
 
-      # Observation precision (high if no measurement error, or estimated)
-      # For now, we fix it high to treat the decomposition as exact-ish
-      # Or better: treat it as the residual error if we didn't have the decomposition
-      # Actually, in GLMMs, usually: Y = Fixed + Random + Error
-      # Here: Y = Mu + Phylo + (Correlated_Res) + (Measurement_Error)
-      # If no measurement error, Correlated_Res IS the residual.
-      # So we can set tau_obs to be very high (effectively 0 variance)
-      # BUT JAGS fails with infinite precision for data.
-      # So we use a large value, e.g., 10000 * observed precision?
-      # OR: We can just say the residual IS the correlated part.
-      # But we defined res[i] ~ dmnorm.
-      # So Y[i] IS deterministic given res[i]? No.
-      # Let's use a fixed high precision for the "observation" link
+      # Build sum string
+      sum_res_errs <- paste(err_terms, collapse = " + ")
+
       model_lines <- c(
         model_lines,
-        paste0("  tau_obs_", var1, " <- 10000"),
-        paste0("  tau_obs_", var2, " <- 10000")
+        paste0("  for (i in 1:N) {"),
+        paste0(
+          "    ",
+          var,
+          "[i] ~ dnorm(mu",
+          var,
+          suffix,
+          "[i]",
+          phylo_term,
+          " + ",
+          sum_res_errs,
+          ", tau_obs_",
+          var,
+          ")"
+        ),
+        paste0("  }")
       )
     }
   }
@@ -1847,7 +1814,8 @@ phybase_model <- function(
   }
 
   # Covariance for correlated vars (phylogenetic part)
-  if (!is.null(induced_correlations)) {
+  # Only use VCV approach when optimise=FALSE; optimised models use eigendecomposition
+  if (!is.null(induced_correlations) && !optimise) {
     for (var in correlated_vars) {
       if (multi.tree) {
         model_lines <- c(
@@ -1885,9 +1853,18 @@ phybase_model <- function(
 
     if (independent) {
       # Independent imputation (i.i.d normal)
-      # Unless latent & standardized (handled below)
       if (is_latent && standardize_latent) {
-        # Use N(0,1) prior handled in the standardized block
+        # Use N(0,1) prior for standardized latent variable
+        model_lines <- c(
+          model_lines,
+          paste0("  for (i in 1:N) {"),
+          paste0(
+            "    ",
+            var,
+            "[i] ~ dnorm(0, 1)  # Standardized latent variable"
+          ),
+          paste0("  }")
+        )
       } else {
         model_lines <- c(
           model_lines,
@@ -2083,7 +2060,8 @@ phybase_model <- function(
       }
     }
 
-    if (!optimise) {
+    # Only generate TAU matrix with VCV when there is a structure defined
+    if (!optimise && length(structure_names) > 0) {
       if (multi.tree) {
         model_lines <- c(
           model_lines,
