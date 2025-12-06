@@ -820,38 +820,73 @@ results <- phybase_compare(
 print(results$comparison)
 ```
 
-## Model Comparison (WAIC)
+## Model Comparison (WAIC with Standard Errors)
 
-You can compare models using the Widely Applicable Information Criterion (WAIC). There are two ways to calculate WAIC:
+The Widely Applicable Information Criterion (WAIC) is the recommended approach for model comparison in `phybaseR`. The package implements **WAIC with standard errors** following Vehtari, Gelman & Gabry (2017), allowing you to assess whether model differences are statistically significant.
 
-### Option 1: Calculate during model fitting
+### Calculating WAIC
 
-Set `WAIC = TRUE` in `phybase_run()` to calculate WAIC automatically:
+Set `WAIC = TRUE` in `phybase_run()` to calculate WAIC with standard errors automatically:
 
-```{r waic_during_run, eval=FALSE}
+```{r waic_example, eval=FALSE}
 fit <- phybase_run(
     data = data,
-    tree = tree,
-    equations = equations,
-    WAIC = TRUE, # Calculate WAIC during fitting
-    n.chains = 2 # WAIC requires at least 2 chains
+    structure = tree,
+    id_col = "SP",
+    equations = list(Y ~ X),
+    WAIC = TRUE, # Enable WAIC calculation
+    n.chains = 2, # At least 2 chains recommended
+    n.iter = 2000
 )
 
-# WAIC is stored in the fit object
+# View WAIC results with standard errors
 fit$WAIC
+#            Estimate   SE
+# elpd_waic   -617.3  12.4
+# p_waic        12.3   3.1
+# waic        1234.5  24.8
 ```
 
-### Option 2: Calculate from an existing fitted model
+**Output interpretation**:
+- `elpd_waic`: Expected log pointwise predictive density (higher is better)
+- `p_waic`: Effective number of parameters
+- `waic`: Widely Applicable Information Criterion (lower is better)
+- `SE`: Standard error for each metric
 
-If you didn't calculate WAIC initially, use the standalone `phybase_waic()` function. This is useful because you don't need to rerun the entire model - it uses the existing MCMC samples:
+### Comparing Models
 
-```{r waic_standalone, eval=FALSE}
-# Calculate WAIC from a previously fitted model
-waic_res <- phybase_waic(fit, n.iter = 2000)
-waic_res
+Compare two models and assess significance:
+
+```{r waic_comparison, eval=FALSE}
+# Fit competing models
+fit_complex <- phybase_run(data, tree, list(Y ~ X1 + X2), WAIC = TRUE)
+fit_simple <- phybase_run(data, tree, list(Y ~ X1), WAIC = TRUE)
+
+# View WAIC
+fit_complex$WAIC["waic", "Estimate"] # e.g., 212.8
+fit_simple$WAIC["waic", "Estimate"] # e.g., 220.0
+
+# Calculate difference and combined SE
+waic_diff <- fit_complex$WAIC["waic", "Estimate"] -
+    fit_simple$WAIC["waic", "Estimate"]
+se_diff <- sqrt(fit_complex$WAIC["waic", "SE"]^2 +
+    fit_simple$WAIC["waic", "SE"]^2)
+
+# Statistical significance test
+abs(waic_diff) > 2 * se_diff # TRUE = models significantly different
 ```
 
-**Note**: WAIC requires at least 2 chains. If you only ran 1 chain, you'll need to refit the model with `n.chains = 2` or more before calculating WAIC.
+**Rule of thumb**: Models are considered significantly different if `|WAIC₁ - WAIC₂| > 2 × SE_diff`
+
+### Notes
+
+- **At least 2 chains**: WAIC requires `n.chains >= 2` for reliable standard errors
+- **Sufficient samples**: Use at least n.iter = 1000 (preferably 2000+) for stable SE estimates
+- **Lower is better**: Choose the model with the lowest WAIC
+- **Pointwise storage**: Pointwise log-likelihoods are automatically stored for detailed model diagnostics
+- **All distributions supported**: Works with Gaussian, Poisson, Binomial, NegBin, Ordinal, Multinomial
+
+**Reference**: Vehtari, A., Gelman, A. & Gabry, J. (2017). Practical Bayesian model evaluation using leave-one-out cross-validation and WAIC. *Statistics and Computing*, 27(5), 1413-1432.
 
 
 ## Model Validation (d-separation)
@@ -1057,8 +1092,8 @@ fit_with_latent <- phybase_run(
 )
 
 # Valid comparison!
-fit_independent$WAIC$WAIC  # Higher WAIC
-fit_with_latent$WAIC$WAIC  # Lower WAIC → latent structure supported
+fit_independent$WAIC["waic", "Estimate"]  # Higher WAIC
+fit_with_latent$WAIC["waic", "Estimate"]  # Lower WAIC → latent structure supported
 ```
 
 **Why MAG works**: The MAG approach marginalizes out latent variables, so WAIC is calculated **only on observed data** (S, G, L, BR, BM) in both models. This makes the information criteria directly comparable.
