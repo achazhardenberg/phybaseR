@@ -936,10 +936,15 @@ phybase_model <- function(
         phylo_term <- paste0(" + ", err_phylo, "[i]")
       }
 
-      # Define Observation Precision (Constant High Precision)
+      # Define Observation Precision (Estimated)
+      # This allows proper variance decomposition between:
+      # - Structural effects (beta coefficients)
+      # - Correlation structure (err_res from Wishart)
+      # - Observation noise (tau_obs)
       model_lines <- c(
         model_lines,
-        paste0("  tau_obs_", var, " <- 10000")
+        paste0("  tau_obs_", var, " ~ dgamma(1, 1)"),
+        paste0("  sigma_obs_", var, " <- 1/sqrt(tau_obs_", var, ")")
       )
 
       # Build sum string
