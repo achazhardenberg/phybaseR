@@ -142,3 +142,38 @@ Initializing model
 +     c("beta1_0", "beta1_1", "beta2_0", "beta2_1"),
 +     n.iter = 3000
 + )
+> 
+> # 4. Check Recovery
+> sum_stats <- summary(samples)
+> print(sum_stats$statistics)
+              Mean        SD    Naive SE Time-series SE
+beta1_0  1.3620381 0.3351621 0.003532918    0.006571926
+beta1_1  0.2589189 0.3381107 0.003563999    0.006722078
+beta2_0 -0.0147875 0.4002579 0.004219089    0.008972122
+beta2_1 -0.7856774 0.4590511 0.004838824    0.010007322
+> 
+> # True values
+> cat("\nTrue Values:\n")
+
+True Values:
+> cat("beta1_0:", beta1_0, "\n")
+beta1_0: 0.5 
+> cat("beta1_1:", beta1_1, "\n")
+beta1_1: 1.2 
+> cat("beta2_0:", beta2_0, "\n")
+beta2_0: -0.5 
+> cat("beta2_1:", beta2_1, "\n")
+beta2_1: -0.8 
+> 
+> # Check if true values are within 95% CI
+> ci <- sum_stats$quantiles[, c(1, 5)]
+> print(ci)
+              2.5%     97.5%
+beta1_0  0.7284717 2.0405748
+beta1_1 -0.3973633 0.9339652
+beta2_0 -0.8169371 0.7483881
+beta2_1 -1.7096416 0.0750485
+> 
+> proc.time()
+   user  system elapsed 
+154.601   2.579 165.513 

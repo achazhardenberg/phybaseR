@@ -1,0 +1,133 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin20
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(phybaseR)
+> library(ape)
+> 
+> data("rhino.dat")
+> data("rhino.tree")
+> 
+> data_list <- list(
++     BM = rhino.dat$BM,
++     NL = rhino.dat$NL,
++     DD = rhino.dat$DD,
++     LS = rhino.dat$LS,
++     RS = rhino.dat$RS
++ )
+> equations <- list(LS ~ BM, NL ~ BM + RS, DD ~ NL)
+> 
+> # Run with dsep=TRUE
+> tryCatch(
++     {
++         fit_rhino_dsep <- phybase_run(
++             data = data_list,
++             tree = rhino.tree,
++             equations = equations,
++             dsep = TRUE,
++             n.iter = 100, # Short run for speed
++             n.burnin = 50
++         )
++         print(summary(fit_rhino_dsep))
++     },
++     error = function(e) {
++         print(e)
++     }
++ )
+Standardizing tree (max_bt: 3.31 -> 1.0)
+Note: WAIC and DIC are not computed for d-separation tests (not needed for conditional independence testing).
+Generating d-separation tests...
+Basis Set for DAG: 
+I(X,Y|Z) means X is d-separated from Y given the set Z in the DAG 
+I( LS , NL | BM ) 
+I( LS , DD |  ) 
+I( LS , RS |  ) 
+I( DD , BM |  ) 
+I( DD , RS |  ) 
+I( BM , RS |  ) 
+Running 6 d-separation tests sequentially...
+  Test 1/6: LS ~ NL + BM
+    Monitoring: beta_LS_NL, beta_LS_BM
+NOTE: Stopping adaptation
+
+
+  Test 2/6: LS ~ DD
+    Monitoring: beta_LS_DD
+NOTE: Stopping adaptation
+
+
+  Test 3/6: LS ~ RS
+    Monitoring: beta_LS_RS
+NOTE: Stopping adaptation
+
+
+  Test 4/6: DD ~ BM
+    Monitoring: beta_DD_BM
+NOTE: Stopping adaptation
+
+
+  Test 5/6: DD ~ RS
+    Monitoring: beta_DD_RS
+NOTE: Stopping adaptation
+
+
+  Test 6/6: BM ~ RS
+    Monitoring: beta_BM_RS
+NOTE: Stopping adaptation
+
+
+PhyBaSE d-separation Tests
+==========================
+
+              Test    Parameter Estimate LowerCI UpperCI Indep P_approx_0  Rhat
+ LS _||_ NL | {BM} beta_LS_NL_1    0.020  -0.118   0.151   Yes      0.933 0.961
+        LS _||_ DD beta_LS_DD_2    0.153  -0.078   0.312   Yes      0.267 1.096
+        LS _||_ RS beta_LS_RS_3   -0.071  -0.278   0.026   Yes      0.400 1.184
+        DD _||_ BM beta_DD_BM_4    0.282   0.140   0.446    No      0.000 1.103
+        DD _||_ RS beta_DD_RS_5    0.261   0.097   0.433    No      0.000 1.231
+        BM _||_ RS beta_BM_RS_6   -0.071  -0.283   0.032   Yes      0.667 1.474
+ n.eff
+    15
+    15
+    15
+    15
+    32
+    25
+
+Legend:
+  Indep: 'Yes' = Conditionally Independent, 'No' = Dependent (based on 95% CI)
+  P(~0): Bayesian probability that effect crosses zero (0-1 scale)
+
+Note: For d-separation, we expect high P(~0) values (close to 1).
+               Test    Parameter Estimate LowerCI UpperCI Indep P_approx_0
+1 LS _||_ NL | {BM} beta_LS_NL_1    0.020  -0.118   0.151   Yes      0.933
+2        LS _||_ DD beta_LS_DD_2    0.153  -0.078   0.312   Yes      0.267
+3        LS _||_ RS beta_LS_RS_3   -0.071  -0.278   0.026   Yes      0.400
+4        DD _||_ BM beta_DD_BM_4    0.282   0.140   0.446    No      0.000
+5        DD _||_ RS beta_DD_RS_5    0.261   0.097   0.433    No      0.000
+6        BM _||_ RS beta_BM_RS_6   -0.071  -0.283   0.032   Yes      0.667
+   Rhat n.eff
+1 0.961    15
+2 1.096    15
+3 1.184    15
+4 1.103    15
+5 1.231    32
+6 1.474    25
+There were 29 warnings (use warnings() to see them)
+> 
+> proc.time()
+   user  system elapsed 
+  3.364   0.066   3.708 
