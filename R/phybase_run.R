@@ -1296,6 +1296,26 @@ phybase_run <- function(
     }
   }
 
+  # Add pointwise log-likelihood monitoring if WAIC requested
+  # (Future: LOO will also use this)
+  if (WAIC) {
+    # Extract log_lik parameters from model
+    log_lik_params <- unique(c(
+      extract_names("^\\s*log_lik")
+    ))
+
+    if (length(log_lik_params) > 0) {
+      monitor <- unique(c(monitor, log_lik_params))
+      if (!quiet) {
+        message(
+          "Monitoring ",
+          length(log_lik_params),
+          " pointwise log-likelihood parameter(s) for WAIC"
+        )
+      }
+    }
+  }
+
   # Add response variables
   # Use perl=TRUE for robust regex matching of variable names
   matches <- regmatches(
@@ -1573,19 +1593,9 @@ phybase_run <- function(
       )
     }
 
-    # Compute WAIC
+    # Compute WAIC using pointwise log-likelihoods
     if (WAIC) {
-      waic_samples <- rjags::jags.samples(
-        ic_model,
-        c("WAIC", "deviance"),
-        type = "mean",
-        n.iter = min(n.iter - n.burnin, 1000),
-        thin = n.thin
-      )
-      waic_samples$p_waic <- waic_samples$WAIC
-      waic_samples$waic <- waic_samples$deviance + waic_samples$p_waic
-      tmp <- sapply(waic_samples, sum)
-      result$WAIC <- round(c(waic = tmp[["waic"]], p_waic = tmp[["p_waic"]]), 1)
+      result$WAIC <- phybase_waic(result)
     }
   } else if ((DIC || WAIC) && parallel && n.cores > 1 && n.chains > 1) {
     # Parallel without recompilation - warn user
@@ -1596,32 +1606,24 @@ phybase_run <- function(
       result$DIC <- NULL
     }
     if (WAIC) {
-      warning(
-        "WAIC calculation disabled for parallel chains. Set ic_recompile=TRUE to compute WAIC."
-      )
-      result$WAIC <- NULL
+      # WAIC can be computed from pointwise log-likelihoods even with parallel chains
+      result$WAIC <- phybase_waic(result)
     }
   } else {
     # Sequential execution - use standard approach
     if (DIC) {
       result$DIC <- rjags::dic.samples(model, n.iter = n.iter - n.burnin)
     }
-
-    if (WAIC) {
-      waic_samples <- rjags::jags.samples(
-        model,
-        c("WAIC", "deviance"),
-        type = "mean",
-        n.iter = n.iter - n.burnin,
-        thin = n.thin
-      )
-      waic_samples$p_waic <- waic_samples$WAIC
-      waic_samples$waic <- waic_samples$deviance + waic_samples$p_waic
-      tmp <- sapply(waic_samples, sum)
-      result$WAIC <- round(c(waic = tmp[["waic"]], p_waic = tmp[["p_waic"]]), 1)
-    }
+    # WAIC will be computed after class assignment
   }
 
+  # Assign class before WAIC computation (phybase_waic needs this)
   class(result) <- "phybase"
+
+  # Compute WAIC if requested (must be after class assignment)
+  if (WAIC) {
+    result$WAIC <- phybase_waic(result)
+  }
+
   return(result)
 }

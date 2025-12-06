@@ -171,7 +171,17 @@ phybase_model <- function(
         model_lines,
         paste0("    ", mu_err, "[i] <- 0"),
         paste0("    logit(", p, "[i]) <- ", linpred, " + ", err, "[i]"),
-        paste0("    ", response, "[i] ~ dbern(", p, "[i])")
+        paste0("    ", response, "[i] ~ dbern(", p, "[i])"),
+        paste0(
+          "    log_lik_",
+          response,
+          suffix,
+          "[i] <- logdensity.bern(",
+          response,
+          "[i], ",
+          p,
+          "[i])"
+        )
       )
     } else if (dist == "multinomial") {
       # Multinomial: K categories
@@ -255,6 +265,18 @@ phybase_model <- function(
           "    ",
           response,
           "[i] ~ dcat(p_",
+          response,
+          "[i, 1:",
+          K_var,
+          "])"
+        ),
+        paste0(
+          "    log_lik_",
+          response,
+          suffix,
+          "[i] <- logdensity.cat(",
+          response,
+          "[i], p_",
           response,
           "[i, 1:",
           K_var,
@@ -349,6 +371,18 @@ phybase_model <- function(
           "[i, 1:",
           K_var,
           "])"
+        ),
+        paste0(
+          "    log_lik_",
+          response,
+          suffix,
+          "[i] <- logdensity.cat(",
+          response,
+          "[i], p_",
+          response,
+          "[i, 1:",
+          K_var,
+          "])"
         )
       )
     } else if (dist == "poisson") {
@@ -362,7 +396,17 @@ phybase_model <- function(
         model_lines,
         paste0("    # Poisson log link for ", response),
         paste0("    log(", mu, "[i]) <- ", linpred, " + ", err, "[i]"),
-        paste0("    ", response, "[i] ~ dpois(", mu, "[i])")
+        paste0("    ", response, "[i] ~ dpois(", mu, "[i])"),
+        paste0(
+          "    log_lik_",
+          response,
+          suffix,
+          "[i] <- logdensity.pois(",
+          response,
+          "[i], ",
+          mu,
+          "[i])"
+        )
       )
     } else if (dist == "negbinomial") {
       # Negative Binomial: log(μ) = linpred + error
@@ -378,7 +422,19 @@ phybase_model <- function(
         paste0("    # Negative Binomial log link for ", response),
         paste0("    log(", mu, "[i]) <- ", linpred, " + ", err, "[i]"),
         paste0("    ", p, "[i] <- ", r, " / (", r, " + ", mu, "[i])"),
-        paste0("    ", response, "[i] ~ dnegbin(", p, "[i], ", r, ")")
+        paste0("    ", response, "[i] ~ dnegbin(", p, "[i], ", r, ")"),
+        paste0(
+          "    log_lik_",
+          response,
+          suffix,
+          "[i] <- logdensity.negbin(",
+          response,
+          "[i], ",
+          p,
+          "[i], ",
+          r,
+          ")"
+        )
       )
     } else {
       stop(paste("Unknown distribution:", dist))
@@ -433,6 +489,20 @@ phybase_model <- function(
               tau_res,
               ")"
             ),
+            paste0(
+              "    log_lik_",
+              response,
+              suffix,
+              "[i] <- logdensity.norm(",
+              response_var,
+              "[i], ",
+              mu,
+              "[i] + ",
+              err,
+              "[i], ",
+              tau_res,
+              ")"
+            ),
             paste0("  }")
           )
         } else {
@@ -450,6 +520,18 @@ phybase_model <- function(
                 "    ",
                 response_var,
                 "[i] ~ dnorm(",
+                mu,
+                "[i], ",
+                tau_e,
+                ")"
+              ),
+              paste0(
+                "    log_lik_",
+                response,
+                suffix,
+                "[i] <- logdensity.norm(",
+                response_var,
+                "[i], ",
                 mu,
                 "[i], ",
                 tau_e,
@@ -516,10 +598,25 @@ phybase_model <- function(
                 tau_e,
                 ")"
               ),
+              paste0(
+                "    log_lik_",
+                response,
+                suffix,
+                "[i] <- logdensity.norm(",
+                response_var,
+                "[i], ",
+                mu,
+                "[i]",
+                additive_terms,
+                ", ",
+                tau_e,
+                ")"
+              ),
               paste0("  }")
             )
           } else {
             # Standard MVN for complete data (Marginal)
+            # Note: dmnorm is joint, so we compute pointwise log-lik separately
             model_lines <- c(
               model_lines,
               paste0(
@@ -530,7 +627,31 @@ phybase_model <- function(
                 "[1:N], ",
                 tau,
                 ")"
-              )
+              ),
+              paste0("  # Pointwise log-likelihood for MVN"),
+              paste0("  for (i in 1:N) {"),
+              paste0(
+                "    tau_marg_",
+                response,
+                suffix,
+                "[i] <- ",
+                tau,
+                "[i, i]  # Extract diagonal precision (marginal variance)"
+              ),
+              paste0(
+                "    log_lik_",
+                response,
+                suffix,
+                "[i] <- logdensity.norm(",
+                response_var,
+                "[i], ",
+                mu,
+                "[i], tau_marg_",
+                response,
+                suffix,
+                "[i])"
+              ),
+              paste0("  }")
             )
           }
         }
@@ -967,6 +1088,23 @@ phybase_model <- function(
           var,
           ")"
         ),
+        paste0(
+          "    log_lik_",
+          var,
+          suffix,
+          "[i] <- logdensity.norm(",
+          var,
+          "[i], mu",
+          var,
+          suffix,
+          "[i]",
+          phylo_term,
+          " + ",
+          sum_res_errs,
+          ", tau_obs_",
+          var,
+          ")"
+        ),
         paste0("  }")
       )
     }
@@ -996,6 +1134,15 @@ phybase_model <- function(
           paste0(
             "    ",
             var,
+            "_tau_obs[i] <- 1/(",
+            var,
+            "_se[i] * ",
+            var,
+            "_se[i])"
+          ),
+          paste0(
+            "    ",
+            var,
             "_mean[i] ~ dnorm(",
             var,
             "[i], ",
@@ -1003,25 +1150,46 @@ phybase_model <- function(
             "_tau_obs[i])"
           ),
           paste0(
-            "    ",
+            "    log_lik_",
             var,
-            "_tau_obs[i] <- 1/(",
+            "_mean[i] <- logdensity.norm(",
             var,
-            "_se[i] * ",
+            "_mean[i], ",
             var,
-            "_se[i])"
+            "[i], ",
+            var,
+            "_tau_obs[i])"
           ),
           paste0("  }")
         )
       } else if (type == "reps") {
+        # For repeated measures, we need log_lik for EACH observation
+        # Then sum them per individual for WAIC
         model_lines <- c(
           model_lines,
           paste0("  for (i in 1:N) {"),
+          paste0("    log_lik_", var, "_reps[i] <- 0  # Initialize sum"),
           paste0("    for (j in 1:N_reps_", var, "[i]) {"),
           paste0(
             "      ",
             var,
             "_obs[i, j] ~ dnorm(",
+            var,
+            "[i], ",
+            var,
+            "_tau)"
+          ),
+          paste0(
+            "      # Sum pointwise log-likelihoods for this individual"
+          ),
+          paste0(
+            "      log_lik_",
+            var,
+            "_reps[i] <- log_lik_",
+            var,
+            "_reps[i] + logdensity.norm(",
+            var,
+            "_obs[i, j], ",
             var,
             "[i], ",
             var,
