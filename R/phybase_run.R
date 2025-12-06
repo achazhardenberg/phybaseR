@@ -1068,20 +1068,36 @@ phybase_run <- function(
       }
 
       # Filter out equations involving latent variables
+      # Handle equations involving latent variables
       original_eq_count <- length(equations)
-      equations <- Filter(
-        function(eq) {
-          vars <- all.vars(eq)
-          !any(vars %in% latent)
-        },
-        equations
-      )
+      equations <- lapply(equations, function(eq) {
+        vars <- all.vars(eq)
+        if (any(vars %in% latent)) {
+          # Remove latent variables from the formula
+          # We construct a new formula string excluding latent vars
+          rhs <- labels(terms(eq))
+          keep_terms <- rhs[!rhs %in% latent]
 
-      if (!quiet && original_eq_count > length(equations)) {
+          if (length(keep_terms) == 0) {
+            # Becomes intercept-only model
+            new_eq <- as.formula(paste(as.character(eq)[2], "~ 1"))
+          } else {
+            # Keep observed predictors
+            new_eq <- as.formula(paste(
+              as.character(eq)[2],
+              "~",
+              paste(keep_terms, collapse = " + ")
+            ))
+          }
+          return(new_eq)
+        }
+        return(eq)
+      })
+
+      # We no longer filter them out, so we don't report "removed equations"
+      if (!quiet) {
         message(
-          "Using MAG approach: removed ",
-          original_eq_count - length(equations),
-          " equation(s) involving latent variable(s)"
+          "Using MAG approach: marginalized latent variables from structural equations."
         )
       }
 
