@@ -9,14 +9,9 @@ library(ape)
 set.seed(12345)
 
 # Helper function
-`%R%` <- function(x, n) paste(rep(x, n), collapse = "")
-
-cat("=" %R% 78, "\n")
+cat(paste(rep("=", 78), collapse = ""), "\n")
 cat("COMPREHENSIVE WAIC-SE TESTING SUITE\n")
-cat("=" %R% 78, "\n\n")
-
-# Helper function
-`%R%` <- function(x, n) paste(rep(x, n), collapse = "")
+cat(paste(rep("=", 78), collapse = ""), "\n\n")
 
 test_counter <- 0
 pass_counter <- 0
@@ -25,7 +20,7 @@ fail_counter <- 0
 run_test <- function(name, expr) {
     test_counter <<- test_counter + 1
     cat(sprintf("\n[Test %d] %s\n", test_counter, name))
-    cat("-" %R% 78, "\n")
+    cat(paste(rep("-", 78), collapse = ""), "\n")
 
     result <- tryCatch(
         {
@@ -434,9 +429,10 @@ run_test("Mixed distribution model (Gaussian + Poisson)", {
 ##############################################################################
 
 cat("\n")
-cat("=" %R% 78, "\n")
+cat("\n")
+cat(paste(rep("=", 78), collapse = ""), "\n")
 cat("TEST SUMMARY\n")
-cat("=" %R% 78, "\n\n")
+cat(paste(rep("=", 78), collapse = ""), "\n\n")
 
 cat(sprintf("Total tests:  %d\n", test_counter))
 cat(sprintf(

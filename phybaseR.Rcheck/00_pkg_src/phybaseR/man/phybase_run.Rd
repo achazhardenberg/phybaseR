@@ -6,54 +6,91 @@
 \usage{
 phybase_run(
   data,
-  tree,
   equations,
+  id_col = NULL,
+  structure = NULL,
+  tree = NULL,
   monitor = NULL,
   n.chains = 3,
-  n.iter = 2000,
-  n.burnin = floor(n.iter/2),
-  n.thin = max(1, floor((n.iter - n.burnin)/1000)),
+  n.iter = 12500,
+  n.burnin = n.iter/5,
+  n.thin = 10,
   DIC = TRUE,
   WAIC = FALSE,
-  n.adapt = 1000,
+  n.adapt = n.iter/5,
   quiet = FALSE,
   dsep = FALSE,
   variability = NULL,
   distribution = NULL,
   latent = NULL,
   latent_method = c("correlations", "explicit"),
+  standardize_latent = TRUE,
   parallel = FALSE,
   n.cores = 1,
   cl = NULL,
-  ic_recompile = TRUE
+  ic_recompile = TRUE,
+  optimise = TRUE
 )
 }
 \arguments{
-\item{data}{A named list of data for JAGS.}
-
-\item{tree}{A single phylogenetic tree of class \code{"phylo"} or a list of trees of class \code{"multiPhylo"} (i.e., a list of \code{"phylo"} objects). If multiple trees are provided, phylogenetic uncertainty is incorporated by sampling among them during model fitting.}
+\item{data}{Data for the model. Accepts:
+\itemize{
+  \item \code{data.frame}: A data frame with variables as columns. Variables needed
+        for the model are automatically extracted from the equations. Extra columns
+        are ignored.
+  \item \code{list}: A named list where each element is a vector of values
+        (traditional format for backward compatibility).
+}}
 
 \item{equations}{A list of model formulas describing the structural equation model.}
 
-\item{monitor}{Optional character vector of parameter names to monitor. If \code{NULL}, parameters will be selected automatically based on model structure.}
+\item{id_col}{Character string specifying the column name in a data.frame containing
+unit identifiers (species, individuals, sites, etc.). This is used to:
+\itemize{
+  \item Match data rows to tree tip labels (for phylogenetic models)
+  \item Handle repeated measures (multiple rows per unit share the same covariance)
+}
+If \code{NULL} (default): uses meaningful row names if available.
+Ignored when \code{data} is already a list.}
+
+\item{structure}{The covariance structure for the model. Accepts:
+\itemize{
+  \item \code{"phylo"} object: Phylogenetic tree (Standard PGLS/PhyloSEM).
+  \item \code{"multiPhylo"} object: List of trees (incorporates phylogenetic uncertainty).
+  \item \code{NULL}: Independent model (Standard SEM, no covariance structure).
+  \item \code{matrix}: Custom covariance or precision matrix (e.g., spatial connectivity, kinship).
+}}
+
+\item{tree}{(Deprecated alias for \code{structure}). A single phylogenetic tree of class
+\code{"phylo"} or a list of trees. Use \code{structure} instead for new code.}
+
+\item{monitor}{Parameter monitoring mode. Options:
+\itemize{
+  \item \code{"interpretable"} (default): Monitor only scientifically meaningful parameters:
+        intercepts (alpha), regression coefficients (beta), phylogenetic signals (lambda) for
+       responses, and WAIC terms. Excludes variance components (tau) and auxiliary predictor parameters.
+  \item \code{"all"}: Monitor all model parameters including variance components and implicit equation parameters.
+  \item Custom vector: Provide a character vector of specific parameter names to monitor.
+  \item \code{NULL}: Auto-detect based on model structure (equivalent to "interpretable").
+}}
 
 \item{n.chains}{Number of MCMC chains (default = 3).}
 
-\item{n.iter}{Total number of MCMC iterations (default = 2000).}
+\item{n.iter}{Total number of MCMC iterations (default = 12500).}
 
-\item{n.burnin}{Number of burn-in iterations (default = n.iter / 2).}
+\item{n.burnin}{Number of burn-in iterations (default = n.iter / 5).}
 
-\item{n.thin}{Thinning rate (default = max(1, floor((n.iter - n.burnin) / 1000))).}
+\item{n.thin}{Thinning rate (default = 10).}
 
 \item{DIC}{Logical; whether to compute DIC using \code{dic.samples()} (default = TRUE).
 **Note**: DIC penalty will be inflated for models with measurement error or repeated measures
-because latent variables are counted as parameters (penalty ≈ structural parameters + N).
+because latent variables are counted as parameters (penalty ~ structural parameters + N).
 For model comparison, use WAIC or compare mean deviance across models with similar structure.}
 
 \item{WAIC}{Logical; whether to sample values for WAIC and deviance (default = FALSE).
 WAIC is generally more appropriate than DIC for hierarchical models with latent variables.}
 
-\item{n.adapt}{Number of adaptation iterations (default = 1000).}
+\item{n.adapt}{Number of adaptation iterations (default = n.iter / 5).}
 
 \item{quiet}{Logical; suppress JAGS output (default = FALSE).}
 
@@ -72,7 +109,15 @@ WAIC is generally more appropriate than DIC for hierarchical models with latent 
   }}
 
 \item{distribution}{Optional named character vector specifying the distribution for response variables.
-Default is "gaussian" for all variables. Supported values: "gaussian", "binomial".
+Default is "gaussian" for all variables. Supported values:
+\itemize{
+  \item "gaussian" (default)
+  \item "binomial" (binary data)
+  \item "multinomial" (unordered categorical > 2 levels)
+  \item "ordinal" (ordered categorical > 2 levels)
+  \item "poisson" (count data)
+  \item "negbinomial" (overdispersed count data)
+}
 Example: \code{distribution = c(Gregarious = "binomial")}.}
 
 \item{latent}{Optional character vector of latent (unmeasured) variable names.
@@ -87,6 +132,11 @@ variables that share these latent common causes.}
         paths from latents to observed variables.
 }}
 
+\item{standardize_latent}{Logical; if \code{TRUE} and \code{latent_method = "explicit"},
+adds standardized priors (\code{N(0,1)}) to latent variables to identify scale and location.
+This improves convergence and makes regression coefficients interpretable as standardized effects.
+Only applicable when using explicit latent variable modeling (default = TRUE).}
+
 \item{parallel}{Logical; if \code{TRUE}, run MCMC chains in parallel (default = FALSE).
 Note: Requires \code{n.cores > 1} to take effect.}
 
@@ -99,6 +149,10 @@ If \code{NULL}, a cluster will be created and destroyed automatically.}
 \item{ic_recompile}{Logical; if \code{TRUE} and \code{parallel = TRUE}, recompile the model
 after parallel chains to compute DIC/WAIC (default = TRUE).
 This adds a small sequential overhead but enables information criteria calculation.}
+
+\item{optimise}{Logical; if \code{TRUE} (default), use the optimized random effects formulation
+for phylogenetic models. This is significantly faster (5-10x) and more numerically stable.
+If \code{FALSE}, use the traditional marginal formulation (slower, but provided for comparison).}
 }
 \value{
 A list of class \code{"phybase"} with model output and diagnostics.

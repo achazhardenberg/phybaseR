@@ -855,30 +855,55 @@ fit$WAIC
 
 ### Comparing Models
 
-Compare two models and assess significance:
+Compare fitted models using `phybase_compare()`, which returns a ranked table with WAIC, standard errors, differences, and Akaike weights.
+
+#### Option 1: Compare Fitted Models
 
 ```{r waic_comparison, eval=FALSE}
 # Fit competing models
-fit_complex <- phybase_run(data, tree, list(Y ~ X1 + X2), WAIC = TRUE)
-fit_simple <- phybase_run(data, tree, list(Y ~ X1), WAIC = TRUE)
+fit_complex <- phybase_run(..., WAIC = TRUE)
+fit_simple <- phybase_run(..., WAIC = TRUE)
 
-# View WAIC
-fit_complex$WAIC["waic", "Estimate"] # e.g., 212.8
-fit_simple$WAIC["waic", "Estimate"] # e.g., 220.0
+# Compare results
+comp <- phybase_compare(fit_complex, fit_simple)
+print(comp)
 
-# Calculate difference and combined SE
-waic_diff <- fit_complex$WAIC["waic", "Estimate"] -
-    fit_simple$WAIC["waic", "Estimate"]
-se_diff <- sqrt(fit_complex$WAIC["waic", "SE"]^2 +
-    fit_simple$WAIC["waic", "SE"]^2)
-
-# Statistical significance test
-abs(waic_diff) > 2 * se_diff # TRUE = models significantly different
+# Output:
+#              WAIC   SE dWAIC  dSE p_waic weight
+# fit_complex 212.8 12.4   0.0  0.0   12.3  0.98
+# fit_simple  220.0 11.8   7.2  3.1   10.5  0.02
 ```
 
-**Rule of thumb**: Models are considered significantly different if `|WAIC₁ - WAIC₂| > 2 × SE_diff`
+**Interpretation**:
+- **dWAIC**: Difference from the best model.
+- **dSE**: Standard error of the difference. A difference is significant if `|dWAIC| > 2 * dSE`.
+- **weight**: Probability that the model is the best among the set.
 
-### Notes
+#### Option 2: Run and Compare in Parallel
+
+You can also specify multiple models and run them in parallel (this automatically enables WAIC):
+
+```{r batch_comparison, eval=FALSE}
+# Define model specifications
+specs <- list(
+    Full = list(equations = list(Y ~ X1 + X2)),
+    Reduced = list(equations = list(Y ~ X1)),
+    Null = list(equations = list(Y ~ 1))
+)
+
+# Run batch in parallel
+results <- phybase_compare(
+    model_specs = specs,
+    data = data,
+    tree = tree,
+    n.cores = 3 # Parallel execution
+)
+
+# View comparison table
+print(results$comparison)
+```
+
+### Notes on Comparison
 
 - **At least 2 chains**: WAIC requires `n.chains >= 2` for reliable standard errors
 - **Sufficient samples**: Use at least n.iter = 1000 (preferably 2000+) for stable SE estimates

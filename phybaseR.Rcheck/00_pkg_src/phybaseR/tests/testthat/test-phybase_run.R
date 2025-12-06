@@ -6,12 +6,6 @@ test_that("phybase_run validates inputs", {
         phybase_run(data = NULL, tree = tree, equations = list(Y ~ X)),
         "data"
     )
-
-    # Missing tree
-    expect_error(
-        phybase_run(data = list(), tree = NULL, equations = list(Y ~ X)),
-        "tree"
-    )
 })
 
 test_that("phybase_run completes a simple run", {

@@ -25,21 +25,19 @@ flush(stderr()); flush(stdout())
 
 base::assign(".ptime", proc.time(), pos = "CheckExEnv")
 ### Name: phybase_compare
-### Title: Compare Multiple PhyBaSE Models in Parallel
+### Title: Compare PhyBaSE Models
 ### Aliases: phybase_compare
 
 ### ** Examples
 
 ## Not run: 
-##D   # Define models
-##D   models <- list(
-##D     m1 = list(equations = list(Y ~ X)),
-##D     m2 = list(equations = list(Y ~ X + Z))
-##D   )
+##D   # Mode 1: Compare existing fits
+##D   phybase_compare(fit1, fit2)
 ##D 
-##D   # Run comparison
-##D   comp <- phybase_compare(models, data, tree, n.cores = 2, n.iter = 1000)
-##D   print(comp$comparison)
+##D   # Mode 2: Run and compare
+##D   specs <- list(m1 = list(equations = list(Y ~ X)), m2 = list(equations = list(Y ~ X + Z)))
+##D   res <- phybase_compare(specs, data = df, tree = tr, n.cores = 2)
+##D   print(res$comparison)
 ## End(Not run)
 
 
@@ -69,7 +67,6 @@ equations_latent <- list(X ~ Quality, Y ~ Quality)
 result <- phybase_dsep(equations_latent, latent = "Quality")
 # result$tests: m-separation tests
 # result$correlations: induced correlation between X and Y
-
 
 
 
@@ -109,6 +106,60 @@ base::assign(".ptime", proc.time(), pos = "CheckExEnv")
 base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
 base::cat("phybase_format_data", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
 cleanEx()
+nameEx("phybase_loo")
+### * phybase_loo
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: phybase_loo
+### Title: Calculate LOO-CV for a PhyBaSE Model
+### Aliases: phybase_loo
+
+### ** Examples
+
+## Not run: 
+##D   fit <- phybase_run(data, tree, equations)
+##D   loo_result <- phybase_loo(fit)
+##D   print(loo_result)
+##D 
+##D   # Check for problematic observations
+##D   plot(loo_result)
+##D 
+##D   # Compare models
+##D   loo_compare(loo_result1, loo_result2)
+## End(Not run)
+
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("phybase_loo", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
+nameEx("phybase_loo_compare")
+### * phybase_loo_compare
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: phybase_loo_compare
+### Title: Compare Models Using LOO-CV
+### Aliases: phybase_loo_compare
+
+### ** Examples
+
+## Not run: 
+##D   loo1 <- phybase_loo(fit1)
+##D   loo2 <- phybase_loo(fit2)
+##D   phybase_loo_compare(loo1, loo2)
+## End(Not run)
+
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("phybase_loo_compare", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
 nameEx("phybase_model")
 ### * phybase_model
 
@@ -138,15 +189,27 @@ flush(stderr()); flush(stdout())
 
 base::assign(".ptime", proc.time(), pos = "CheckExEnv")
 ### Name: phybase_waic
-### Title: Calculate WAIC for a PhyBaSE Model
+### Title: Calculate WAIC with Standard Errors for a PhyBaSE Model
 ### Aliases: phybase_waic
 
 ### ** Examples
 
 ## Not run: 
-##D   fit <- phybase_run(data, tree, equations)
-##D   waic_res <- phybase_waic(fit, n.iter = 1000)
-##D   print(waic_res)
+##D   # Fit model with WAIC monitoring
+##D   fit <- phybase_run(data, tree, equations, WAIC = TRUE)
+##D 
+##D   # View WAIC with standard errors
+##D   fit$WAIC
+##D   #             Estimate   SE
+##D   # elpd_waic   -617.3   12.4
+##D   # p_waic        12.3    3.1
+##D   # waic        1234.5   24.8
+##D 
+##D   # Compare two models
+##D   fit1$WAIC
+##D   fit2$WAIC
+##D   # Model with lower WAIC is preferred
+##D   # Difference is significant if |WAIC1 - WAIC2| > 2 * sqrt(SE1^2 + SE2^2)
 ## End(Not run)
 
 

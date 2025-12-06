@@ -1232,4 +1232,94 @@ fit_multi <- phybase_run(
 > **Limitation:** Non-Gaussian families (Binomial, Multinomial, Ordinal) currently support only a **single** covariance structure. If you need to use these families, please ensure `structure` contains only one element (e.g., the phylogeny). Support for multiple structures in non-Gaussian models is planned for a future release.
 
 
+## Random Effects Models (GLMMs)
 
+`phybaseR` supports **Linear Mixed Models (LMMs)** and **Generalized Linear Mixed Models (GLMMs)** using `lmer`-style syntax. This allows you to include random intercepts for grouping factors (e.g., species, site, year) alongside phylogenetic effects.
+
+### Syntax
+
+To add a random intercept for a group, use `(1|Group)` inside your model equation:
+
+```r
+equations = list(Y ~ X + (1|Site))
+```
+
+### Example: Gaussian Random Intercept
+
+```r
+# Data with grouping factor 'Site'
+data_glmm <- data.frame(
+    Y = rnorm(100),
+    X = rnorm(100),
+    Site = sample(LETTERS[1:5], 100, replace = TRUE)
+)
+
+fit_glmm <- phybase_run(
+    equations = list(Y ~ X + (1|Site)),
+    data = data_glmm,
+    n.chains = 2,
+    n.iter = 1000
+)
+
+summary(fit_glmm)
+```
+
+**Output Interpretation**:
+- `sigma_Y_Site`: Standard deviation of the random effect (between-site variation).
+- `sigma_Y_res`: Residual standard deviation (within-site variation).
+
+### Multiple Random Effects
+
+You can include multiple additive random effects in the same equation:
+
+```r
+equations = list(Y ~ X + (1|Site) + (1|Year))
+```
+
+This estimates separate variance components for `Site` (`sigma_Y_Site`) and `Year` (`sigma_Y_Year`).
+
+### GLMMs (Non-Gaussian)
+
+Random effects work seamlessly with all supported distributions (Poisson, Binomial, etc.), allowing you to fit phylogenetic GLMMs.
+
+**Example: Poisson GLMM with Overdispersion**
+
+```r
+# Poisson count data with site-level random effects
+fit_pois_glmm <- phybase_run(
+    equations = list(Count ~ Temp + (1|Site)),
+    data = data_counts,
+    distribution = list(Count = "poisson")
+)
+```
+
+In this model:
+- `alphaCount`: Global intercept
+- `beta_Count_Temp`: Effect of temperature
+- `sigma_Count_Site`: Variation between sites
+- `sigma_Count_res`: Overdispersion (residual variation beyond Poisson expectation)
+
+### Notes
+- **Random Slopes**: Currently, only random intercepts `(1|Group)` are supported. Random slopes `(X|Group)` are not yet implemented and will default to a random intercept with a warning.
+- **Optimization**: Random effects models use the optimized JAGS implementation by default for speed.
+
+
+
+### Global Random Effects
+
+If you want to apply the same random effect structure to **all** equations in your model (e.g., a block effect or random intercept for Site across all species), you can use the `random` argument in `phybase_run`. This is more convenient than adding `(1|Group)` to every equation and ensures consistent handling in d-separation tests.
+
+```r
+fit_global <- phybase_run(
+    equations = list(
+        Y1 ~ X1,
+        Y2 ~ Y1 + X2
+    ),
+    data = data_glmm,
+    random = ~ (1|Site), # Applies (1|Site) to BOTH Y1 and Y2
+    n.chains = 2,
+    n.iter = 1000
+)
+```
+
+**Note:** `phybaseR` automatically detects overlapping random terms. If you specify `(1|Site)` in an equation AND in the global `random` argument, it will be handled correctly (deduplicated) to avoid double-counting.

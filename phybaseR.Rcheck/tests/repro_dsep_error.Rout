@@ -93,19 +93,19 @@ PhyBaSE d-separation Tests
 ==========================
 
               Test    Parameter Estimate LowerCI UpperCI Indep P_approx_0  Rhat
- LS _||_ NL | {BM} beta_LS_NL_1    0.020  -0.118   0.151   Yes      0.933 0.961
-        LS _||_ DD beta_LS_DD_2    0.153  -0.078   0.312   Yes      0.267 1.096
-        LS _||_ RS beta_LS_RS_3   -0.071  -0.278   0.026   Yes      0.400 1.184
-        DD _||_ BM beta_DD_BM_4    0.282   0.140   0.446    No      0.000 1.103
-        DD _||_ RS beta_DD_RS_5    0.261   0.097   0.433    No      0.000 1.231
-        BM _||_ RS beta_BM_RS_6   -0.071  -0.283   0.032   Yes      0.667 1.474
+ LS _||_ NL | {BM} beta_LS_NL_1   -0.004  -0.181   0.089   Yes      0.933 1.012
+        LS _||_ DD beta_LS_DD_2    0.115  -0.018   0.317   Yes      0.267 1.096
+        LS _||_ RS beta_LS_RS_3   -0.048  -0.231   0.159   Yes      0.667 1.303
+        DD _||_ BM beta_DD_BM_4    0.267   0.124   0.400    No      0.000 1.101
+        DD _||_ RS beta_DD_RS_5    0.213   0.048   0.391    No      0.000 1.533
+        BM _||_ RS beta_BM_RS_6   -0.045  -0.193   0.067   Yes      0.800 1.482
  n.eff
+    37
     15
-    15
-    15
-    15
-    32
     25
+    15
+    52
+    15
 
 Legend:
   Indep: 'Yes' = Conditionally Independent, 'No' = Dependent (based on 95% CI)
@@ -113,21 +113,21 @@ Legend:
 
 Note: For d-separation, we expect high P(~0) values (close to 1).
                Test    Parameter Estimate LowerCI UpperCI Indep P_approx_0
-1 LS _||_ NL | {BM} beta_LS_NL_1    0.020  -0.118   0.151   Yes      0.933
-2        LS _||_ DD beta_LS_DD_2    0.153  -0.078   0.312   Yes      0.267
-3        LS _||_ RS beta_LS_RS_3   -0.071  -0.278   0.026   Yes      0.400
-4        DD _||_ BM beta_DD_BM_4    0.282   0.140   0.446    No      0.000
-5        DD _||_ RS beta_DD_RS_5    0.261   0.097   0.433    No      0.000
-6        BM _||_ RS beta_BM_RS_6   -0.071  -0.283   0.032   Yes      0.667
+1 LS _||_ NL | {BM} beta_LS_NL_1   -0.004  -0.181   0.089   Yes      0.933
+2        LS _||_ DD beta_LS_DD_2    0.115  -0.018   0.317   Yes      0.267
+3        LS _||_ RS beta_LS_RS_3   -0.048  -0.231   0.159   Yes      0.667
+4        DD _||_ BM beta_DD_BM_4    0.267   0.124   0.400    No      0.000
+5        DD _||_ RS beta_DD_RS_5    0.213   0.048   0.391    No      0.000
+6        BM _||_ RS beta_BM_RS_6   -0.045  -0.193   0.067   Yes      0.800
    Rhat n.eff
-1 0.961    15
+1 1.012    37
 2 1.096    15
-3 1.184    15
-4 1.103    15
-5 1.231    32
-6 1.474    25
+3 1.303    25
+4 1.101    15
+5 1.533    52
+6 1.482    15
 There were 29 warnings (use warnings() to see them)
 > 
 > proc.time()
    user  system elapsed 
-  3.364   0.066   3.708 
+  7.979   0.173  12.339 

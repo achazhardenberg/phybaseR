@@ -69,7 +69,7 @@ Ignored when \code{data} is already a list.}
   \item \code{"interpretable"} (default): Monitor only scientifically meaningful parameters:
         intercepts (alpha), regression coefficients (beta), phylogenetic signals (lambda) for
        responses, and WAIC terms. Excludes variance components (tau) and auxiliary predictor parameters.
-  \item \code {"all"}: Monitor all model parameters including variance components and implicit equation parameters.
+  \item \code{"all"}: Monitor all model parameters including variance components and implicit equation parameters.
   \item Custom vector: Provide a character vector of specific parameter names to monitor.
   \item \code{NULL}: Auto-detect based on model structure (equivalent to "interpretable").
 }}
@@ -84,7 +84,7 @@ Ignored when \code{data} is already a list.}
 
 \item{DIC}{Logical; whether to compute DIC using \code{dic.samples()} (default = TRUE).
 **Note**: DIC penalty will be inflated for models with measurement error or repeated measures
-because latent variables are counted as parameters (penalty ≈ structural parameters + N).
+because latent variables are counted as parameters (penalty ~ structural parameters + N).
 For model comparison, use WAIC or compare mean deviance across models with similar structure.}
 
 \item{WAIC}{Logical; whether to sample values for WAIC and deviance (default = FALSE).

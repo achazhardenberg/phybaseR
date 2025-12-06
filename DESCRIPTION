@@ -23,7 +23,8 @@ Imports:
     ggm,
     coda,
     stats,
-    parallel
+    parallel,
+    utils
 Depends: 
     R (>= 3.5)
 RoxygenNote: 7.3.2
@@ -31,6 +32,7 @@ Suggests:
     knitr,
     rmarkdown,
     testthat (>= 3.0.0),
+    devtools,
     MASS,
     loo
 VignetteBuilder: knitr, rmarkdown

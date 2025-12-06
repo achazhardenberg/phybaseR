@@ -543,21 +543,36 @@ med_data <- data.frame(
 
 ## ----waic_comparison, eval=FALSE----------------------------------------------
 # # Fit competing models
-# fit_complex <- phybase_run(data, tree, list(Y ~ X1 + X2), WAIC = TRUE)
-# fit_simple <- phybase_run(data, tree, list(Y ~ X1), WAIC = TRUE)
+# fit_complex <- phybase_run(..., WAIC = TRUE)
+# fit_simple <- phybase_run(..., WAIC = TRUE)
 # 
-# # View WAIC
-# fit_complex$WAIC["waic", "Estimate"] # e.g., 212.8
-# fit_simple$WAIC["waic", "Estimate"] # e.g., 220.0
+# # Compare results
+# comp <- phybase_compare(fit_complex, fit_simple)
+# print(comp)
 # 
-# # Calculate difference and combined SE
-# waic_diff <- fit_complex$WAIC["waic", "Estimate"] -
-#     fit_simple$WAIC["waic", "Estimate"]
-# se_diff <- sqrt(fit_complex$WAIC["waic", "SE"]^2 +
-#     fit_simple$WAIC["waic", "SE"]^2)
+# # Output:
+# #              WAIC   SE dWAIC  dSE p_waic weight
+# # fit_complex 212.8 12.4   0.0  0.0   12.3  0.98
+# # fit_simple  220.0 11.8   7.2  3.1   10.5  0.02
+
+## ----batch_comparison, eval=FALSE---------------------------------------------
+# # Define model specifications
+# specs <- list(
+#     Full = list(equations = list(Y ~ X1 + X2)),
+#     Reduced = list(equations = list(Y ~ X1)),
+#     Null = list(equations = list(Y ~ 1))
+# )
 # 
-# # Statistical significance test
-# abs(waic_diff) > 2 * se_diff # TRUE = models significantly different
+# # Run batch in parallel
+# results <- phybase_compare(
+#     model_specs = specs,
+#     data = data,
+#     tree = tree,
+#     n.cores = 3 # Parallel execution
+# )
+# 
+# # View comparison table
+# print(results$comparison)
 
 ## ----dsep_example, eval=FALSE-------------------------------------------------
 # # Define a path model: A -> B -> C

@@ -77,7 +77,7 @@ Model run complete.
 > beta_lm <- coef(fit_lm)["x1"]
 > 
 > cat(sprintf("Beta (phybaseR): %.3f\n", beta_phybase))
-Beta (phybaseR): 0.442
+Beta (phybaseR): 0.444
 > cat(sprintf("Beta (lm):       %.3f\n", beta_lm))
 Beta (lm):       0.448
 > 
@@ -166,4 +166,4 @@ In rjags::jags.model(model_file, data = data, n.chains = n.chains,  :
 > 
 > proc.time()
    user  system elapsed 
-  6.767   0.148   7.296 
+ 12.609   0.383  13.957 

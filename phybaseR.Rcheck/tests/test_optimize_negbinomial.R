@@ -2,10 +2,6 @@
 # Verifies correctness of the random effects formulation for NB models
 
 # Source local files
-source("R/phybase_run.R")
-source("R/phybase_model.R")
-source("R/phybase_format_data.R")
-source("R/phybase_dsep.R")
 
 library(rjags)
 library(coda)

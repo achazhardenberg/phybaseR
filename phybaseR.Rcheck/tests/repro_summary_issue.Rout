@@ -43,21 +43,21 @@ Warning message:
 In rjags::jags.model(model_file, data = data, n.chains = n.chains,  :
   Unused variable "ID2" in data
 > print(summary(fit3))
-          Mean    SD Naive SE Time-series SE   2.5%   50% 97.5%  Rhat n.eff
-alphaY   0.042 0.380    0.031          0.039 -0.668 0.006 0.873 0.990   120
-beta_Y_X 0.372 0.187    0.015          0.017  0.030 0.365 0.743 0.990   132
-lambdaY  0.334 0.149    0.012          0.012  0.135 0.304 0.707 1.004   150
-sigmaY   1.328 0.155    0.013          0.015  1.125 1.293 1.754 1.021   149
+           Mean    SD Naive SE Time-series SE   2.5%   50% 97.5%  Rhat n.eff
+alphaY   -0.013 0.348    0.028          0.028 -0.682 0.002 0.673 1.006   150
+beta_Y_X  0.341 0.189    0.015          0.015  0.007 0.328 0.693 0.992   150
+lambdaY   0.315 0.143    0.012          0.012  0.107 0.290 0.670 0.993   150
+sigmaY    1.298 0.139    0.011          0.011  1.065 1.284 1.581 0.995   152
 
 DIC:
-Mean deviance:  149.1 
-penalty 14.1 
-Penalized deviance: 163.2 
-          Mean    SD Naive SE Time-series SE   2.5%   50% 97.5%  Rhat n.eff
-alphaY   0.042 0.380    0.031          0.039 -0.668 0.006 0.873 0.990   120
-beta_Y_X 0.372 0.187    0.015          0.017  0.030 0.365 0.743 0.990   132
-lambdaY  0.334 0.149    0.012          0.012  0.135 0.304 0.707 1.004   150
-sigmaY   1.328 0.155    0.013          0.015  1.125 1.293 1.754 1.021   149
+Mean deviance:  150 
+penalty 12.91 
+Penalized deviance: 162.9 
+           Mean    SD Naive SE Time-series SE   2.5%   50% 97.5%  Rhat n.eff
+alphaY   -0.013 0.348    0.028          0.028 -0.682 0.002 0.673 1.006   150
+beta_Y_X  0.341 0.189    0.015          0.015  0.007 0.328 0.693 0.992   150
+lambdaY   0.315 0.143    0.012          0.012  0.107 0.290 0.670 0.993   150
+sigmaY    1.298 0.139    0.011          0.011  1.065 1.284 1.581 0.995   152
 > 
 > cat("\n=== TEST 2: 1 Chain (Should show n.eff, NO Rhat) ===\n")
 
@@ -77,17 +77,17 @@ Warning messages:
 2: In phybase_run(data = data, tree = tree, equations = list(Y ~ X),  :
   DIC and WAIC require at least 2 chains. Disabling calculation.
 > print(summary(fit1))
-          Mean    SD Naive SE Time-series SE   2.5%    50% 97.5% n.eff
-alphaY   0.009 0.359    0.051          0.051 -0.619 -0.006 0.673    50
-beta_Y_X 0.348 0.198    0.028          0.031 -0.031  0.360 0.704    40
-lambdaY  0.285 0.128    0.018          0.018  0.101  0.256 0.513    50
-sigmaY   1.294 0.111    0.016          0.016  1.092  1.285 1.545    50
-          Mean    SD Naive SE Time-series SE   2.5%    50% 97.5% n.eff
-alphaY   0.009 0.359    0.051          0.051 -0.619 -0.006 0.673    50
-beta_Y_X 0.348 0.198    0.028          0.031 -0.031  0.360 0.704    40
-lambdaY  0.285 0.128    0.018          0.018  0.101  0.256 0.513    50
-sigmaY   1.294 0.111    0.016          0.016  1.092  1.285 1.545    50
+          Mean    SD Naive SE Time-series SE   2.5%   50% 97.5% n.eff
+alphaY   0.185 0.415    0.059          0.080 -0.287 0.106 1.365    27
+beta_Y_X 0.369 0.185    0.026          0.026  0.023 0.385 0.677    50
+lambdaY  0.324 0.146    0.021          0.022  0.117 0.296 0.644    45
+sigmaY   1.340 0.133    0.019          0.028  1.148 1.322 1.662    23
+          Mean    SD Naive SE Time-series SE   2.5%   50% 97.5% n.eff
+alphaY   0.185 0.415    0.059          0.080 -0.287 0.106 1.365    27
+beta_Y_X 0.369 0.185    0.026          0.026  0.023 0.385 0.677    50
+lambdaY  0.324 0.146    0.021          0.022  0.117 0.296 0.644    45
+sigmaY   1.340 0.133    0.019          0.028  1.148 1.322 1.662    23
 > 
 > proc.time()
    user  system elapsed 
-  1.899   0.044   2.081 
+  4.177   0.092   4.587 

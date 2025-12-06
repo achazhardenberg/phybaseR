@@ -31,7 +31,7 @@
 #'     \item \code{"interpretable"} (default): Monitor only scientifically meaningful parameters:
 #'           intercepts (alpha), regression coefficients (beta), phylogenetic signals (lambda) for
 #'          responses, and WAIC terms. Excludes variance components (tau) and auxiliary predictor parameters.
-#'     \item \code {"all"}: Monitor all model parameters including variance components and implicit equation parameters.
+#'     \item \code{"all"}: Monitor all model parameters including variance components and implicit equation parameters.
 #'     \item Custom vector: Provide a character vector of specific parameter names to monitor.
 #'     \item \code{NULL}: Auto-detect based on model structure (equivalent to "interpretable").
 #'   }
@@ -41,7 +41,7 @@
 #' @param n.thin Thinning rate (default = 10).
 #' @param DIC Logical; whether to compute DIC using \code{dic.samples()} (default = TRUE).
 #'   **Note**: DIC penalty will be inflated for models with measurement error or repeated measures
-#'   because latent variables are counted as parameters (penalty ≈ structural parameters + N).
+#'   because latent variables are counted as parameters (penalty ~ structural parameters + N).
 #'   For model comparison, use WAIC or compare mean deviance across models with similar structure.
 #' @param WAIC Logical; whether to sample values for WAIC and deviance (default = FALSE).
 #'   WAIC is generally more appropriate than DIC for hierarchical models with latent variables.
@@ -101,7 +101,8 @@
 #' @export
 #' @importFrom ape vcv.phylo branching.times
 #' @importFrom rjags jags.model coda.samples dic.samples jags.samples
-#' @importFrom stats na.omit update formula terms setNames
+#' @importFrom stats na.omit update formula terms setNames start var
+#' @importFrom utils capture.output
 #' @importFrom coda gelman.diag effectiveSize
 #' @import coda
 phybase_run <- function(
@@ -129,8 +130,10 @@ phybase_run <- function(
   n.cores = 1,
   cl = NULL,
   ic_recompile = TRUE,
-  optimise = TRUE
+  optimise = TRUE,
+  random = NULL # Global random effects applied to all equations
 ) {
+  # --- Input Validation & Setup ---
   # Handle 'structure' alias
   if (is.null(tree) && !is.null(structure)) {
     tree <- structure
@@ -161,12 +164,76 @@ phybase_run <- function(
     stop("Argument 'equations' must be provided.")
   }
 
+  # --- Random Effects Parsing ---
+  # Extract (1|Group) and update equations to be fixed-effects only
+  parsed_random <- extract_random_effects(equations)
+  equations <- parsed_random$fixed_equations
+  # Start with equation-specific random terms
+  random_terms <- parsed_random$random_terms
+
+  # Parse global random argument if provided
+  if (!is.null(random)) {
+    global_random_terms <- parse_global_random(random, equations)
+    # Combine with equation-specific terms
+    random_terms <- c(random_terms, global_random_terms)
+
+    # Deduplicate terms (avoid adding same (1|Group) twice for same response)
+    # Create unique keys
+    if (length(random_terms) > 0) {
+      keys <- sapply(random_terms, function(x) {
+        paste(x$response, x$group, sep = "|")
+      })
+      random_terms <- random_terms[!duplicated(keys)]
+    }
+  }
+  random_structures <- list()
+
+  if (length(random_terms) > 0 & is.null(tree)) {
+    if (!quiet) {
+      message(
+        "Random effects detected. Enabling optimization by default if not specified."
+      )
+    }
+    if (is.null(optimise)) optimise <- TRUE
+  }
+
+  # --- Random Effects Data Prep ---
+  # Create structures for JAGS (indices, precisions)
+  if (length(random_terms) > 0) {
+    if (is.null(data)) {
+      stop("Data must be provided for random effects.")
+    }
+
+    # Needs to process data first if it's a list?
+    # data is converted to list later. We should do this on the data.frame first if possible.
+    # But code below handles data.frame to list conversion.
+    # We should perform structure creation using the original data.frame logic
+
+    # We'll rely on data being a data.frame or having the columns
+
+    rand_structs <- create_group_structures(data, random_terms)
+    random_structures <- rand_structs$structures
+
+    # We need to merge these updates into the final data list
+    # But `data` variable is modified below.
+    # We'll store updates and apply them after data is finalized
+    random_data_updates <- rand_structs$data_updates
+  } else {
+    random_data_updates <- list()
+  }
+
   # --- Data Frame Preprocessing ---
   # If data is a data.frame, convert to list format expected by the model
   original_data <- data
   if (is.data.frame(data)) {
-    # Extract all variable names from equations
+    # Extract all variable names from fixed equations
     eq_vars <- unique(unlist(lapply(equations, all.vars)))
+
+    # Add variables from random terms (grouping factors)
+    if (length(random_terms) > 0) {
+      random_vars <- unique(sapply(random_terms, function(x) x$group))
+      eq_vars <- unique(c(eq_vars, random_vars))
+    }
 
     # Check which variables are in the data frame
     available_vars <- intersect(eq_vars, colnames(data))
@@ -236,7 +303,8 @@ phybase_run <- function(
 
     # Preserve any existing attributes
     data_attrs <- attributes(original_data)
-    data <- data_list
+    # Combine data_list with random effect data
+    data <- c(data_list, random_data_updates)
 
     if (!quiet) {
       message(
@@ -736,7 +804,12 @@ phybase_run <- function(
       }
     }
 
-    dsep_result <- phybase_dsep(equations, latent = latent, quiet = !dsep)
+    dsep_result <- phybase_dsep(
+      equations,
+      latent = latent,
+      random_terms = random_terms,
+      quiet = !dsep
+    )
 
     # Extract tests and correlations
     if (!is.null(latent)) {
@@ -863,9 +936,12 @@ phybase_run <- function(
         function(i) {
           test_eq <- dsep_tests[[i]]
           # Monitor betas for ALL predictors in the d-sep equation
-          # This ensures we capture the relevant test statistic regardless of variable order
-          test_vars <- all.vars(test_eq)
-          response <- as.character(test_eq)[2]
+          # We must exclude random effects grouping variables (which are not fixed predictors)
+          parsed_test_eq <- extract_random_effects(list(test_eq))
+          fixed_test_eq <- parsed_test_eq$fixed_equations[[1]]
+
+          test_vars <- all.vars(fixed_test_eq)
+          response <- as.character(fixed_test_eq)[2]
           predictors <- test_vars[test_vars != response]
 
           params_to_monitor <- character(0)
@@ -914,9 +990,11 @@ phybase_run <- function(
       results <- lapply(seq_along(dsep_tests), function(i) {
         test_eq <- dsep_tests[[i]]
         # Monitor betas for ALL predictors in the d-sep equation
-        # This ensures we capture the relevant test statistic regardless of variable order
-        test_vars <- all.vars(test_eq)
-        response <- as.character(test_eq)[2]
+        parsed_test_eq <- extract_random_effects(list(test_eq))
+        fixed_test_eq <- parsed_test_eq$fixed_equations[[1]]
+
+        test_vars <- all.vars(fixed_test_eq)
+        response <- as.character(fixed_test_eq)[2]
         predictors <- test_vars[test_vars != response]
 
         params_to_monitor <- character(0)
@@ -1063,7 +1141,12 @@ phybase_run <- function(
       # MAG approach: marginalize latents, use induced correlations
       # If not already computed by dsep, compute now
       if (is.null(induced_cors)) {
-        dsep_result <- phybase_dsep(equations, latent = latent, quiet = !dsep)
+        dsep_result <- phybase_dsep(
+          equations,
+          latent = latent,
+          random_terms = random_terms,
+          quiet = !dsep
+        )
         induced_cors <- dsep_result$correlations
       }
 
@@ -1203,7 +1286,8 @@ phybase_run <- function(
     latent = latent,
     standardize_latent = standardize_latent,
     optimise = optimise,
-    structure_names = structure_names
+    structure_names = structure_names,
+    random_structure_names = names(random_structures)
   )
 
   model_string <- model_output$model
@@ -1435,6 +1519,11 @@ phybase_run <- function(
     model <- chain_results[[1]]$model
   } else {
     # Sequential execution (default)
+    if (!quiet) {
+      message("--- JAGS Model Code (Pre-Compile) ---")
+      message(paste(model_output$model, collapse = "\n"))
+      message("-------------------------------------")
+    }
     # Compile model
     model <- rjags::jags.model(
       model_file,

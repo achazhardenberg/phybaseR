@@ -41,8 +41,14 @@ These variables will use element-wise likelihoods instead of multivariate normal
 from latent variables. Each element should be a character vector of length 2 specifying
 the pair of variables that share a latent common cause.}
 
+\item{latent}{Optional character vector of latent variable names.}
+
+\item{standardize_latent}{Logical (default TRUE). If TRUE, standardizes latent variables to unit variance.}
+
 \item{optimise}{Logical. If TRUE (default), use random effects formulation for 4.6× speedup.
 If FALSE, use original marginal covariance formulation.}
+
+\item{structure_names}{(Internal) Character vector of names for multiple trees/structures.}
 }
 \value{
 A list with two elements:

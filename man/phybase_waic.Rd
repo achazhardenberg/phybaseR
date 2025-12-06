@@ -26,21 +26,35 @@ for a fitted PhyBaSE model using pointwise log-likelihoods.
 \details{
 This function implements WAIC following Vehtari et al. (2017). It requires that
 the model was run with \code{WAIC = TRUE} to monitor pointwise log-likelihoods.
+}
+\section{WAIC Definition}{
+
+The Widely Applicable Information Criterion (WAIC) is calculated as:
+\deqn{WAIC = -2 \times (lppd - p_{waic})}
+where:
+\itemize{
+  \item \eqn{lppd = \sum_{i=1}^N \log(\frac{1}{S} \sum_{s=1}^S \exp(log\_lik_{is}))} is the log pointwise predictive density
+  \item \eqn{p_{waic} = \sum_{i=1}^N \text{var}(log\_lik_{is})} is the effective number of parameters
+}
 
 **WAIC Algorithm**:
 \enumerate{
   \item \strong{lpd} (log pointwise predictive density): For each observation \eqn{i},
-    compute \eqn{\log(\text{mean}(\exp(\text{log_lik}_i)))} across MCMC samples
+    compute \eqn{\log(\text{mean}(\exp(\text{log\_lik}_i)))} across MCMC samples
   \item \strong{p_waic}: For each observation \eqn{i}, compute
-    \eqn{\text{var}(\text{log_lik}_i)} across MCMC samples
-  \item \strong{elpd_waic}: \eqn{\text{lpd}_i - \text{p_waic}_i} for each observation
-  \item \strong{waic}: \eqn{-2 \times \sum \text{elpd_waic}_i}
+    \eqn{\text{var}(\text{log\_lik}_i)} across MCMC samples
+  \item \strong{elpd_waic}: \eqn{\text{lpd}_i - \text{p\_waic}_i} for each observation
+  \item \strong{waic}: \eqn{-2 \times \sum \text{elpd\_waic}_i}
+}
 }
 
-**Standard Errors**:
-\deqn{SE(\text{WAIC}) = \sqrt{N \times \text{var}(\text{waic}_i)}}
-where \eqn{N} is the number of observations and \eqn{\text{waic}_i = -2 \times \text{elpd_waic}_i}.
+\section{Standard Errors}{
+
+Standard errors for WAIC are calculated using the pointwise contributions:
+\deqn{SE(WAIC) = \sqrt{N \times \text{var}(waic_i)}}
+where \eqn{waic_i = -2 \times (lppd_i - p_{waic,i})}.
 }
+
 \examples{
 \dontrun{
   # Fit model with WAIC monitoring

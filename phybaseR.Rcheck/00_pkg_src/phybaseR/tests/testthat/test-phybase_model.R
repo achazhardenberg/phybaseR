@@ -23,7 +23,8 @@ test_that("phybase_model handles missing data", {
 
     model_output <- phybase_model(
         equations,
-        vars_with_na = vars_with_na
+        vars_with_na = vars_with_na,
+        structure_names = "tree"
     )
 
     # Should use GLMM formulation

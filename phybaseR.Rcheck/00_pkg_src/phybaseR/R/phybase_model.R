@@ -49,6 +49,9 @@
 #'
 #' @param optimise Logical. If TRUE (default), use random effects formulation for 4.6× speedup.
 #'   If FALSE, use original marginal covariance formulation.
+#' @param standardize_latent Logical (default TRUE). If TRUE, standardizes latent variables to unit variance.
+#' @param structure_names (Internal) Character vector of names for multiple trees/structures.
+#' @param latent Optional character vector of latent variable names.
 #' @export
 #' @importFrom stats formula terms setNames sd
 #' @importFrom utils combn

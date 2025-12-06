@@ -2,47 +2,63 @@
 % Please edit documentation in R/phybase_compare.R
 \name{phybase_compare}
 \alias{phybase_compare}
-\title{Compare Multiple PhyBaSE Models in Parallel}
+\title{Compare PhyBaSE Models}
 \usage{
-phybase_compare(model_specs, data, tree, n.cores = 1, cl = NULL, ...)
+phybase_compare(
+  ...,
+  model_specs = NULL,
+  data = NULL,
+  tree = NULL,
+  n.cores = 1,
+  cl = NULL,
+  sort = TRUE
+)
 }
 \arguments{
-\item{model_specs}{A named list where each element is a list containing the
-\code{equations} argument for \code{\link{phybase_run}}.
-Example: \code{list(m1 = list(equations = list(Y ~ X)), m2 = list(equations = list(Y ~ X + Z)))}}
+\item{...}{For comparing fitted models: individual fitted model objects of class \code{"phybase"}.
+For running models: additional arguments passed to \code{\link{phybase_run}} (e.g., \code{n.iter}).}
 
-\item{data}{A list containing the data for the models.}
+\item{model_specs}{A named list of model specifications to run (Mode 2). Each element should be a list containing arguments for \code{phybase_run}.
+Alternatively, this argument can accept the first fitted model object (Mode 1).}
 
-\item{tree}{A phylo object or list of phylo objects.}
+\item{data}{The dataset (required for Mode 2). Alternatively, the second fitted model object (Mode 1).}
 
-\item{n.cores}{Number of cores to use for parallel execution. Default is 1.}
+\item{tree}{The phylogenetic tree (optional for Mode 2). Alternatively, the third fitted model object (Mode 1).}
 
-\item{cl}{Optional cluster object created by \code{parallel::makeCluster()}.
-If \code{NULL} and \code{n.cores > 1}, a cluster is created and stopped automatically.}
+\item{n.cores}{Number of cores for parallel execution (Mode 2). Default is 1.}
 
-\item{...}{Additional arguments passed to \code{\link{phybase_run}} (e.g., \code{n.iter}, \code{n.burnin}).
-Note: \code{parallel} will be forced to \code{FALSE} for individual runs to avoid nested parallelism.}
+\item{cl}{Optional cluster object (Mode 2).}
+
+\item{sort}{Logical. If \code{TRUE} (default), sort comparison table by WAIC.}
 }
 \value{
-A list containing:
-  \item{results}{A list of fitted \code{phybase} objects.}
-  \item{comparison}{A data frame comparing models by WAIC and DIC (if computed).}
+If comparing fitted models: A class \code{"phybase_comparison"} object (data frame) with WAIC rankings.
+
+If running models: A list containing:
+\item{results}{List of fitted model objects.}
+\item{comparison}{The comparison data frame.}
 }
 \description{
-Fits multiple PhyBaSE models in parallel and returns a comparison table
-based on WAIC and DIC.
+A unified function to either (1) compare previously fitted models, or (2) run multiple model specifications in parallel and then compare them.
+}
+\details{
+\strong{Mode 1: Compare Fitted Models}
+Call \code{phybase_compare(fit1, fit2)} or \code{phybase_compare(models = list(fit1, fit2))}.
+Extracts WAIC (with SE) from each model and ranks them.
+
+\strong{Mode 2: Run and Compare}
+Call \code{phybase_compare(model_specs = list(m1=..., m2=...), data=data, tree=tree)}.
+This runs the models in parallel and returns the comparison.
 }
 \examples{
 \dontrun{
-  # Define models
-  models <- list(
-    m1 = list(equations = list(Y ~ X)),
-    m2 = list(equations = list(Y ~ X + Z))
-  )
+  # Mode 1: Compare existing fits
+  phybase_compare(fit1, fit2)
 
-  # Run comparison
-  comp <- phybase_compare(models, data, tree, n.cores = 2, n.iter = 1000)
-  print(comp$comparison)
+  # Mode 2: Run and compare
+  specs <- list(m1 = list(equations = list(Y ~ X)), m2 = list(equations = list(Y ~ X + Z)))
+  res <- phybase_compare(specs, data = df, tree = tr, n.cores = 2)
+  print(res$comparison)
 }
 
 }

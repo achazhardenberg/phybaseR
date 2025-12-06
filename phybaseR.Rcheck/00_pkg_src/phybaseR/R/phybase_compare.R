@@ -1,145 +1,294 @@
-#' Compare Multiple PhyBaSE Models in Parallel
+#' Compare PhyBaSE Models
 #'
-#' Fits multiple PhyBaSE models in parallel and returns a comparison table
-#' based on WAIC and DIC.
+#' A unified function to either (1) compare previously fitted models, or (2) run multiple model specifications in parallel and then compare them.
 #'
-#' @param model_specs A named list where each element is a list containing the
-#'   \code{equations} argument for \code{\link{phybase_run}}.
-#'   Example: \code{list(m1 = list(equations = list(Y ~ X)), m2 = list(equations = list(Y ~ X + Z)))}
-#' @param data A list containing the data for the models.
-#' @param tree A phylo object or list of phylo objects.
-#' @param n.cores Number of cores to use for parallel execution. Default is 1.
-#' @param cl Optional cluster object created by \code{parallel::makeCluster()}.
-#'   If \code{NULL} and \code{n.cores > 1}, a cluster is created and stopped automatically.
-#' @param ... Additional arguments passed to \code{\link{phybase_run}} (e.g., \code{n.iter}, \code{n.burnin}).
-#'   Note: \code{parallel} will be forced to \code{FALSE} for individual runs to avoid nested parallelism.
+#' @param ... For comparing fitted models: individual fitted model objects of class \code{"phybase"}.
+#'   For running models: additional arguments passed to \code{\link{phybase_run}} (e.g., \code{n.iter}).
+#' @param model_specs A named list of model specifications to run (Mode 2). Each element should be a list containing arguments for \code{phybase_run}.
+#'   Alternatively, this argument can accept the first fitted model object (Mode 1).
+#' @param data The dataset (required for Mode 2). Alternatively, the second fitted model object (Mode 1).
+#' @param tree The phylogenetic tree (optional for Mode 2). Alternatively, the third fitted model object (Mode 1).
+#' @param n.cores Number of cores for parallel execution (Mode 2). Default is 1.
+#' @param cl Optional cluster object (Mode 2).
+#' @param sort Logical. If \code{TRUE} (default), sort comparison table by WAIC.
 #'
-#' @return A list containing:
-#'   \item{results}{A list of fitted \code{phybase} objects.}
-#'   \item{comparison}{A data frame comparing models by WAIC and DIC (if computed).}
+#' @return
+#' If comparing fitted models: A class \code{"phybase_comparison"} object (data frame) with WAIC rankings.
+#'
+#' If running models: A list containing:
+#' \item{results}{List of fitted model objects.}
+#' \item{comparison}{The comparison data frame.}
+#'
+#' @details
+#' \strong{Mode 1: Compare Fitted Models}
+#' Call \code{phybase_compare(fit1, fit2)} or \code{phybase_compare(models = list(fit1, fit2))}.
+#' Extracts WAIC (with SE) from each model and ranks them.
+#'
+#' \strong{Mode 2: Run and Compare}
+#' Call \code{phybase_compare(model_specs = list(m1=..., m2=...), data=data, tree=tree)}.
+#' This runs the models in parallel and returns the comparison.
 #'
 #' @examples
 #' \dontrun{
-#'   # Define models
-#'   models <- list(
-#'     m1 = list(equations = list(Y ~ X)),
-#'     m2 = list(equations = list(Y ~ X + Z))
-#'   )
+#'   # Mode 1: Compare existing fits
+#'   phybase_compare(fit1, fit2)
 #'
-#'   # Run comparison
-#'   comp <- phybase_compare(models, data, tree, n.cores = 2, n.iter = 1000)
-#'   print(comp$comparison)
+#'   # Mode 2: Run and compare
+#'   specs <- list(m1 = list(equations = list(Y ~ X)), m2 = list(equations = list(Y ~ X + Z)))
+#'   res <- phybase_compare(specs, data = df, tree = tr, n.cores = 2)
+#'   print(res$comparison)
 #' }
 #'
 #' @export
-#' @importFrom parallel makeCluster stopCluster parLapply clusterExport clusterEvalQ
 phybase_compare <- function(
-    model_specs,
-    data,
-    tree,
+    ...,
+    model_specs = NULL,
+    data = NULL,
+    tree = NULL,
     n.cores = 1,
     cl = NULL,
-    ...
+    sort = TRUE
 ) {
-    # Input validation
-    if (!is.list(model_specs) || is.null(names(model_specs))) {
-        stop("model_specs must be a named list of model specifications.")
+    # --- ARGUMENT HARVESTING & MODE DETECTION ---
+
+    # Collect all named arguments and ... arguments
+    dots <- list(...)
+
+    # Check if we are in Mode 2 (Run Specs)
+    # Criteria: 'model_specs' is a list of specs, OR dots[[1]] is a list of specs
+
+    specs <- NULL
+    run_data <- NULL
+    run_tree <- NULL
+
+    is_spec_list <- function(x) {
+        is.list(x) &&
+            !is.null(names(x)) &&
+            all(sapply(x, function(s) {
+                is.list(s) &&
+                    ("equations" %in% names(s) || "formula" %in% names(s))
+            }))
     }
 
-    # Capture dot arguments
-    dot_args <- list(...)
-
-    # Function to run a single model
-    run_model <- function(name, spec, data, tree, dot_args) {
-        # Prepare arguments
-        args <- list(
-            data = data,
-            tree = tree,
-            equations = spec$equations,
-            parallel = FALSE # Force sequential for inner runs
-        )
-
-        # Add dot arguments (override if present)
-        args <- c(args, dot_args)
-
-        # Ensure parallel is FALSE even if passed in dots
-        args$parallel <- FALSE
-
-        # Run model
-        do.call(phybaseR::phybase_run, args)
+    # Check explicit argument
+    if (is_spec_list(model_specs)) {
+        specs <- model_specs
+        run_data <- data
+        run_tree <- tree
+    } else if (length(dots) >= 1 && is_spec_list(dots[[1]])) {
+        # Check first positional argument (if model_specs was NULL)
+        specs <- dots[[1]]
+        # Try to rescue data/tree from dots or named args
+        if (!is.null(data)) {
+            run_data <- data
+        } else if (length(dots) >= 2) {
+            run_data <- dots[[2]]
+        }
+        if (!is.null(tree)) {
+            run_tree <- tree
+        } else if (length(dots) >= 3) {
+            run_tree <- dots[[3]]
+        }
     }
 
-    # Execution
-    if (n.cores > 1) {
-        message(sprintf(
-            "Running %d models in parallel on %d cores...",
-            length(model_specs),
-            n.cores
-        ))
-
-        # Setup cluster
-        if (is.null(cl)) {
-            cl <- parallel::makeCluster(n.cores)
-            on.exit(parallel::stopCluster(cl), add = TRUE)
+    # If specs found, Execute Mode 2
+    if (!is.null(specs)) {
+        if (is.null(run_data)) {
+            stop("Argument 'data' is required for running models.")
         }
 
-        # Export necessary objects
-        parallel::clusterExport(
-            cl,
-            c("data", "tree", "dot_args", "run_model"),
-            envir = environment()
+        # Extract extra args for phybase_run from dots (excluding rescued pos args)
+        # This is tricky with ... mixing positional and named.
+        # Safest: Use named arguments in ... mainly.
+        common_args <- dots[nzchar(names(dots))]
+
+        # Run Function
+        run_model_internal <- function(name, spec, d, t, extra) {
+            args <- c(
+                list(data = d, structure = t, WAIC = TRUE, quiet = TRUE),
+                spec,
+                extra
+            )
+            tryCatch(
+                {
+                    do.call(phybaseR::phybase_run, args)
+                },
+                error = function(e) {
+                    warning(paste("Model", name, "failed:", e$message))
+                    return(NULL)
+                }
+            )
+        }
+
+        message(sprintf(
+            "Running %d models in comparison set...",
+            length(specs)
+        ))
+
+        fit_results <- list()
+        spec_names <- names(specs)
+
+        # Handle n.cores passed as model object by mistake?
+        # Ensure n.cores is numeric
+        n_cores_val <- if (is.numeric(n.cores)) n.cores else 1
+
+        if (n_cores_val > 1) {
+            created_cluster <- FALSE
+            if (is.null(cl)) {
+                cl <- parallel::makeCluster(n_cores_val)
+                on.exit(parallel::stopCluster(cl), add = TRUE)
+                created_cluster <- TRUE
+            }
+            parallel::clusterEvalQ(cl, library(phybaseR))
+
+            fit_results <- parallel::parLapply(cl, spec_names, function(nm) {
+                run_model_internal(
+                    nm,
+                    specs[[nm]],
+                    run_data,
+                    run_tree,
+                    common_args
+                )
+            })
+            names(fit_results) <- spec_names
+        } else {
+            fit_results <- lapply(spec_names, function(nm) {
+                message(paste("Fitting model:", nm))
+                run_model_internal(
+                    nm,
+                    specs[[nm]],
+                    run_data,
+                    run_tree,
+                    common_args
+                )
+            })
+            names(fit_results) <- spec_names
+        }
+
+        # Filter failed
+        failed <- sapply(fit_results, is.null)
+        if (any(failed)) {
+            message("Some models failed.")
+        }
+        fit_results <- fit_results[!failed]
+
+        if (length(fit_results) == 0) {
+            return(NULL)
+        }
+
+        # Compare
+        comp <- phybase_compare(models = fit_results, sort = sort)
+
+        return(list(results = fit_results, comparison = comp))
+    } else {
+        # --- Mode 1: Compare Fitted Models ---
+
+        # Harvest models from ALL arguments
+        candidates <- list(model_specs, data, tree, n.cores, cl) # Potential positional args
+        candidates <- c(candidates, dots)
+
+        # If user passed a list of models explicitly
+        if (!is.null(dots$models) && is.list(dots$models)) {
+            candidates <- c(candidates, dots$models)
+        }
+
+        # Filter for phybase objects
+        is_fit <- function(x) inherits(x, "phybase")
+        models <- Filter(is_fit, candidates)
+
+        # Name models if needed
+        if (length(models) > 0) {
+            # Try to separate named vs unnamed
+            # Use names if available in source list, else generate
+            curr_names <- names(models)
+            if (is.null(curr_names)) {
+                curr_names <- rep("", length(models))
+            }
+
+            for (i in seq_along(models)) {
+                if (curr_names[i] == "") curr_names[i] <- paste0("Model_", i)
+            }
+            names(models) <- curr_names
+        } else {
+            stop(
+                "No fitted 'phybase' models provided (Mode 1), nor valid 'model_specs' (Mode 2)."
+            )
+        }
+
+        return(calc_waic_table(models, sort))
+    }
+}
+
+# Internal Helper
+calc_waic_table <- function(models, sort = TRUE) {
+    res_list <- list()
+    pointwise_list <- list()
+
+    for (name in names(models)) {
+        mod <- models[[name]]
+        if (is.null(mod$WAIC)) {
+            warning(paste("Model", name, "missing WAIC. Skipping."))
+            next
+        }
+
+        res_list[[name]] <- c(
+            WAIC = mod$WAIC["waic", "Estimate"],
+            SE = mod$WAIC["waic", "SE"],
+            p_waic = mod$WAIC["p_waic", "Estimate"]
         )
 
-        # Load package on workers
-        parallel::clusterEvalQ(cl, {
-            library(phybaseR)
-        })
-
-        # Run in parallel
-        results <- parallel::parLapply(cl, names(model_specs), function(name) {
-            run_model(name, model_specs[[name]], data, tree, dot_args)
-        })
-        names(results) <- names(model_specs)
-    } else {
-        message("Running models sequentially...")
-        results <- lapply(names(model_specs), function(name) {
-            run_model(name, model_specs[[name]], data, tree, dot_args)
-        })
-        names(results) <- names(model_specs)
+        pt <- attr(mod$WAIC, "pointwise")
+        if (!is.null(pt)) pointwise_list[[name]] <- pt
     }
 
-    # Compile comparison table
-    waic_vals <- sapply(results, function(x) {
-        if (!is.null(x$WAIC)) x$WAIC["waic"] else NA
-    })
-
-    dic_vals <- sapply(results, function(x) {
-        if (!is.null(x$DIC)) sum(x$DIC$deviance) + sum(x$DIC$penalty) else NA
-    })
-
-    comparison <- data.frame(
-        Model = names(results),
-        WAIC = waic_vals,
-        DIC = dic_vals,
-        stringsAsFactors = FALSE
-    )
-
-    # Calculate Delta and Weights if values exist
-    if (!all(is.na(comparison$WAIC))) {
-        min_waic <- min(comparison$WAIC, na.rm = TRUE)
-        comparison$Delta_WAIC <- comparison$WAIC - min_waic
-
-        # Akaike weights for WAIC
-        exp_delta <- exp(-0.5 * comparison$Delta_WAIC)
-        comparison$Weight_WAIC <- exp_delta / sum(exp_delta, na.rm = TRUE)
+    if (length(res_list) == 0) {
+        return(NULL)
     }
 
-    # Sort by WAIC if available, else DIC
-    if (!all(is.na(comparison$WAIC))) {
-        comparison <- comparison[order(comparison$WAIC), ]
-    } else if (!all(is.na(comparison$DIC))) {
-        comparison <- comparison[order(comparison$DIC), ]
+    df <- as.data.frame(do.call(rbind, res_list))
+    df$Model <- rownames(df)
+
+    if (sort) {
+        df <- df[order(df$WAIC), ]
+        pointwise_list <- pointwise_list[df$Model]
     }
 
-    list(results = results, comparison = comparison)
+    df$dWAIC <- df$WAIC - df$WAIC[1]
+
+    dSE <- numeric(nrow(df))
+    best_pt <- pointwise_list[[1]]
+
+    for (i in seq_len(nrow(df))) {
+        if (i == 1) {
+            dSE[i] <- 0
+        } else {
+            curr_pt <- pointwise_list[[i]]
+            if (
+                !is.null(best_pt) &&
+                    !is.null(curr_pt) &&
+                    nrow(best_pt) == nrow(curr_pt) &&
+                    "waic" %in% colnames(best_pt)
+            ) {
+                diffs <- curr_pt[, "waic"] - best_pt[, "waic"]
+                dSE[i] <- sqrt(length(diffs) * var(diffs))
+            } else {
+                dSE[i] <- NA
+            }
+        }
+    }
+    df$dSE <- dSE
+
+    rel_lik <- exp(-0.5 * df$dWAIC)
+    df$weight <- rel_lik / sum(rel_lik)
+
+    df <- df[, c("WAIC", "SE", "dWAIC", "dSE", "p_waic", "weight")]
+    class(df) <- c("phybase_comparison", "data.frame")
+    return(df)
+}
+
+#' @export
+print.phybase_comparison <- function(x, digits = 2, ...) {
+    cat("Model Comparison (ordered by WAIC):\n")
+    print.data.frame(x, digits = digits, ...)
+    cat("\n")
 }

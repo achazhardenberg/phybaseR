@@ -11,20 +11,13 @@ library(coda)
 library(rjags)
 
 # Source local files
-source("R/phybase_model.R")
-source("R/phybase_run.R")
-source("R/phybase_format_data.R")
-source("R/phybase_waic.R")
-source("R/summary.phybase.R")
-source("R/mag_helpers.R")
-source("R/dag_to_mag.R")
 
 cat("\n=== Testing Multi-Tree Support with Optimization ===\n\n")
 
 # 1. Simulate Data with Phylogenetic Uncertainty
 set.seed(999)
 N <- 40
-n_trees <- 10  # Number of trees (phylogenetic uncertainty)
+n_trees <- 10 # Number of trees (phylogenetic uncertainty)
 
 # Generate multiple trees from the same topology with branch length variation
 base_tree <- rtree(N)
@@ -35,7 +28,8 @@ tree_list <- list()
 for (i in 1:n_trees) {
   tree_i <- base_tree
   # Add some variation to branch lengths (±20%)
-  tree_i$edge.length <- base_tree$edge.length * runif(length(base_tree$edge.length), 0.8, 1.2)
+  tree_i$edge.length <- base_tree$edge.length *
+    runif(length(base_tree$edge.length), 0.8, 1.2)
   tree_i$edge.length <- tree_i$edge.length / max(branching.times(tree_i))
   tree_list[[i]] <- tree_i
 }
@@ -78,7 +72,10 @@ time_opt <- system.time({
   )
 })
 
-cat(sprintf("✓ Optimized multi-tree model finished in %.2f seconds\n", time_opt["elapsed"]))
+cat(sprintf(
+  "✓ Optimized multi-tree model finished in %.2f seconds\n",
+  time_opt["elapsed"]
+))
 
 # 3. Verify Output
 cat("\nChecking parameter estimates:\n")
@@ -119,7 +116,10 @@ time_unopt <- system.time({
   )
 })
 
-cat(sprintf("✓ Unoptimized multi-tree model finished in %.2f seconds\n", time_unopt["elapsed"]))
+cat(sprintf(
+  "✓ Unoptimized multi-tree model finished in %.2f seconds\n",
+  time_unopt["elapsed"]
+))
 cat(sprintf("Speedup: %.2fx\n", time_unopt["elapsed"] / time_opt["elapsed"]))
 
 # Compare estimates
@@ -128,8 +128,18 @@ beta_unopt <- sum_unopt$statistics["beta_Y_X", "Mean"]
 lambda_unopt <- sum_unopt$statistics["lambdaY", "Mean"]
 
 cat("\nComparing estimates (Optimized vs Unoptimized):\n")
-cat(sprintf("  beta: %.4f vs %.4f (diff=%.4f)\n", beta_est, beta_unopt, abs(beta_est - beta_unopt)))
-cat(sprintf("  lambda: %.4f vs %.4f (diff=%.4f)\n", lambda_est, lambda_unopt, abs(lambda_est - lambda_unopt)))
+cat(sprintf(
+  "  beta: %.4f vs %.4f (diff=%.4f)\n",
+  beta_est,
+  beta_unopt,
+  abs(beta_est - beta_unopt)
+))
+cat(sprintf(
+  "  lambda: %.4f vs %.4f (diff=%.4f)\n",
+  lambda_est,
+  lambda_unopt,
+  abs(lambda_est - lambda_unopt)
+))
 
 if (abs(beta_est - beta_unopt) < 0.1 && abs(lambda_est - lambda_unopt) < 0.1) {
   cat("✓ Estimates match between methods (diff < 0.1)\n")
@@ -137,5 +147,8 @@ if (abs(beta_est - beta_unopt) < 0.1 && abs(lambda_est - lambda_unopt) < 0.1) {
   cat("⚠ Estimates differ between methods\n")
 }
 
-cat("\n=== Multi-Tree Test Complete" ===\n")
-cat(sprintf("✓ Multi-tree optimization works correctly with %d trees\n", n_trees))
+cat("\n=== Multi-Tree Test Complete ===\n")
+cat(sprintf(
+  "✓ Multi-tree optimization works correctly with %d trees\n",
+  n_trees
+))

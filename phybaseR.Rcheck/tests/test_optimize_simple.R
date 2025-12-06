@@ -11,13 +11,6 @@ library(coda)
 library(rjags)
 
 # Source local files
-source("R/phybase_model.R")
-source("R/phybase_run.R")
-source("R/phybase_format_data.R")
-source("R/phybase_waic.R")
-source("R/summary.phybase.R")
-source("R/mag_helpers.R")
-source("R/dag_to_mag.R")
 
 cat("\n=== Testing JAGS Optimization (Simple Model) ===\n\n")
 

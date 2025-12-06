@@ -31,7 +31,7 @@
 #'     \item \code{"interpretable"} (default): Monitor only scientifically meaningful parameters:
 #'           intercepts (alpha), regression coefficients (beta), phylogenetic signals (lambda) for
 #'          responses, and WAIC terms. Excludes variance components (tau) and auxiliary predictor parameters.
-#'     \item \code {"all"}: Monitor all model parameters including variance components and implicit equation parameters.
+#'     \item \code{"all"}: Monitor all model parameters including variance components and implicit equation parameters.
 #'     \item Custom vector: Provide a character vector of specific parameter names to monitor.
 #'     \item \code{NULL}: Auto-detect based on model structure (equivalent to "interpretable").
 #'   }
@@ -41,7 +41,7 @@
 #' @param n.thin Thinning rate (default = 10).
 #' @param DIC Logical; whether to compute DIC using \code{dic.samples()} (default = TRUE).
 #'   **Note**: DIC penalty will be inflated for models with measurement error or repeated measures
-#'   because latent variables are counted as parameters (penalty ≈ structural parameters + N).
+#'   because latent variables are counted as parameters (penalty ~ structural parameters + N).
 #'   For model comparison, use WAIC or compare mean deviance across models with similar structure.
 #' @param WAIC Logical; whether to sample values for WAIC and deviance (default = FALSE).
 #'   WAIC is generally more appropriate than DIC for hierarchical models with latent variables.
@@ -101,7 +101,8 @@
 #' @export
 #' @importFrom ape vcv.phylo branching.times
 #' @importFrom rjags jags.model coda.samples dic.samples jags.samples
-#' @importFrom stats na.omit update formula terms setNames
+#' @importFrom stats na.omit update formula terms setNames start var
+#' @importFrom utils capture.output
 #' @importFrom coda gelman.diag effectiveSize
 #' @import coda
 phybase_run <- function(
