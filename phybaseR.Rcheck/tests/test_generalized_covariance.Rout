@@ -1,0 +1,169 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin20
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # Test script for Generalized Covariance Support (Non-Phylogenetic & Custom Matrix)
+> 
+> # library(phybaseR)
+> devtools::load_all(".")
+ℹ Loading phybaseR
+> library(ape)
+> library(testthat)
+> 
+> # 1. Synthesize Independent Data
+> set.seed(123)
+> N <- 100
+> x1 <- rnorm(N)
+> beta_true <- 0.5
+> sigma_true <- 1.0
+> y <- beta_true * x1 + rnorm(N, 0, sigma_true)
+> data_df <- data.frame(y = y, x1 = x1)
+> 
+> # Equation
+> eq <- list(y ~ x1)
+> 
+> cat("--- Test 1: Independent Model (tree = NULL) ---\n")
+--- Test 1: Independent Model (tree = NULL) ---
+> 
+> # Run phybaseR with tree = NULL
+> fit_null <- phybase_run(
++     data = data_df,
++     tree = NULL,
++     equations = eq,
++     n.iter = 5000,
++     n.burnin = 1000,
++     n.thin = 5,
++     quiet = FALSE
++ )
+No structure/tree provided. Running standard (non-phylogenetic) SEM.
+No tree provided. Running standard (non-phylogenetic) SEM.
+Converted data.frame to list with 2 variables: y, x1
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 100
+   Unobserved stochastic nodes: 3
+   Total graph size: 10509
+
+Initializing model
+
+Warning message:
+In rjags::jags.model(model_file, data = data, n.chains = n.chains,  :
+  Unused variable "ID2" in data
+> 
+> message("Model run complete.")
+Model run complete.
+> 
+> # Compare with simple linear regression (lm)
+> fit_lm <- lm(y ~ x1, data = data_df)
+> summ_lm <- summary(fit_lm)
+> 
+> # Extract estimates
+> beta_phybase <- mean(fit_null$samples[[1]][, "beta_y_x1"])
+> beta_lm <- coef(fit_lm)["x1"]
+> 
+> cat(sprintf("Beta (phybaseR): %.3f\n", beta_phybase))
+Beta (phybaseR): 0.442
+> cat(sprintf("Beta (lm):       %.3f\n", beta_lm))
+Beta (lm):       0.448
+> 
+> diff <- abs(beta_phybase - beta_lm)
+> if (diff < 0.1) {
++     cat("[PASS] Estimates match within tolerance.\n")
++ } else {
++     cat("[FAIL] Estimates diverge significantly.\n")
++ }
+[PASS] Estimates match within tolerance.
+> 
+> cat("\n--- Test 2: Custom Matrix Support (Identity Matrix) ---\n")
+
+--- Test 2: Custom Matrix Support (Identity Matrix) ---
+> 
+> # Pass diagonal matrix (Identity) - Should be equivalent to Null/Independent
+> # But with u_std generated (model interprets it as structured with Prec = Identity)
+> # Wait, if we pass Identity as Prec, u ~ N(0, I).
+> # Then Y = mu + u + epsilon.
+> # This is a model with two independent error terms (overparametrized if both are estimated freely).
+> # But let's just check if it RUNS.
+> 
+> identity_mat <- diag(N)
+> # Treat as Covariance Matrix
+> fit_matrix <- phybase_run(
++     data = data_df,
++     tree = identity_mat, # Pass matrix directly
++     equations = eq,
++     n.iter = 1000,
++     quiet = TRUE
++ )
+Warning message:
+In rjags::jags.model(model_file, data = data, n.chains = n.chains,  :
+  Unused variable "ID2" in data
+> 
+> message("Matrix model run complete.")
+Matrix model run complete.
+> if (!is.null(fit_matrix$samples)) {
++     cat("[PASS] Custom matrix model ran successfully.\n")
++ } else {
++     cat("[FAIL] Custom matrix model failed.\n")
++ }
+[PASS] Custom matrix model ran successfully.
+> 
+> cat("\n--- Test 3: Multinomial Independent (tree = NULL) ---\n")
+
+--- Test 3: Multinomial Independent (tree = NULL) ---
+> # Brief test for multinomial syntax
+> N_cat <- 50
+> cats <- sample(1:3, N_cat, replace = TRUE)
+> x_cat <- rnorm(N_cat)
+> data_cat <- data.frame(cat = as.factor(cats), x = x_cat)
+> 
+> fit_multinom <- phybase_run(
++     data = data_cat,
++     tree = NULL,
++     equations = list(cat ~ x),
++     distribution = c(cat = "multinomial"),
++     n.iter = 1000,
++     quiet = FALSE
++ )
+No structure/tree provided. Running standard (non-phylogenetic) SEM.
+No tree provided. Running standard (non-phylogenetic) SEM.
+Converted data.frame to list with 2 variables: cat, x
+Auto-detected K_cat = 3 from multinomial variable 'cat'
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 50
+   Unobserved stochastic nodes: 106
+   Total graph size: 3362
+
+Initializing model
+
+Warning message:
+In rjags::jags.model(model_file, data = data, n.chains = n.chains,  :
+  Unused variable "ID2" in data
+> 
+> if (!is.null(fit_multinom$samples)) {
++     cat("[PASS] Independent Multinomial model ran successfully.\n")
++ } else {
++     cat("[FAIL] Independent Multinomial model failed.\n")
++ }
+[PASS] Independent Multinomial model ran successfully.
+> 
+> proc.time()
+   user  system elapsed 
+  6.767   0.148   7.296 

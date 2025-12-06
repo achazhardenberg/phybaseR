@@ -1,0 +1,93 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin20
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(phybaseR)
+> library(ape)
+> 
+> # Simulate data
+> set.seed(123)
+> N <- 50
+> tree <- rtree(N)
+> data <- data.frame(
++     X = rnorm(N),
++     Y = rnorm(N)
++ )
+> data$Y <- 0.5 * data$X + rnorm(N)
+> 
+> cat("=== TEST 1: 3 Chains (Should show Rhat and n.eff) ===\n")
+=== TEST 1: 3 Chains (Should show Rhat and n.eff) ===
+> fit3 <- phybase_run(
++     data = data,
++     tree = tree,
++     equations = list(Y ~ X),
++     n.chains = 3,
++     n.iter = 1000,
++     n.burnin = 500,
++     quiet = TRUE
++ )
+Warning message:
+In rjags::jags.model(model_file, data = data, n.chains = n.chains,  :
+  Unused variable "ID2" in data
+> print(summary(fit3))
+          Mean    SD Naive SE Time-series SE   2.5%   50% 97.5%  Rhat n.eff
+alphaY   0.042 0.380    0.031          0.039 -0.668 0.006 0.873 0.990   120
+beta_Y_X 0.372 0.187    0.015          0.017  0.030 0.365 0.743 0.990   132
+lambdaY  0.334 0.149    0.012          0.012  0.135 0.304 0.707 1.004   150
+sigmaY   1.328 0.155    0.013          0.015  1.125 1.293 1.754 1.021   149
+
+DIC:
+Mean deviance:  149.1 
+penalty 14.1 
+Penalized deviance: 163.2 
+          Mean    SD Naive SE Time-series SE   2.5%   50% 97.5%  Rhat n.eff
+alphaY   0.042 0.380    0.031          0.039 -0.668 0.006 0.873 0.990   120
+beta_Y_X 0.372 0.187    0.015          0.017  0.030 0.365 0.743 0.990   132
+lambdaY  0.334 0.149    0.012          0.012  0.135 0.304 0.707 1.004   150
+sigmaY   1.328 0.155    0.013          0.015  1.125 1.293 1.754 1.021   149
+> 
+> cat("\n=== TEST 2: 1 Chain (Should show n.eff, NO Rhat) ===\n")
+
+=== TEST 2: 1 Chain (Should show n.eff, NO Rhat) ===
+> fit1 <- phybase_run(
++     data = data,
++     tree = tree,
++     equations = list(Y ~ X),
++     n.chains = 1,
++     n.iter = 1000,
++     n.burnin = 500,
++     quiet = TRUE
++ )
+Warning messages:
+1: In rjags::jags.model(model_file, data = data, n.chains = n.chains,  :
+  Unused variable "ID2" in data
+2: In phybase_run(data = data, tree = tree, equations = list(Y ~ X),  :
+  DIC and WAIC require at least 2 chains. Disabling calculation.
+> print(summary(fit1))
+          Mean    SD Naive SE Time-series SE   2.5%    50% 97.5% n.eff
+alphaY   0.009 0.359    0.051          0.051 -0.619 -0.006 0.673    50
+beta_Y_X 0.348 0.198    0.028          0.031 -0.031  0.360 0.704    40
+lambdaY  0.285 0.128    0.018          0.018  0.101  0.256 0.513    50
+sigmaY   1.294 0.111    0.016          0.016  1.092  1.285 1.545    50
+          Mean    SD Naive SE Time-series SE   2.5%    50% 97.5% n.eff
+alphaY   0.009 0.359    0.051          0.051 -0.619 -0.006 0.673    50
+beta_Y_X 0.348 0.198    0.028          0.031 -0.031  0.360 0.704    40
+lambdaY  0.285 0.128    0.018          0.018  0.101  0.256 0.513    50
+sigmaY   1.294 0.111    0.016          0.016  1.092  1.285 1.545    50
+> 
+> proc.time()
+   user  system elapsed 
+  1.899   0.044   2.081 
