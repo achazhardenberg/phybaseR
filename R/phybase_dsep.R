@@ -251,8 +251,19 @@ dsep_with_latents <- function(
     grouping_vars <- unique(sapply(random_terms, function(x) x$group))
   }
 
-  # Convert equations to ggm DAG format (excluding grouping variables)
-  dag <- equations_to_dag(equations, exclude_vars = grouping_vars)
+  # Extract polynomial internal variables to exclude from DAG
+  # They're deterministic transformations, not causal nodes
+  poly_internal_vars <- NULL
+  all_poly_terms <- get_all_polynomial_terms(equations)
+  if (!is.null(all_poly_terms)) {
+    poly_internal_vars <- sapply(all_poly_terms, function(x) x$internal_name)
+  }
+
+  # Combine exclusions
+  exclude_vars <- c(grouping_vars, poly_internal_vars)
+
+  # Convert equations to ggm DAG format (excluding grouping & polynomial variables)
+  dag <- equations_to_dag(equations, exclude_vars = exclude_vars)
 
   # Always suppress DAG.to.MAG output - we'll print our own filtered version
   invisible(capture.output(
