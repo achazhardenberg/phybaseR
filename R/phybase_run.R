@@ -167,7 +167,8 @@ phybase_run <- function(
   }
 
   # --- Hierarchical Data Detection & Validation ---
-  is_hierarchical <- is.list(data) && !is.data.frame(data)
+  # Data is hierarchical if it's a list (not dataframe) AND levels are provided
+  is_hierarchical <- is.list(data) && !is.data.frame(data) && !is.null(levels)
   hierarchical_info <- NULL
 
   if (is_hierarchical) {
@@ -228,6 +229,27 @@ phybase_run <- function(
         paste(x$response, x$group, sep = "|")
       })
       random_terms <- random_terms[!duplicated(keys)]
+    }
+  }
+
+  # --- Polynomial Term Extraction ---
+  # Extract I(var^power) terms and expand formulas
+  all_poly_terms <- get_all_polynomial_terms(equations)
+
+  if (!is.null(all_poly_terms)) {
+    # Expand formulas to replace I(x^2) with x_pow2
+    equations <- lapply(equations, function(eq) {
+      poly_terms <- extract_polynomial_terms(eq)
+      expand_polynomial_formula(eq, poly_terms)
+    })
+
+    if (!quiet) {
+      message(
+        "Detected ",
+        length(all_poly_terms),
+        " polynomial term(s): ",
+        paste(sapply(all_poly_terms, function(x) x$original), collapse = ", ")
+      )
     }
   }
   random_structures <- list()
@@ -413,6 +435,27 @@ phybase_run <- function(
     # Preserve attributes (like categorical_vars) which are lost during as.list()
     data_attrs <- attributes(data)
     data <- as.list(data)
+  }
+
+  # Compute polynomial values and add to data
+  if (!is.null(all_poly_terms)) {
+    for (poly_term in all_poly_terms) {
+      base_var <- poly_term$base_var
+      power <- poly_term$power
+      internal_name <- poly_term$internal_name
+
+      # Check if base variable exists in data
+      if (base_var %in% names(data)) {
+        # Compute polynomial: x^2, x^3, etc.
+        data[[internal_name]] <- data[[base_var]]^power
+      }
+    }
+
+    # Update original_data with polynomial values for d-separation
+    # But only if it wasn't hierarchical (avoid breaking hierarchical validation)
+    if (!is_hierarchical) {
+      original_data <- data
+    }
   }
 
   # Restore categorical_vars if present
@@ -881,6 +924,14 @@ phybase_run <- function(
 
       # Find variables that appear in equations but not in data
       potential_latents <- setdiff(vars_in_equations, vars_in_data)
+
+      # Exclude polynomial internal variables (they're deterministic, not latent)
+      if (!is.null(all_poly_terms)) {
+        poly_internal_names <- sapply(all_poly_terms, function(x) {
+          x$internal_name
+        })
+        potential_latents <- setdiff(potential_latents, poly_internal_names)
+      }
 
       if (length(potential_latents) > 0) {
         # Auto-detect latent variables
@@ -1423,7 +1474,8 @@ phybase_run <- function(
     optimise = optimise,
     structure_names = structure_names,
     random_structure_names = names(random_structures),
-    random_terms = random_terms
+    random_terms = random_terms,
+    poly_terms = all_poly_terms # Add polynomial terms
   )
 
   model_string <- model_output$model

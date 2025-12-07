@@ -69,7 +69,8 @@ phybase_model <- function(
   variability = NULL,
   distribution = NULL,
   optimise = TRUE,
-  standardize_latent = TRUE
+  standardize_latent = TRUE,
+  poly_terms = NULL # Polynomial transformation terms
 ) {
   # Helper: returns b if a is NULL or if a is a list element that doesn't exist
   `%||%` <- function(a, b) {
@@ -130,6 +131,21 @@ phybase_model <- function(
     "  # Structural equations",
     "  for (i in 1:N) {"
   )
+
+  # Add polynomial transformations as deterministic nodes
+  if (!is.null(poly_terms)) {
+    poly_jags <- generate_polynomial_jags(poly_terms)
+    if (length(poly_jags) > 0) {
+      model_lines <- c(
+        model_lines,
+        "    # Deterministic polynomial transformations",
+        poly_jags
+      )
+    }
+  }
+
+  # Continue with structural equations
+  model_lines <- c(model_lines, "")
 
   for (j in seq_along(eq_list)) {
     eq <- eq_list[[j]]
