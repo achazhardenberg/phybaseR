@@ -1323,3 +1323,66 @@ fit_global <- phybase_run(
 ```
 
 **Note:** `phybaseR` automatically detects overlapping random terms. If you specify `(1|Site)` in an equation AND in the global `random` argument, it will be handled correctly (deduplicated) to avoid double-counting.
+
+### Hierarchical Data: Handling Multi-Level Variables
+
+**Problem**: When variables are measured at different hierarchical levels (e.g., site-year vs individual), storing them in one dataset with replicated values can cause **sample size inflation** when testing relationships between higher-level variables.
+
+**Example scenario**:
+- Individual-level measurements: `weight`, `age` (20 unique individuals)
+- Site-year measurements: `temperature`, `rainfall` (4 unique site-year combinations, replicated across individuals)
+
+When testing `temperature ~ rainfall` with replicated data, the model incorrectly sees 20 observations instead of 4.
+
+**Solution**: phybaseR now supports hierarchical data structures automatically!
+
+```r
+# Individual-level data
+individual_data <- data.frame(
+  individual_id = 1:20,
+  site = rep(c("A", "B"), each = 10),
+  year = rep(c(2020, 2021), 10),
+  weight = rnorm(20, 50, 10),
+  age = rnorm(20, 5, 2)
+)
+
+# Site-year level data (only 4 unique combinations!)
+site_year_data <- data.frame(
+  site = c("A", "A", "B", "B"),
+  year = c(2020, 2021, 2020, 2021),
+  temperature = c(15, 16, 17, 18),
+  rainfall = c(800, 850, 900, 950)
+)
+
+# Specify hierarchical structure
+fit <- phybase_run(
+  data = list(
+    individual = individual_data,
+    site_year = site_year_data
+  ),
+  levels = list(
+    individual = c("weight", "age"),
+    site_year = c("temperature", "rainfall")
+  ),
+  hierarchy = "site_year > individual",
+  link_vars = c("site", "year"),
+  equations = list(
+    weight ~ age + temperature,
+    age ~ rainfall
+  ),
+  dsep = TRUE
+)
+```
+
+**How it works**:
+- phybaseR automatically joins datasets for the main model (20 observations)
+- For d-separation tests, each test uses the appropriate dataset:
+  - `weight _||_ rainfall | age, temperature` → 20 observations (needs individual level)
+  - `temperature _||_ rainfall | ` → 4 observations (site-year only!)
+- Sample sizes are correct for all tests
+
+**Key parameters**:
+- `levels`: Maps variables to hierarchical levels
+- `hierarchy`: Specifies nesting (e.g., "site_year > individual")
+- `link_vars`: Variables that link levels (e.g., site, year)
+
