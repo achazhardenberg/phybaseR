@@ -7,17 +7,34 @@
 phybase_model(
   equations,
   multi.tree = FALSE,
-  variability = NULL,
-  distribution = NULL,
+  latent_method = "correlations",
+  structure_names = "phylo",
+  random_structure_names = NULL,
+  random_terms = list(),
   vars_with_na = NULL,
   induced_correlations = NULL,
-  latent = NULL
+  latent = NULL,
+  variability = NULL,
+  distribution = NULL,
+  optimise = TRUE,
+  standardize_latent = TRUE
 )
 }
 \arguments{
 \item{equations}{A list of model formulas.}
 
 \item{multi.tree}{Logical; if \code{TRUE}, incorporates phylogenetic uncertainty by sampling across a set of trees.}
+
+\item{structure_names}{(Internal) Character vector of names for multiple trees/structures.}
+
+\item{vars_with_na}{Optional character vector of response variable names that have missing data.
+These variables will use element-wise likelihoods instead of multivariate normal.}
+
+\item{induced_correlations}{Optional list of variable pairs with induced correlations
+from latent variables. Each element should be a character vector of length 2 specifying
+the pair of variables that share a latent common cause.}
+
+\item{latent}{Optional character vector of latent variable names.}
 
 \item{variability}{Optional character vector or named character vector of variable names that have measurement error or within-species variability.
 If named, the names should be the variable names and the values should be the type of variability: "se" (for mean and standard error) or "reps" (for repeated measures).
@@ -31,12 +48,10 @@ If unnamed, it defaults to "se" for all specified variables.
 Default is "gaussian" for all variables. Supported values: "gaussian", "binomial", "multinomial".
 For "binomial" variables, the model uses a logit link and a Bernoulli likelihood, with phylogenetic correlation modeled on the latent scale.}
 
-\item{vars_with_na}{Optional character vector of response variable names that have missing data.
-These variables will use element-wise likelihoods instead of multivariate normal.}
+\item{optimise}{Logical. If TRUE (default), use random effects formulation for 4.6× speedup.
+If FALSE, use original marginal covariance formulation.}
 
-\item{induced_correlations}{Optional list of variable pairs with induced correlations
-from latent variables. Each element should be a character vector of length 2 specifying
-the pair of variables that share a latent common cause.}
+\item{standardize_latent}{Logical (default TRUE). If TRUE, standardizes latent variables to unit variance.}
 }
 \value{
 A list with two elements:

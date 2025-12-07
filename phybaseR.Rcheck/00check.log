@@ -6,11 +6,27 @@
     GNU Fortran (GCC) 14.2.0
 * running under: macOS Sequoia 15.6
 * using session charset: UTF-8
-* using option ‘--no-manual’
+* using option ‘--as-cran’
 * checking for file ‘phybaseR/DESCRIPTION’ ... OK
 * checking extension type ... Package
-* this is package ‘phybaseR’ version ‘0.1.0’
+* this is package ‘phybaseR’ version ‘1.0’
 * package encoding: UTF-8
+* checking CRAN incoming feasibility ... [5s/11s] NOTE
+Maintainer: ‘Achaz von Hardenberg <achaz.hardenberg@unipv.it>’
+
+New submission
+
+Found the following (possibly) invalid URLs:
+  URL: http://mcmc-jags.sourceforge.net (moved to https://mcmc-jags.sourceforge.io/)
+    From: README.md
+    Status: 200
+    Message: OK
+
+The Title field starts with the package name.
+The Title field should be in title case. Current version is:
+  ‘phybaseR: An R package to easily create and run PhyBaSE models’
+In title case that is:
+  ‘phybaseR: An R Package to Easily Create and Run PhyBaSE Models’
 * checking package namespace information ... OK
 * checking package dependencies ... OK
 * checking if this is a source package ... OK
@@ -22,8 +38,12 @@
 * checking whether package ‘phybaseR’ can be installed ... OK
 * checking installed package size ... OK
 * checking package directory ... OK
+* checking for future file timestamps ... OK
+* checking ‘build’ directory ... OK
 * checking DESCRIPTION meta-information ... OK
-* checking top-level files ... OK
+* checking top-level files ... NOTE
+Non-standard files/directories found at top level:
+  ‘IMPLEMENTATION_PROGRESS.md’ ‘docs’ ‘jags_func_test.bug’
 * checking for left-over files ... OK
 * checking index information ... OK
 * checking package subdirectories ... OK
@@ -34,6 +54,7 @@
 * checking whether the package can be unloaded cleanly ... OK
 * checking whether the namespace can be loaded with stated dependencies ... OK
 * checking whether the namespace can be unloaded cleanly ... OK
+* checking use of S3 registration ... OK
 * checking dependencies in R code ... OK
 * checking S3 generic/method consistency ... OK
 * checking replacement functions ... OK
@@ -41,6 +62,7 @@
 * checking R code for possible problems ... OK
 * checking Rd files ... OK
 * checking Rd metadata ... OK
+* checking Rd line widths ... OK
 * checking Rd cross-references ... OK
 * checking for missing documentation entries ... OK
 * checking for code/documentation mismatches ... OK
@@ -51,15 +73,375 @@
 * checking data for non-ASCII characters ... OK
 * checking LazyData ... OK
 * checking data for ASCII and uncompressed saves ... OK
-* checking files in ‘vignettes’ ... WARNING
-Files in the 'vignettes' directory but no files in 'inst/doc':
-  ‘phybaseR_tutorial.Rmd’
+* checking installed files from ‘inst/doc’ ... OK
+* checking files in ‘vignettes’ ... OK
 * checking examples ... OK
+* checking for unstated dependencies in ‘tests’ ... OK
+* checking tests ... [167s/179s] ERROR
+  Running ‘repro_dsep_error.R’ [8s/13s]
+  Running ‘repro_summary_issue.R’
+  Running ‘test_auto_variability.R’
+  Running ‘test_binomial_eigenvalue.R’
+  Running ‘test_categorical_dsep.R’
+  Running ‘test_categorical_expansion.R’
+  Running ‘test_categorical_predictors.R’
+  Running ‘test_custom_variability.R’
+  Running ‘test_distribution_lookup.R’
+  Running ‘test_format_data.R’
+  Running ‘test_generalized_covariance.R’ [13s/14s]
+  Running ‘test_induced_convergence.R’
+  Running ‘test_latent_methods.R’ [14s/14s]
+  Running ‘test_latent_variable.R’
+  Running ‘test_loglik_gaussian.R’
+  Running ‘test_loglik_monitoring.R’
+  Running ‘test_loglik_phylo.R’
+  Running ‘test_mixed_dist.R’
+  Running ‘test_model_comparison_func.R’ [48s/49s]
+  Running ‘test_model_comparison_unified.R’
+  Running ‘test_model_saving.R’ [20s/20s]
+  Running ‘test_multiple_covariance.R’ [21s/22s]
+  Running ‘test_optimize_binomial.R’
+  Running ‘test_optimize_mixed.R’
+  Running ‘test_optimize_multinomial.R’
+  Running ‘test_optimize_multitree.R’
+  Running ‘test_optimize_negbinomial.R’
+  Running ‘test_optimize_ordinal.R’
+  Running ‘test_optimize_poisson.R’
+  Running ‘test_optimize_simple.R’
+  Running ‘test_poisson_fix.R’
+  Running ‘test_summary_metrics.R’
+  Running ‘test_waic_comprehensive.R’ [15s/16s]
+  Running ‘test_waic_se.R’
+  Running ‘testthat.R’
+Running the tests in ‘tests/test_auto_variability.R’ failed.
+Last 13 lines of output:
+     Allocating nodes
+  Deleting model
+  
+  Error in rjags::jags.model(model_file, data = data, n.chains = n.chains,  : 
+    RUNTIME ERROR:
+  Compilation error on line 19.
+  Unknown variable X
+  Either supply values for this variable with the data
+  or define it  on the left hand side of a relation.
+  
+  Calls: phybase_run -> <Anonymous>
+  In addition: Warning message:
+  In rjags::jags.model(model_file, data = data, n.chains = n.chains,  :
+    Unused variable "ID2" in data
+  Execution halted
+Running the tests in ‘tests/test_binomial_eigenvalue.R’ failed.
+Last 13 lines of output:
+  
+  Error in rjags::jags.model(model_file, data = data, n.chains = n.chains,  : 
+    RUNTIME ERROR:
+  Compilation error on line 13.
+  Unknown variable Prec_phylo_fixed
+  Either supply values for this variable with the data
+  or define it  on the left hand side of a relation.
+  
+  Calls: phybase_run -> <Anonymous>
+  In addition: Warning messages:
+  1: In rjags::jags.model(model_file, data = data, n.chains = n.chains,  :
+    Unused variable "Prec_phylo" in data
+  2: In rjags::jags.model(model_file, data = data, n.chains = n.chains,  :
+    Unused variable "ID2" in data
+  Execution halted
+Running the tests in ‘tests/test_categorical_dsep.R’ failed.
+Complete output:
+  > # Test script for Categorical d-separation
+  > 
+  > source("R/phybase_format_data.R")
+  Error in file(filename, "r", encoding = encoding) : 
+    cannot open the connection
+  Calls: source -> file
+  In addition: Warning message:
+  In file(filename, "r", encoding = encoding) :
+    cannot open file 'R/phybase_format_data.R': No such file or directory
+  Execution halted
+Running the tests in ‘tests/test_categorical_expansion.R’ failed.
+Complete output:
+  > # Simple test to verify categorical expansion in equations
+  > 
+  > source("R/phybase_format_data.R")
+  Error in file(filename, "r", encoding = encoding) : 
+    cannot open the connection
+  Calls: source -> file
+  In addition: Warning message:
+  In file(filename, "r", encoding = encoding) :
+    cannot open file 'R/phybase_format_data.R': No such file or directory
+  Execution halted
+Running the tests in ‘tests/test_categorical_predictors.R’ failed.
+Complete output:
+  > # Test script for Categorical Predictor Support
+  > 
+  > source("R/phybase_format_data.R")
+  Error in file(filename, "r", encoding = encoding) : 
+    cannot open the connection
+  Calls: source -> file
+  In addition: Warning message:
+  In file(filename, "r", encoding = encoding) :
+    cannot open file 'R/phybase_format_data.R': No such file or directory
+  Execution halted
+Running the tests in ‘tests/test_custom_variability.R’ failed.
+Last 13 lines of output:
+  +     n.burnin = 250,
+  +     quiet = TRUE
+  + )
+  Error in rjags::jags.model(model_file, data = data, n.chains = n.chains,  : 
+    RUNTIME ERROR:
+  Compilation error on line 19.
+  Unknown variable BodyMass
+  Either supply values for this variable with the data
+  or define it  on the left hand side of a relation.
+  
+  Calls: phybase_run -> <Anonymous>
+  In addition: Warning message:
+  In rjags::jags.model(model_file, data = data, n.chains = n.chains,  :
+    Unused variable "ID2" in data
+  Execution halted
+Running the tests in ‘tests/test_distribution_lookup.R’ failed.
+Complete output:
+  > # Test script to reproduce distribution lookup error
+  > 
+  > source("R/phybase_format_data.R")
+  Error in file(filename, "r", encoding = encoding) : 
+    cannot open the connection
+  Calls: source -> file
+  In addition: Warning message:
+  In file(filename, "r", encoding = encoding) :
+    cannot open file 'R/phybase_format_data.R': No such file or directory
+  Execution halted
+Running the tests in ‘tests/test_format_data.R’ failed.
+Last 13 lines of output:
+  > cat("\n\n=== Testing with phybase_run ===\n")
+  
+  
+  === Testing with phybase_run ===
+  > fit <- phybase_run(
+  +     data = data_list,
+  +     tree = tree,
+  +     equations = list(NL ~ BM),
+  +     n.iter = 1000,
+  +     n.burnin = 500,
+  +     quiet = TRUE
+  + )
+  Error in phybase_run(data = data_list, tree = tree, equations = list(NL ~  : 
+    Variable NL specified as 'reps' type but column NL_obs (as matrix) not found in data.
+  Execution halted
+Running the tests in ‘tests/test_latent_variable.R’ failed.
+Last 13 lines of output:
+  correlated via one or more common latent effects that have been conditioned 
+  due to biased sampling. 
+   
+  ___________________________ 
+  ___________________________ 
+  Basis Set for MAG: 
+  I(X,Y|Z) means X is m-separated from Y given the set Z in the MAG 
+  No elements in the basis set 
+  Basis Set for MAG: 
+  I(X,Y|Z) means X is m-separated from Y given the set Z in the MAG 
+  No elements in the basis set 
+  Found 1 induced correlation(s) from latent variable(s)
+  Error in phybase_run(data = data, tree = tree, equations = equations,  : 
+    No d-separation tests implied by the model (model is saturated). Stopping run.
+  Execution halted
+Running the tests in ‘tests/test_model_saving.R’ failed.
+Last 13 lines of output:
+  
+  
+  === Checking Models Field ===
+  > cat("Number of models saved:", length(fit_rhino_dsep$models), "\n")
+  Number of models saved: 6 
+  > cat("Names of list elements:", names(fit_rhino_dsep), "\n\n")
+  Names of list elements: samples parameter_map models dsep dsep_tests induced_correlations 
+  
+  > 
+  > cat("=== Model 1 (first 30 lines) ===\n")
+  === Model 1 (first 30 lines) ===
+  > model_1_lines <- strsplit(fit_rhino_dsep$models[[1]], "\n")[[1]]
+  Error in strsplit(fit_rhino_dsep$models[[1]], "\n") : 
+    non-character argument
+  Execution halted
+Running the tests in ‘tests/test_multiple_covariance.R’ failed.
+Last 13 lines of output:
+  > # Use summary of posteriors (mcmc.list)
+  > summ <- summary(fit$posteriors)
+  > get_mean <- function(param) {
+  +     if (param %in% rownames(summ$statistics)) {
+  +         return(summ$statistics[param, "Mean"])
+  +     } else {
+  +         warning(paste("Param not found:", param))
+  +         return(NA)
+  +     }
+  + }
+  > 
+  > est_sigma_phylo <- get_mean("sigma_Y_phylo")
+  Error in summ$statistics : $ operator is invalid for atomic vectors
+  Calls: get_mean -> %in% -> rownames -> %||%
+  Execution halted
+Running the tests in ‘tests/test_optimize_binomial.R’ failed.
+Last 13 lines of output:
+  +         tree = tree,
+  +         equations = equations,
+  +         distribution = c(Y = "binomial"),
+  +         n.iter = 3000,
+  +         n.burnin = 500,
+  +         n.thin = 3,
+  +         optimise = TRUE,
+  +         quiet = TRUE
+  +     )
+  + })
+  Error in phybase_run(data = data, tree = tree, equations = equations,  : 
+    could not find function "phybase_run"
+  Calls: system.time
+  Timing stopped at: 0 0 0
+  Execution halted
+Running the tests in ‘tests/test_optimize_mixed.R’ failed.
+Last 13 lines of output:
+  +         tree = tree,
+  +         equations = equations,
+  +         distribution = c(Y = "gaussian", B = "binomial", Z = "gaussian"),
+  +         n.iter = 3000,
+  +         n.burnin = 500,
+  +         n.thin = 3,
+  +         optimise = TRUE,
+  +         quiet = TRUE
+  +     )
+  + })
+  Error in phybase_run(data = data, tree = tree, equations = equations,  : 
+    could not find function "phybase_run"
+  Calls: system.time
+  Timing stopped at: 0 0 0.001
+  Execution halted
+Running the tests in ‘tests/test_optimize_multinomial.R’ failed.
+Last 13 lines of output:
+  Running Unoptimized Multinomial Model (Marginal)...
+  > start_time <- Sys.time()
+  > fit_marg <- phybase_run(
+  +     data = data,
+  +     tree = tree,
+  +     equations = equations,
+  +     distribution = c(Y = "multinomial"),
+  +     optimise = FALSE,
+  +     n.iter = 1000,
+  +     n.burnin = 500,
+  +     n.chains = 2 # Reduced for speed
+  + )
+  Error in phybase_run(data = data, tree = tree, equations = equations,  : 
+    could not find function "phybase_run"
+  Execution halted
+Running the tests in ‘tests/test_optimize_multitree.R’ failed.
+Last 13 lines of output:
+  +     data = data,
+  +     tree = tree_list,
+  +     equations = equations,
+  +     n.iter = 2000,
+  +     n.burnin = 500,
+  +     n.thin = 2,
+  +     optimise = TRUE,
+  +     quiet = TRUE
+  +   )
+  + })
+  Error in phybase_run(data = data, tree = tree_list, equations = equations,  : 
+    could not find function "phybase_run"
+  Calls: system.time
+  Timing stopped at: 0 0 0
+  Execution halted
+Running the tests in ‘tests/test_optimize_negbinomial.R’ failed.
+Last 13 lines of output:
+  > 
+  > start_time <- Sys.time()
+  > fit_opt <- phybase_run(
+  +     data = data,
+  +     tree = tree,
+  +     equations = equations,
+  +     distribution = c(Y = "negbinomial"),
+  +     optimise = TRUE,
+  +     n.iter = 2000,
+  +     n.burnin = 1000,
+  +     n.chains = 2
+  + )
+  Error in phybase_run(data = data, tree = tree, equations = equations,  : 
+    could not find function "phybase_run"
+  Execution halted
+Running the tests in ‘tests/test_optimize_ordinal.R’ failed.
+Last 13 lines of output:
+  Running Optimized Ordinal Model (Random Effects)...
+  > start_time <- Sys.time()
+  > fit_opt <- phybase_run(
+  +     data = data,
+  +     tree = tree,
+  +     equations = equations,
+  +     distribution = c(Y = "ordinal"),
+  +     optimise = TRUE,
+  +     n.iter = 2000,
+  +     n.burnin = 1000,
+  +     n.chains = 2
+  + )
+  Error in phybase_run(data = data, tree = tree, equations = equations,  : 
+    could not find function "phybase_run"
+  Execution halted
+Running the tests in ‘tests/test_optimize_poisson.R’ failed.
+Last 13 lines of output:
+  Running Optimized Poisson Model (Random Effects)...
+  > start_time <- Sys.time()
+  > fit_opt <- phybase_run(
+  +     data = data,
+  +     tree = tree,
+  +     equations = equations,
+  +     distribution = c(Y = "poisson"),
+  +     optimise = TRUE,
+  +     n.iter = 2000,
+  +     n.burnin = 1000,
+  +     n.chains = 2
+  + )
+  Error in phybase_run(data = data, tree = tree, equations = equations,  : 
+    could not find function "phybase_run"
+  Execution halted
+Running the tests in ‘tests/test_optimize_simple.R’ failed.
+Last 13 lines of output:
+  > Y <- MASS::mvrnorm(1, mu, Sigma)
+  > 
+  > data <- list(Y = Y, X = X)
+  > equations <- list(Y ~ X)
+  > 
+  > # Debug: Print model code
+  > cat("Generating model code...\n")
+  Generating model code...
+  > model_out <- phybase_model(
+  +     equations = equations,
+  +     optimise = TRUE
+  + )
+  Error in phybase_model(equations = equations, optimise = TRUE) : 
+    could not find function "phybase_model"
+  Execution halted
+Running the tests in ‘tests/testthat.R’ failed.
+Last 13 lines of output:
+  Backtrace:
+      ▆
+   1. └─testthat::expect_match(model_output$model, "tau_res_Y") at test-phybase_model.R:32:5
+   2.   └─testthat:::expect_match_(...)
+  ── Failure ('test-phybase_model.R:33:5'): phybase_model handles missing data ───
+  model_output\$model does not match "tau_phylo_Y".
+  Actual value: "model \{\\n  # Dummy usage of ID to prevent warnings in GLMM-only models\\n  dummy_ID <- ID\[1,1\]\\n  # Structural equations\\n  for \(i in 1:N\) \{\\n    muY\[i\] <- alphaY \+ beta_Y_X\*X\[i\]\\n  \}\\n  # Multivariate normal likelihoods\\n  u_std_Y\[1:N\] ~ dmnorm\(zeros\[1:N\], Prec_tree\[1:N, 1:N\]\)\\n  for \(i in 1:N\) \{ u_Y\[i\] <- u_std_Y\[i\] / sqrt\(tau_u_Y\) \}\\n  for \(i in 1:N\) \{\\n    Y\[i\] ~ dnorm\(muY\[i\] \+ u_Y\[i\], tau_e_Y\)\\n    log_lik_Y\[i\] <- logdensity\.norm\(Y\[i\], muY\[i\] \+ u_Y\[i\], tau_e_Y\)\\n  \}\\n  # Priors for structural parameters\\n  alphaY ~ dnorm\(0, 1\.0E-6\)\\n  tau_u_Y ~ dgamma\(1, 1\)\\n  tau_e_Y ~ dgamma\(1, 1\)\\n  lambdaY <- \(1/tau_u_Y\) / \(\(1/tau_u_Y\) \+ \(1/tau_e_Y\)\)\\n  sigmaY <- sqrt\(1/tau_u_Y \+ 1/tau_e_Y\)\\n  beta_Y_X ~ dnorm\(0, 1\.0E-6\)\\n  # Covariance structure for responses\\n  # Predictor priors for imputation\\n\}"
+  Backtrace:
+      ▆
+   1. └─testthat::expect_match(model_output$model, "tau_phylo_Y") at test-phybase_model.R:33:5
+   2.   └─testthat:::expect_match_(...)
+  
+  [ FAIL 4 | WARN 3 | SKIP 18 | PASS 42 ]
+  Error: Test failures
+  Execution halted
 * checking for unstated dependencies in vignettes ... OK
-* checking package vignettes ... WARNING
-Directory 'inst/doc' does not exist.
-Package vignette without corresponding single PDF/HTML:
-  ‘phybaseR_tutorial.Rmd’
+* checking package vignettes ... OK
 * checking re-building of vignette outputs ... OK
+* checking PDF version of manual ... OK
+* checking HTML version of manual ... NOTE
+Skipping checking HTML validation: 'tidy' doesn't look like recent enough HTML Tidy.
+Please obtain a recent version of HTML Tidy by downloading a binary
+release or compiling the source code from <https://www.html-tidy.org/>.
+* checking for non-standard things in the check directory ... OK
+* checking for detritus in the temp directory ... OK
 * DONE
-Status: 2 WARNINGs
+Status: 1 ERROR, 3 NOTEs

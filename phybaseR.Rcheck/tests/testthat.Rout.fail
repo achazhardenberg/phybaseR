@@ -1,0 +1,107 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin20
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(testthat)
+> library(phybaseR)
+> 
+> test_check("phybaseR")
+NOTE: Stopping adaptation
+
+
+Basis Set for DAG: 
+I(X,Y|Z) means X is d-separated from Y given the set Z in the DAG 
+I( C , A |  ) 
+Basis Set for DAG: 
+I(X,Y|Z) means X is d-separated from Y given the set Z in the DAG 
+No elements in the basis set 
+the original DAG is: 
+L -> X 
+L -> Y 
+latent variable(s):  L 
+_____________________ 
+Mixed Acyclic Graph involving only the observed variables: 
+X <-> Y 
+___________________________ 
+X->Y means X that is a cause of Y given these observed variables 
+although there could also be latent common causes between them as well. 
+ 
+X<->Y means that X and Y are not causes of each other but are correlated 
+via one or more marginal common latent causes. 
+ 
+X--Y means that X and Y are not causes of each other but are  
+correlated via one or more common latent effects that have been conditioned 
+due to biased sampling. 
+ 
+___________________________ 
+___________________________ 
+Basis Set for MAG: 
+I(X,Y|Z) means X is m-separated from Y given the set Z in the MAG 
+No elements in the basis set 
+Basis Set for MAG: 
+I(X,Y|Z) means X is m-separated from Y given the set Z in the MAG 
+No elements in the basis set 
+[ FAIL 4 | WARN 3 | SKIP 18 | PASS 42 ]
+
+══ Skipped tests (18) ══════════════════════════════════════════════════════════
+• Binomial phylogenetic models can have convergence issues with short MCMC runs
+  (1): 'test-regression.R:40:5'
+• On CRAN (17): 'test-compare.R:2:5', 'test-distributions.R:54:5',
+  'test-edge-cases.R:27:5', 'test-ic-recompile.R:2:5',
+  'test-ic-recompile.R:35:5', 'test-integration.R:2:5',
+  'test-integration.R:47:5', 'test-multinomial.R:2:5', 'test-parallel.R:2:5',
+  'test-parallel.R:34:5', 'test-parallel.R:86:5', 'test-performance.R:2:5',
+  'test-performance.R:32:5', 'test-phybase_run.R:12:5',
+  'test-phybase_waic.R:2:5', 'test-regression.R:2:5', 'test-regression.R:81:5'
+
+══ Failed tests ════════════════════════════════════════════════════════════════
+── Failure ('test-compare.R:74:5'): phybase_compare handles errors gracefully ──
+`phybase_compare(list(), list(), ape::rtree(10))` threw an error with unexpected message.
+Expected match: "must be a named list"
+Actual message: "No fitted 'phybase' models provided (Mode 1), nor valid 'model_specs' (Mode 2)."
+Backtrace:
+    ▆
+ 1. ├─testthat::expect_error(...) at test-compare.R:74:5
+ 2. │ └─testthat:::quasi_capture(...)
+ 3. │   ├─testthat (local) .capture(...)
+ 4. │   │ └─base::withCallingHandlers(...)
+ 5. │   └─rlang::eval_bare(quo_get_expr(.quo), quo_get_env(.quo))
+ 6. └─phybaseR::phybase_compare(list(), list(), ape::rtree(10))
+── Failure ('test-phybase_model.R:31:5'): phybase_model handles missing data ───
+model_output\$model does not match "err_Y".
+Actual value: "model \{\\n  # Dummy usage of ID to prevent warnings in GLMM-only models\\n  dummy_ID <- ID\[1,1\]\\n  # Structural equations\\n  for \(i in 1:N\) \{\\n    muY\[i\] <- alphaY \+ beta_Y_X\*X\[i\]\\n  \}\\n  # Multivariate normal likelihoods\\n  u_std_Y\[1:N\] ~ dmnorm\(zeros\[1:N\], Prec_tree\[1:N, 1:N\]\)\\n  for \(i in 1:N\) \{ u_Y\[i\] <- u_std_Y\[i\] / sqrt\(tau_u_Y\) \}\\n  for \(i in 1:N\) \{\\n    Y\[i\] ~ dnorm\(muY\[i\] \+ u_Y\[i\], tau_e_Y\)\\n    log_lik_Y\[i\] <- logdensity\.norm\(Y\[i\], muY\[i\] \+ u_Y\[i\], tau_e_Y\)\\n  \}\\n  # Priors for structural parameters\\n  alphaY ~ dnorm\(0, 1\.0E-6\)\\n  tau_u_Y ~ dgamma\(1, 1\)\\n  tau_e_Y ~ dgamma\(1, 1\)\\n  lambdaY <- \(1/tau_u_Y\) / \(\(1/tau_u_Y\) \+ \(1/tau_e_Y\)\)\\n  sigmaY <- sqrt\(1/tau_u_Y \+ 1/tau_e_Y\)\\n  beta_Y_X ~ dnorm\(0, 1\.0E-6\)\\n  # Covariance structure for responses\\n  # Predictor priors for imputation\\n\}"
+Backtrace:
+    ▆
+ 1. └─testthat::expect_match(model_output$model, "err_Y") at test-phybase_model.R:31:5
+ 2.   └─testthat:::expect_match_(...)
+── Failure ('test-phybase_model.R:32:5'): phybase_model handles missing data ───
+model_output\$model does not match "tau_res_Y".
+Actual value: "model \{\\n  # Dummy usage of ID to prevent warnings in GLMM-only models\\n  dummy_ID <- ID\[1,1\]\\n  # Structural equations\\n  for \(i in 1:N\) \{\\n    muY\[i\] <- alphaY \+ beta_Y_X\*X\[i\]\\n  \}\\n  # Multivariate normal likelihoods\\n  u_std_Y\[1:N\] ~ dmnorm\(zeros\[1:N\], Prec_tree\[1:N, 1:N\]\)\\n  for \(i in 1:N\) \{ u_Y\[i\] <- u_std_Y\[i\] / sqrt\(tau_u_Y\) \}\\n  for \(i in 1:N\) \{\\n    Y\[i\] ~ dnorm\(muY\[i\] \+ u_Y\[i\], tau_e_Y\)\\n    log_lik_Y\[i\] <- logdensity\.norm\(Y\[i\], muY\[i\] \+ u_Y\[i\], tau_e_Y\)\\n  \}\\n  # Priors for structural parameters\\n  alphaY ~ dnorm\(0, 1\.0E-6\)\\n  tau_u_Y ~ dgamma\(1, 1\)\\n  tau_e_Y ~ dgamma\(1, 1\)\\n  lambdaY <- \(1/tau_u_Y\) / \(\(1/tau_u_Y\) \+ \(1/tau_e_Y\)\)\\n  sigmaY <- sqrt\(1/tau_u_Y \+ 1/tau_e_Y\)\\n  beta_Y_X ~ dnorm\(0, 1\.0E-6\)\\n  # Covariance structure for responses\\n  # Predictor priors for imputation\\n\}"
+Backtrace:
+    ▆
+ 1. └─testthat::expect_match(model_output$model, "tau_res_Y") at test-phybase_model.R:32:5
+ 2.   └─testthat:::expect_match_(...)
+── Failure ('test-phybase_model.R:33:5'): phybase_model handles missing data ───
+model_output\$model does not match "tau_phylo_Y".
+Actual value: "model \{\\n  # Dummy usage of ID to prevent warnings in GLMM-only models\\n  dummy_ID <- ID\[1,1\]\\n  # Structural equations\\n  for \(i in 1:N\) \{\\n    muY\[i\] <- alphaY \+ beta_Y_X\*X\[i\]\\n  \}\\n  # Multivariate normal likelihoods\\n  u_std_Y\[1:N\] ~ dmnorm\(zeros\[1:N\], Prec_tree\[1:N, 1:N\]\)\\n  for \(i in 1:N\) \{ u_Y\[i\] <- u_std_Y\[i\] / sqrt\(tau_u_Y\) \}\\n  for \(i in 1:N\) \{\\n    Y\[i\] ~ dnorm\(muY\[i\] \+ u_Y\[i\], tau_e_Y\)\\n    log_lik_Y\[i\] <- logdensity\.norm\(Y\[i\], muY\[i\] \+ u_Y\[i\], tau_e_Y\)\\n  \}\\n  # Priors for structural parameters\\n  alphaY ~ dnorm\(0, 1\.0E-6\)\\n  tau_u_Y ~ dgamma\(1, 1\)\\n  tau_e_Y ~ dgamma\(1, 1\)\\n  lambdaY <- \(1/tau_u_Y\) / \(\(1/tau_u_Y\) \+ \(1/tau_e_Y\)\)\\n  sigmaY <- sqrt\(1/tau_u_Y \+ 1/tau_e_Y\)\\n  beta_Y_X ~ dnorm\(0, 1\.0E-6\)\\n  # Covariance structure for responses\\n  # Predictor priors for imputation\\n\}"
+Backtrace:
+    ▆
+ 1. └─testthat::expect_match(model_output$model, "tau_phylo_Y") at test-phybase_model.R:33:5
+ 2.   └─testthat:::expect_match_(...)
+
+[ FAIL 4 | WARN 3 | SKIP 18 | PASS 42 ]
+Error: Test failures
+Execution halted

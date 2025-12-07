@@ -1,0 +1,109 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin20
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # ==============================================================================
+> # Test Script: Mixed Gaussian + Binomial Model with Optimization
+> # ==============================================================================
+> # Verifies that optimized random effects work correctly when a model contains
+> # both Gaussian and binomial response variables.
+> # ==============================================================================
+> 
+> # library(phybaseR)
+> library(ape)
+> library(coda)
+> library(rjags)
+Linked to JAGS 4.3.2
+Loaded modules: basemod,bugs
+> 
+> # Source local files
+> 
+> cat("\n=== Testing Mixed Gaussian + Binomial Model ===\n\n")
+
+=== Testing Mixed Gaussian + Binomial Model ===
+
+> 
+> # 1. Simulate Data
+> set.seed(789)
+> N <- 60
+> tree <- rtree(N)
+> tree$edge.length <- tree$edge.length / max(branching.times(tree))
+> VCV <- vcv.phylo(tree)
+> 
+> # True parameters
+> beta_ZY <- 0.8 # Effect of Z on Y (Gaussian)
+> beta_YB <- 1.2 # Effect of Y on B (binomial)
+> lambda_Y <- 0.7 # Phylogenetic signal for Y (Gaussian)
+> lambda_B <- 0.5 # Phylogenetic signal for B (binomial)
+> 
+> # Simulate Z (exogenous predictor)
+> Z <- rnorm(N)
+> 
+> # Simulate Y (Gaussian response)
+> sigma_Y <- 1.0
+> phylo_var_Y <- lambda_Y * sigma_Y^2
+> resid_var_Y <- (1 - lambda_Y) * sigma_Y^2
+> Sigma_phylo_Y <- phylo_var_Y * VCV
+> err_phylo_Y <- MASS::mvrnorm(1, rep(0, N), Sigma_phylo_Y)
+> err_resid_Y <- rnorm(N, 0, sqrt(resid_var_Y))
+> Y <- beta_ZY * Z + err_phylo_Y + err_resid_Y
+> 
+> # Simulate B (binomial response, depends on Y)
+> sigma_B <- 1.5
+> phylo_var_B <- lambda_B * sigma_B^2
+> resid_var_B <- (1 - lambda_B) * sigma_B^2
+> Sigma_phylo_B <- phylo_var_B * VCV
+> err_phylo_B <- MASS::mvrnorm(1, rep(0, N), Sigma_phylo_B)
+> err_resid_B <- rnorm(N, 0, sqrt(resid_var_B))
+> logit_p <- beta_YB * Y + err_phylo_B + err_resid_B
+> p <- plogis(logit_p)
+> B <- rbinom(N, 1, p)
+> 
+> cat(sprintf("Simulated data: %d species\n", N))
+Simulated data: 60 species
+> cat(sprintf("  Y (Gaussian): mean=%.2f, sd=%.2f\n", mean(Y), sd(Y)))
+  Y (Gaussian): mean=0.90, sd=1.25
+> cat(sprintf("  B (Binomial): %.1f%% ones\n", 100 * mean(B)))
+  B (Binomial): 71.7% ones
+> 
+> data <- list(Y = Y, B = B, Z = Z)
+> equations <- list(
++     Y ~ Z,
++     B ~ Y
++ )
+> 
+> # 2. Run Optimized Model
+> cat("\nRunning optimized model (optimize = TRUE)...\n")
+
+Running optimized model (optimize = TRUE)...
+> time_opt <- system.time({
++     fit_opt <- phybase_run(
++         data = data,
++         tree = tree,
++         equations = equations,
++         distribution = c(Y = "gaussian", B = "binomial", Z = "gaussian"),
++         n.iter = 3000,
++         n.burnin = 500,
++         n.thin = 3,
++         optimise = TRUE,
++         quiet = TRUE
++     )
++ })
+Error in phybase_run(data = data, tree = tree, equations = equations,  : 
+  could not find function "phybase_run"
+Calls: system.time
+Timing stopped at: 0 0 0.001
+Execution halted

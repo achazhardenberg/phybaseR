@@ -1,7 +1,7 @@
 Package: phybaseR
 Type: Package
-Title: R functions to easily create and run PhyBaSE models
-Version: 0.1.0
+Title: phybaseR: An R package to easily create and run PhyBaSE models
+Version: 1.0
 Authors@R: c(
     person(
       "Achaz", "von Hardenberg",
@@ -12,18 +12,18 @@ Authors@R: c(
 Description: Provides tools for specifying and fitting Phylogenetic Bayesian 
     Structural Equation Models (PhyBaSE) using JAGS. PhyBaSE models allow causal
     inference in phylogenetic comparative analyses, accounting for phylogenetic
-    uncertainty and handling missing data. Implements the methods described in
+    uncertainty and handling missing data. Implements and expands on the methods described in
     von Hardenberg and Gonzalez-Voyer (2025) <doi:10.1111/2041-210X.70044>.
 License: AGPL-3
 Encoding: UTF-8
 LazyData: true
-Imports: rjags, ape, stats
+Imports: rjags, ape, ggm, coda, stats, parallel, utils
 Depends: R (>= 3.5)
 RoxygenNote: 7.3.2
-Suggests: knitr, rmarkdown
-VignetteBuilder: knitr
+Suggests: knitr, rmarkdown, testthat (>= 3.0.0), devtools, MASS, loo
+VignetteBuilder: knitr, rmarkdown
 NeedsCompilation: no
-Packaged: 2025-11-30 08:57:45 UTC; achazhardenberg
+Packaged: 2025-12-06 20:07:19 UTC; achazhardenberg
 Author: Achaz von Hardenberg [aut, cre]
 Maintainer: Achaz von Hardenberg <achaz.hardenberg@unipv.it>
-Built: R 4.5.2; ; 2025-11-30 10:11:20 UTC; unix
+Built: R 4.5.2; ; 2025-12-06 20:07:33 UTC; unix

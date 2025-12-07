@@ -1,0 +1,104 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin20
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # ==============================================================================
+> # Test Script: Multi-Tree Support with Optimization
+> # ==============================================================================
+> # Verifies that the optimized random effects formulation works correctly
+> # with phylogenetic uncertainty (multiple trees).
+> # ==============================================================================
+> 
+> # library(phybaseR)
+> library(ape)
+> library(coda)
+> library(rjags)
+Linked to JAGS 4.3.2
+Loaded modules: basemod,bugs
+> 
+> # Source local files
+> 
+> cat("\n=== Testing Multi-Tree Support with Optimization ===\n\n")
+
+=== Testing Multi-Tree Support with Optimization ===
+
+> 
+> # 1. Simulate Data with Phylogenetic Uncertainty
+> set.seed(999)
+> N <- 40
+> n_trees <- 10 # Number of trees (phylogenetic uncertainty)
+> 
+> # Generate multiple trees from the same topology with branch length variation
+> base_tree <- rtree(N)
+> base_tree$edge.length <- base_tree$edge.length / max(branching.times(base_tree))
+> 
+> # Create a set of trees with perturbed branch lengths
+> tree_list <- list()
+> for (i in 1:n_trees) {
++   tree_i <- base_tree
++   # Add some variation to branch lengths (±20%)
++   tree_i$edge.length <- base_tree$edge.length *
++     runif(length(base_tree$edge.length), 0.8, 1.2)
++   tree_i$edge.length <- tree_i$edge.length / max(branching.times(tree_i))
++   tree_list[[i]] <- tree_i
++ }
+> class(tree_list) <- "multiPhylo"
+> 
+> cat(sprintf("Created %d trees with %d species\n", n_trees, N))
+Created 10 trees with 40 species
+> 
+> # True parameters
+> beta <- 0.7
+> lambda <- 0.6
+> 
+> # Simulate data using first tree (for simplicity)
+> VCV <- vcv.phylo(tree_list[[1]])
+> X <- rnorm(N)
+> sigma <- 1.0
+> phylo_var <- lambda * sigma^2
+> resid_var <- (1 - lambda) * sigma^2
+> Sigma_phylo <- phylo_var * VCV
+> err_phylo <- MASS::mvrnorm(1, rep(0, N), Sigma_phylo)
+> err_resid <- rnorm(N, 0, sqrt(resid_var))
+> Y <- beta * X + err_phylo + err_resid
+> 
+> cat(sprintf("Simulated data: Y = %.2f*X + phylo_error + resid_error\n", beta))
+Simulated data: Y = 0.70*X + phylo_error + resid_error
+> 
+> data <- list(Y = Y, X = X)
+> equations <- list(Y ~ X)
+> 
+> # 2. Run Optimized Multi-Tree Model
+> cat("\nRunning optimized multi-tree model (optimize = TRUE)...\n")
+
+Running optimized multi-tree model (optimize = TRUE)...
+> time_opt <- system.time({
++   fit_opt <- phybase_run(
++     data = data,
++     tree = tree_list,
++     equations = equations,
++     n.iter = 2000,
++     n.burnin = 500,
++     n.thin = 2,
++     optimise = TRUE,
++     quiet = TRUE
++   )
++ })
+Error in phybase_run(data = data, tree = tree_list, equations = equations,  : 
+  could not find function "phybase_run"
+Calls: system.time
+Timing stopped at: 0 0 0
+Execution halted

@@ -4,43 +4,52 @@
 \alias{phybase_dsep}
 \title{Extract d-separation statements from a structural equation model}
 \usage{
-phybase_dsep(equations)
+phybase_dsep(equations, latent = NULL, quiet = FALSE)
 }
 \arguments{
 \item{equations}{A list of model formulas (one per structural equation),
 e.g., \code{list(Y ~ X1 + X2, Z ~ Y)}.}
+
+\item{latent}{Optional character vector of latent (unmeasured) variable names.
+If provided, the function converts the DAG to a MAG and returns m-separation tests.}
+
+\item{quiet}{Logical; if FALSE (default), print the basis set and MAG structure.
+If TRUE, suppress informational output.}
 }
 \value{
-A list of formulas representing conditional independence tests.
-  Each formula represents a regression that should yield a non-significant
-  coefficient if the model is correctly specified.
+If \code{latent} is NULL, returns a list of formulas representing
+  conditional independence tests. If \code{latent} is specified, returns a list with:
+  \itemize{
+    \item \code{tests}: List of m-separation test formulas
+    \item \code{correlations}: List of variable pairs with induced correlations
+  }
 }
 \description{
 This function takes a set of structural equations defining a causal model
-and returns the conditional independence statements (d-separation tests)
-implied by the model structure. These can be used to test the model's
-fit using the basis set method.
+and returns the conditional independence statements (d-separation or m-separation tests)
+implied by the model structure. If latent variables are specified, the function
+uses the MAG (Maximal Ancestral Graph) approach by Shipley and Douma (2021)
+to account for unmeasured latent variables.
 }
 \details{
 The function implements the basis set approach to d-separation testing
-(Shipley 2000, 2009). For each pair of non-adjacent variables in the
-causal graph, it creates a conditional independence test by regressing
-one variable on the other while conditioning on their common parents.
+(Shipley 2000, 2009, 2016). For standard DAGs without latent variables, it identifies
+pairs of non-adjacent variables and creates conditional independence tests.
 
-Variables with no parents are preferentially placed on the right-hand
-side of test equations. When both variables have parents, descendants
-are placed on the left-hand side.
+When latent variables are specified, the function uses the DAG-to-MAG conversion
+(Shipley & Douma 2021) to identify m-separation statements and induced correlations
+among observed variables that arise from shared latent common causes.
 }
 \examples{
-# Define a simple path model
+# Standard DAG
 equations <- list(LS ~ BM, NL ~ BM + RS, DD ~ NL)
-
-# Get conditional independence tests
 ind_tests <- phybase_dsep(equations)
 
-# Each test is a formula
-print(ind_tests)
-
+# With latent variable
+equations_latent <- list(X ~ Quality, Y ~ Quality)
+result <- phybase_dsep(equations_latent, latent = "Quality")
+# result$tests: m-separation tests
+# result$correlations: induced correlation between X and Y
 }
 \references{
 Shipley, B. (2000). A new inferential test for path models based on
@@ -48,4 +57,12 @@ directed acyclic graphs. Structural Equation Modeling, 7(2), 206-218.
 
 Shipley, B. (2009). Confirmatory path analysis in a generalized multilevel
 context. Ecology, 90(2), 363-368.
+
+Shipley, B. (2016). Cause and Correlation in Biology (2nd ed.).
+Cambridge University Press.
+
+Shipley, B., & Douma, J. C. (2021). Testing Piecewise Structural Equations
+Models in the Presence of Latent Variables and Including Correlated Errors.
+Structural Equation Modeling: A Multidisciplinary Journal, 28(4), 582–589.
+https://doi.org/10.1080/10705511.2020.1871355
 }

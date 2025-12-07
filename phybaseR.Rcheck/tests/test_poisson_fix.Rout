@@ -1,0 +1,68 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin20
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(phybaseR)
+> 
+> # Quick Poisson test
+> set.seed(123)
+> N <- 35
+> df <- data.frame(
++     SP = paste0("sp", 1:N),
++     Y = rpois(N, lambda = 5),
++     X = rnorm(N)
++ )
+> 
+> cat("Testing Poisson model with WAIC...\n")
+Testing Poisson model with WAIC...
+> fit <- phybase_run(
++     data = df,
++     id_col = "SP",
++     equations = list(Y ~ X),
++     distribution = list(Y = "poisson"),
++     WAIC = TRUE,
++     n.chains = 2,
++     n.iter = 1000,
++     quiet = TRUE
++ )
+Warning message:
+In rjags::jags.model(model_file, data = data, n.chains = n.chains,  :
+  Unused variable "ID2" in data
+> 
+> cat("\n✓ SUCCESS! Poisson model compiles\n\n")
+
+✓ SUCCESS! Poisson model compiles
+
+> cat("WAIC Results:\n")
+WAIC Results:
+> print(fit$WAIC)
+WAIC with Standard Errors
+-------------------------
+N = 35 observations, 160 MCMC samples
+
+          Estimate  SE
+elpd_waic    -82.6 2.1
+p_waic        10.2 1.1
+waic         165.3 4.3
+
+Interpretation:
+  - Lower WAIC indicates better model fit
+  - Compare models: difference significant if |WAIC1 - WAIC2| > 2*SE_diff
+  - p_waic estimates effective number of parameters
+> 
+> proc.time()
+   user  system elapsed 
+  0.808   0.079   0.965 

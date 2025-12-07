@@ -9,7 +9,12 @@ phybase_model(
   multi.tree = FALSE,
   variability = NULL,
   distribution = NULL,
-  vars_with_na = NULL
+  vars_with_na = NULL,
+  induced_correlations = NULL,
+  latent = NULL,
+  standardize_latent = TRUE,
+  optimise = TRUE,
+  structure_names = NULL
 )
 }
 \arguments{
@@ -26,14 +31,31 @@ If unnamed, it defaults to "se" for all specified variables.
 }}
 
 \item{distribution}{Optional named character vector specifying the distribution for response variables.
-Default is "gaussian" for all variables. Supported values: "gaussian", "binomial".
+Default is "gaussian" for all variables. Supported values: "gaussian", "binomial", "multinomial".
 For "binomial" variables, the model uses a logit link and a Bernoulli likelihood, with phylogenetic correlation modeled on the latent scale.}
 
 \item{vars_with_na}{Optional character vector of response variable names that have missing data.
 These variables will use element-wise likelihoods instead of multivariate normal.}
+
+\item{induced_correlations}{Optional list of variable pairs with induced correlations
+from latent variables. Each element should be a character vector of length 2 specifying
+the pair of variables that share a latent common cause.}
+
+\item{latent}{Optional character vector of latent variable names.}
+
+\item{standardize_latent}{Logical (default TRUE). If TRUE, standardizes latent variables to unit variance.}
+
+\item{optimise}{Logical. If TRUE (default), use random effects formulation for 4.6× speedup.
+If FALSE, use original marginal covariance formulation.}
+
+\item{structure_names}{(Internal) Character vector of names for multiple trees/structures.}
 }
 \value{
-A character string containing the JAGS model code.
+A list with two elements:
+\itemize{
+  \item \code{model}: A character string containing the JAGS model code.
+  \item \code{parameter_map}: A data frame mapping response variables to their predictors and parameter names.
+}
 }
 \description{
 This function builds the model code to be passed to JAGS based on a set of structural equations.
@@ -57,6 +79,6 @@ The generated model includes:
 }
 \examples{
 eqs <- list(BR ~ BM, S ~ BR, G ~ BR, L ~ BR)
-cat(phybase_model(eqs, multi.tree = TRUE))
+cat(phybase_model(eqs, multi.tree = TRUE)$model)
 
 }

@@ -1,0 +1,94 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin20
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # Test script for Ordinal Optimization in phybaseR
+> # Verifies correctness of the random effects formulation for ordinal models (Cumulative Logit)
+> 
+> # Source local files
+> 
+> library(rjags)
+Loading required package: coda
+Linked to JAGS 4.3.2
+Loaded modules: basemod,bugs
+> library(coda)
+> library(ape)
+> library(MASS)
+> 
+> set.seed(456)
+> 
+> # 1. Simulate Ordinal Data (e.g., IUCN Red List: LC=1, NT=2, VU=3, EN=4, CR=5)
+> N <- 100
+> tree <- rcoal(N)
+> VCV <- vcv(tree)
+> # Standardize VCV to max height 1
+> VCV <- VCV / max(node.depth.edgelength(tree))
+> 
+> # Predictor (e.g., log body mass)
+> X <- rnorm(N)
+> 
+> # True parameters
+> beta_true <- -0.8 # Larger body mass -> lower threat
+> lambda_true <- 0.6
+> 
+> # Phylogenetic + residual error
+> sigma_phylo <- sqrt(lambda_true)
+> sigma_resid <- sqrt(1 - lambda_true)
+> u <- mvrnorm(1, rep(0, N), sigma_phylo^2 * VCV)
+> epsilon <- rnorm(N, 0, sigma_resid)
+> eta <- beta_true * X + u + epsilon
+> 
+> # Cutpoints (true values)
+> cutpoints_true <- c(-1, 0, 1, 2)
+> 
+> # Calculate probabilities using cumulative logit
+> Q <- matrix(0, nrow = N, ncol = 4)
+> for (i in 1:N) {
++     for (k in 1:4) {
++         Q[i, k] <- 1 / (1 + exp(-(cutpoints_true[k] - eta[i])))
++     }
++ }
+> 
+> # Category probabilities
+> P <- matrix(0, nrow = N, ncol = 5)
+> P[, 1] <- Q[, 1]
+> for (k in 2:4) {
++     P[, k] <- Q[, k] - Q[, k - 1]
++ }
+> P[, 5] <- 1 - Q[, 4]
+> 
+> # Sample ordinal outcome
+> Y <- apply(P, 1, function(p) sample(1:5, 1, prob = p))
+> 
+> data <- list(Y = Y, X = X, K_Y = 5)
+> equations <- list(Y ~ X)
+> 
+> cat("Running Optimized Ordinal Model (Random Effects)...\n")
+Running Optimized Ordinal Model (Random Effects)...
+> start_time <- Sys.time()
+> fit_opt <- phybase_run(
++     data = data,
++     tree = tree,
++     equations = equations,
++     distribution = c(Y = "ordinal"),
++     optimise = TRUE,
++     n.iter = 2000,
++     n.burnin = 1000,
++     n.chains = 2
++ )
+Error in phybase_run(data = data, tree = tree, equations = equations,  : 
+  could not find function "phybase_run"
+Execution halted

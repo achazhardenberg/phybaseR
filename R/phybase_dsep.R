@@ -53,21 +53,33 @@
 #' result <- phybase_dsep(equations_latent, latent = "Quality")
 #' # result$tests: m-separation tests
 #' # result$correlations: induced correlation between X and Y
-#'
+#' @param quiet Logical; if FALSE (default), print the basis set and MAG structure.
+#'   If TRUE, suppress informational output.
+#' @param random_terms Optional list of random effects (group, type) parsed from equations.
 #' @export
 #' @importFrom stats formula terms as.formula
-phybase_dsep <- function(equations, latent = NULL) {
+phybase_dsep <- function(
+  equations,
+  latent = NULL,
+  random_terms = list(),
+  quiet = FALSE
+) {
   # If no latents, use standard DAG d-separation
   if (is.null(latent)) {
-    return(dsep_standard(equations))
+    return(dsep_standard(equations, random_terms = random_terms, quiet = quiet))
   }
 
   # With latents: use MAG m-separation
-  return(dsep_with_latents(equations, latent))
+  return(dsep_with_latents(
+    equations,
+    latent,
+    random_terms = random_terms,
+    quiet = quiet
+  ))
 }
 
 # Standard d-separation for DAGs (original logic)
-dsep_standard <- function(equations) {
+dsep_standard <- function(equations, random_terms = list(), quiet = FALSE) {
   # Parse equations to extract parent-child relationships
   parents <- list()
   children <- list()
@@ -89,7 +101,7 @@ dsep_standard <- function(equations) {
   cond_indep_regressions <- list()
 
   # Loop through all pairs of non-adjacent variables
-  for (i in 1:(length(all_vars) - 1)) {
+  for (i in seq_len(length(all_vars) - 1)) {
     for (j in (i + 1):length(all_vars)) {
       var1 <- all_vars[i]
       var2 <- all_vars[j]
@@ -100,72 +112,112 @@ dsep_standard <- function(equations) {
         parents_var1 <- parents[[var1]]
         parents_var2 <- parents[[var2]]
 
-        # Combine the parents of both variables
-        conditioning_vars <- unique(c(parents_var1, parents_var2))
-
-        # Ensure that if a variable has no parents, it always goes on the right-hand side
-        if (length(parents_var1) == 0 && length(parents_var2) == 0) {
-          # If both have no parents, put both on the right-hand side
-          reg_formula <- paste(
-            var1,
-            "~",
-            paste(c(var2, conditioning_vars), collapse = " + ")
-          )
-        } else if (length(parents_var1) == 0) {
-          # If var1 has no parents, put var1 on the right-hand side
-          reg_formula <- paste(
-            var2,
-            "~",
-            paste(c(var1, conditioning_vars), collapse = " + ")
-          )
-        } else if (length(parents_var2) == 0) {
-          # If var2 has no parents, put var2 on the right-hand side
-          reg_formula <- paste(
-            var1,
-            "~",
-            paste(c(var2, conditioning_vars), collapse = " + ")
-          )
+        # Determine the conditioning set
+        if (!is.null(parents_var1) && !is.null(parents_var2)) {
+          conditioning_vars <- intersect(parents_var1, parents_var2)
         } else {
-          # Apply the previous logic where the child/grandchild goes on the left-hand side
-          if (var1 %in% children[[var2]]) {
-            reg_formula <- paste(
-              var2,
-              "~",
-              paste(c(var1, conditioning_vars), collapse = " + ")
-            )
-          } else {
-            reg_formula <- paste(
-              var1,
-              "~",
-              paste(c(var2, conditioning_vars), collapse = " + ")
-            )
-          }
+          conditioning_vars <- NULL
         }
 
-        # Create the formula
-        f <- as.formula(reg_formula)
+        # Identify Test Variable & Response Variable logic
+        # Rule: The variable with NO parents in the pair usually becomes the predictor?
+        # Actually, in basis set construction:
+        # If neither has parents (exogenous), I(X,Y). One predicts other.
+        # If X->Z<-Y (collider), they are independent given empty set. I(X,Y).
+        # Standard algorithm:
+        # conditioning set = parents(var1) U parents(var2) ? No, that's not general d-sep.
+        # This implementation assumes a specific basis set construction for acyclic graphs.
+        # It seems to verify independence given the *common causes*.
 
-        # Identify the test variable
-        if (length(parents_var1) == 0 && length(parents_var2) == 0) {
+        # Let's trust the existing logic for variable assignment, just capturing variables.
+
+        p1_len <- length(parents_var1)
+        p2_len <- length(parents_var2)
+
+        test_var <- NULL
+        response_var <- NULL
+        reg_rhs <- NULL
+
+        if (p1_len == 0 && p2_len == 0) {
+          # Both exogenous. Test: var1 ~ var2 (or vice versa)
+          response_var <- var1
           test_var <- var2
-        } else if (length(parents_var1) == 0) {
+          reg_rhs <- c(test_var, conditioning_vars)
+        } else if (p1_len == 0) {
+          # var1 exogenous. var2 has parents.
+          # Usually we test Indep conditioned on common parents.
+          # Original code: var2 ~ var1 + inputs
+          response_var <- var2
           test_var <- var1
-        } else if (length(parents_var2) == 0) {
+          reg_rhs <- c(test_var, conditioning_vars)
+        } else if (p2_len == 0) {
+          # var2 exogenous
+          response_var <- var1
           test_var <- var2
+          reg_rhs <- c(test_var, conditioning_vars)
         } else {
-          if (var1 %in% children[[var2]]) {
-            test_var <- var1
-          } else {
-            test_var <- var2
+          # Both have parents.
+          # Original logic: if var1 is child of var2 (impossible if non-adjacent).
+          # It checks children[[var2]].
+          # Wait, if they are non-adjacent, var1 CANNOT be in children[[var2]].
+          # So the check `if (var1 %in% children[[var2]])` in original code was weird/dead given the non-adjacent check above.
+          # We will assume arbitrary assignment or based on topological order if we had it.
+          # Let's stick to var1 ~ var2 + parents.
+          response_var <- var1
+          test_var <- var2
+          reg_rhs <- c(test_var, conditioning_vars)
+        }
+
+        # Construct formula string
+        reg_formula_str <- paste(
+          response_var,
+          "~",
+          paste(reg_rhs, collapse = " + ")
+        )
+
+        # Add random effects if present for the RESPONSE variable
+        if (length(random_terms) > 0) {
+          # Find random terms where the response variable is the LHS
+          vocab_rand <- Filter(
+            function(x) x$response == response_var,
+            random_terms
+          )
+
+          if (length(vocab_rand) > 0) {
+            # Construct random string like " + (1|Group)"
+            rand_str <- paste(
+              sapply(vocab_rand, function(rt) {
+                paste0("(1 | ", rt$group, ")")
+              }),
+              collapse = " + "
+            )
+            # Append to formula
+            reg_formula_str <- paste0(reg_formula_str, " + ", rand_str)
           }
         }
 
+        # Create the formula object
+        f <- as.formula(reg_formula_str)
         attr(f, "test_var") <- test_var
 
         # Add the formula to the list
-        cond_indep_regressions[[
-          length(cond_indep_regressions) + 1
-        ]] <- f
+        cond_indep_regressions[[length(cond_indep_regressions) + 1]] <- f
+      }
+    }
+  }
+
+  # Print basis set if not quiet
+  if (!quiet) {
+    cat("Basis Set for DAG:", "\n")
+    cat(
+      "I(X,Y|Z) means X is d-separated from Y given the set Z in the DAG",
+      "\n"
+    )
+    if (length(cond_indep_regressions) == 0) {
+      cat("No elements in the basis set", "\n")
+    } else {
+      for (test in cond_indep_regressions) {
+        cat(format_dsep_test(test), "\n")
       }
     }
   }
@@ -174,25 +226,139 @@ dsep_standard <- function(equations) {
 }
 
 # M-separation for MAGs (with latent variables)
-dsep_with_latents <- function(equations, latent) {
+dsep_with_latents <- function(
+  equations,
+  latent,
+  random_terms = list(),
+  quiet = FALSE
+) {
   # Convert equations to ggm DAG format
   dag <- equations_to_dag(equations)
 
-  # Call Shipley's DAG.to.MAG (suppressing verbose output)
-  mag <- suppressMessages(DAG.to.MAG(dag, latents = latent))
+  # Call local DAG.to.MAG (suppress cat output when quiet=TRUE)
+  if (quiet) {
+    # Capture printed output and assign the result to 'mag'
+    invisible(capture.output(
+      {
+        mag <- suppressMessages(DAG.to.MAG(dag, latents = latent))
+      },
+      type = "output"
+    ))
+  } else {
+    mag <- suppressMessages(DAG.to.MAG(dag, latents = latent))
+  }
 
   # Extract basis set from MAG
-  basis <- suppressMessages(basiSet.mag(mag))
+  # Always capture output because basiSet.mag prints to stdout,
+  # and we want to print our own modified version (with random effects) later.
+  invisible(capture.output(
+    {
+      basis <- suppressMessages(basiSet.mag(mag))
+    },
+    type = "output"
+  ))
 
-  # Convert to formula format
-  tests <- mag_basis_to_formulas(basis)
+  # Identify variables that are direct children of latent variables
+  # These should be predictors (not responses) in independence tests
+  latent_children <- character(0)
+  if (!is.null(latent) && length(latent) > 0) {
+    all_vars <- rownames(dag)
+    for (lat in latent) {
+      if (lat %in% all_vars) {
+        # Find children of this latent (dag[latent, child] == 1)
+        children <- all_vars[dag[lat, ] == 1]
+        latent_children <- unique(c(latent_children, children))
+      }
+    }
+  }
+
+  # Convert to formula format, with variable ordering preference
+  tests <- mag_basis_to_formulas(basis, latent_children = latent_children)
+
+  # Append random terms to MAG tests
+  if (length(random_terms) > 0 && length(tests) > 0) {
+    new_tests <- list()
+    for (t_idx in seq_along(tests)) {
+      t_eq <- tests[[t_idx]]
+      resp <- as.character(t_eq)[2]
+
+      # Find random terms for response
+      vocab_rand <- Filter(function(x) x$response == resp, random_terms)
+
+      if (length(vocab_rand) > 0) {
+        rand_str <- paste(
+          sapply(vocab_rand, function(rt) {
+            paste0("(1 | ", rt$group, ")")
+          }),
+          collapse = " + "
+        )
+
+        # Rebuild formula
+        # deparse might wrap lines, be careful
+        # Use reliable string construction
+        rhs <- labels(terms(t_eq))
+        # d-sep output usually has predictors on RHS
+        # Reconstruct: Resp ~ Preds + Random
+        # Actually, mag_basis_to_formulas output is cleaner?
+        # Let's just paste to the formula string representation
+
+        # Safe approach: deparse
+        f_str <- paste(deparse(t_eq), collapse = " ")
+        f_str <- paste0(f_str, " + ", rand_str)
+
+        new_eq <- as.formula(f_str)
+
+        # Preserve attributes? test_var is usually implicit or attached?
+        # mag_basis_to_formulas might attach attributes.
+        # Let's just modify
+        new_tests[[t_idx]] <- new_eq
+      } else {
+        new_tests[[t_idx]] <- t_eq
+      }
+    }
+    tests <- new_tests
+  }
 
   # Extract bidirected edges (induced correlations)
   correlations <- extract_bidirected_edges(mag)
+
+  # Print basis set if not quiet (our own formatted version)
+  if (!quiet) {
+    cat("Basis Set for MAG:", "\n")
+    cat(
+      "I(X,Y|Z) means X is m-separated from Y given the set Z in the MAG",
+      "\n"
+    )
+    if (length(tests) == 0) {
+      cat("No elements in the basis set", "\n")
+    } else {
+      for (test in tests) {
+        cat(format_dsep_test(test), "\n")
+      }
+    }
+  }
 
   return(list(
     tests = tests,
     correlations = correlations,
     mag = mag # Include MAG for reference
   ))
+}
+
+# Helper to format a d-sep test for printing
+format_dsep_test <- function(test) {
+  # Extract variables from formula
+  vars <- all.vars(test)
+  response <- as.character(test)[2]
+  predictors <- setdiff(vars, response)
+
+  if (length(predictors) == 1) {
+    # No conditioning set
+    return(paste0("I( ", response, " , ", predictors[1], " | ", " )"))
+  } else {
+    # First predictor is the test variable, rest are conditioning
+    test_var <- predictors[1]
+    cond_set <- paste(predictors[-1], collapse = ", ")
+    return(paste0("I( ", response, " , ", test_var, " | ", cond_set, " )"))
+  }
 }

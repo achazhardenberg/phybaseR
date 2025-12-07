@@ -1,196 +1,200 @@
-#' Calculate WAIC for a PhyBaSE Model
+#' Calculate WAIC with Standard Errors for a PhyBaSE Model
 #'
-#' Calculates the Widely Applicable Information Criterion (WAIC) for a fitted PhyBaSE model.
+#' Calculates the Widely Applicable Information Criterion (WAIC) with standard errors
+#' for a fitted PhyBaSE model using pointwise log-likelihoods.
 #'
-#' @param model A fitted model object of class \code{"phybase"} returned by \code{\link{phybase_run}}.
-#' @param n.iter Number of iterations for WAIC calculation. Default is 2000.
-#' @param n.burnin Number of burn-in iterations. Default is 500.
-#' @param n.thin Thinning interval. Default is 10.
+#' @param model A fitted model object of class \code{"phybase"} returned by \code{\link{phybase_run}}
+#'   with \code{WAIC = TRUE}.
 #'
-#' @return A named vector containing:
-#' \item{waic}{The WAIC value (lower is better for model comparison).}
-#' \item{p_waic}{The effective number of parameters (penalty term).}
+#' @return A data frame with columns \code{Estimate} and \code{SE} containing:
+#' \item{elpd_waic}{Expected log pointwise predictive density (higher is better)}
+#' \item{p_waic}{Effective number of parameters}
+#' \item{waic}{The WAIC value (lower is better for model comparison)}
+#'
+#' The returned object also has a \code{pointwise} attribute containing individual
+#' observation contributions for model comparison.
 #'
 #' @details
-#' This function uses the \code{dic} module in JAGS to monitor deviance and what JAGS
-#' calls "WAIC" (which is actually p_waic, the effective number of parameters).
+#' This function implements WAIC following Vehtari et al. (2017). It requires that
+#' the model was run with \code{WAIC = TRUE} to monitor pointwise log-likelihoods.
 #'
-#' The true WAIC is calculated as:
-#' \deqn{WAIC = \bar{D} + p_{WAIC}}
-#' where \eqn{\bar{D}} is the mean deviance and \eqn{p_{WAIC}} is the effective number
-#' of parameters (computed as the variance of the log-likelihood across MCMC samples).
-#'
-#' **What you get**:
+#' @section WAIC Definition:
+#' The Widely Applicable Information Criterion (WAIC) is calculated as:
+#' \deqn{WAIC = -2 \times (lppd - p_{waic})}
+#' where:
 #' \itemize{
-#'   \item \code{waic}: The full WAIC for model comparison (lower is better)
-#'   \item \code{p_waic}: Effective number of parameters (useful for understanding model complexity)
+#'   \item \eqn{lppd = \sum_{i=1}^N \log(\frac{1}{S} \sum_{s=1}^S \exp(log\_lik_{is}))} is the log pointwise predictive density
+#'   \item \eqn{p_{waic} = \sum_{i=1}^N \text{var}(log\_lik_{is})} is the effective number of parameters
 #' }
 #'
-#' **Note**: JAGS's "WAIC" monitor name is misleading - it returns p_waic, not full WAIC.
-#' This function correctly computes the full WAIC by combining deviance and p_waic.
+#' **WAIC Algorithm**:
+#' \enumerate{
+#'   \item \strong{lpd} (log pointwise predictive density): For each observation \eqn{i},
+#'     compute \eqn{\log(\text{mean}(\exp(\text{log\_lik}_i)))} across MCMC samples
+#'   \item \strong{p_waic}: For each observation \eqn{i}, compute
+#'     \eqn{\text{var}(\text{log\_lik}_i)} across MCMC samples
+#'   \item \strong{elpd_waic}: \eqn{\text{lpd}_i - \text{p\_waic}_i} for each observation
+#'   \item \strong{waic}: \eqn{-2 \times \sum \text{elpd\_waic}_i}
+#' }
+#'
+#' @section Standard Errors:
+#' Standard errors for WAIC are calculated using the pointwise contributions:
+#' \deqn{SE(WAIC) = \sqrt{N \times \text{var}(waic_i)}}
+#' where \eqn{waic_i = -2 \times (lppd_i - p_{waic,i})}.
 #'
 #' @examples
 #' \dontrun{
+#'   # Fit model with WAIC monitoring
 #'   fit <- phybase_run(data, tree, equations, WAIC = TRUE)
 #'
-#'   # Access WAIC results
+#'   # View WAIC with standard errors
 #'   fit$WAIC
-#'   #    waic  p_waic
-#'   # 1234.5    45.2
+#'   #             Estimate   SE
+#'   # elpd_waic   -617.3   12.4
+#'   # p_waic        12.3    3.1
+#'   # waic        1234.5   24.8
 #'
-#'   # Or recompute with different settings
-#'   waic_res <- phybase_waic(fit, n.iter = 5000)
-#'   print(waic_res)
+#'   # Compare two models
+#'   fit1$WAIC
+#'   fit2$WAIC
+#'   # Model with lower WAIC is preferred
+#'   # Difference is significant if |WAIC1 - WAIC2| > 2 * sqrt(SE1^2 + SE2^2)
 #' }
 #'
+#' @references
+#' Vehtari, A., Gelman, A., & Gabry, J. (2017). Practical Bayesian model
+#' evaluation using leave-one-out cross-validation and WAIC.
+#' \emph{Statistics and Computing}, 27(5), 1413-1432.
+#'
 #' @export
-#' @importFrom rjags jags.samples load.module
-phybase_waic <- function(model, n.iter = 2000, n.burnin = 500, n.thin = 10) {
+phybase_waic <- function(model) {
     if (!inherits(model, "phybase")) {
         stop("Input must be a 'phybase' model object.")
     }
 
-    # Ensure dic module is loaded
-    rjags::load.module("dic")
+    # Extract log_lik from MCMC samples
+    log_lik <- NULL
 
-    jags_model <- model$model
+    if (!is.null(model$samples)) {
+        # Get column names from first chain
+        col_names <- colnames(model$samples[[1]])
+        log_lik_cols <- grep("^log_lik", col_names, value = TRUE)
 
-    # Check if model object is valid (it might be a broken pointer from parallel execution)
-    is_valid_model <- FALSE
-    if (!is.null(jags_model) && inherits(jags_model, "jags")) {
-        # Try to access the pointer to see if it's valid
-        tryCatch(
-            {
-                # Accessing state() or similar method usually triggers error if pointer is nil
-                # But rjags objects are external pointers.
-                # Best check is to try a simple operation or check if it's NULL
-                # Actually, for parallel runs, model$model might be NULL or a broken pointer
-                # If it's from parallel execution without recompilation, it might be invalid.
-                # Let's try to use it, and if it fails, recompile.
-                is_valid_model <- TRUE
-            },
-            error = function(e) {
-                is_valid_model <- FALSE
-            }
-        )
-    }
-
-    # Function to run jags.samples with error handling
-    run_jags_samples <- function(mod) {
-        rjags::jags.samples(
-            mod,
-            c("WAIC", "deviance"),
-            type = "mean",
-            n.iter = n.iter,
-            n.burnin = n.burnin,
-            n.thin = n.thin
-        )
-    }
-
-    # Try to run with existing model
-    samples <- NULL
-    if (is_valid_model) {
-        tryCatch(
-            {
-                samples <- run_jags_samples(jags_model)
-            },
-            error = function(e) {
-                # If error indicates recompilation needed, set flag to recompile
-                if (grepl("recompiled", e$message, ignore.case = TRUE)) {
-                    is_valid_model <<- FALSE
-                } else {
-                    stop(e)
-                }
-            }
-        )
-    }
-
-    # If model is missing, invalid, or failed to run, recompile it
-    if (!is_valid_model || is.null(samples)) {
-        if (is.null(model$model_code) || is.null(model$data)) {
+        if (length(log_lik_cols) == 0) {
             stop(
-                "Model object is invalid and cannot be recompiled (missing code or data)."
+                "No log_lik parameters found in MCMC samples.\n",
+                "Please run the model with WAIC = TRUE to monitor pointwise log-likelihoods."
             )
         }
 
-        message("Recompiling model for WAIC calculation...")
-
-        # Determine number of chains: use original number, but at least 2
-        n_chains_orig <- if (!is.null(model$samples)) {
-            coda::nchain(model$samples)
-        } else {
-            2
-        }
-        n_chains_new <- max(2, n_chains_orig)
-
-        # Create temporary model file
-        model_file <- tempfile(fileext = ".jg")
-        writeLines(model$model_code, model_file)
-
-        # Create inits from posterior means to speed up convergence
-        inits_list <- NULL
-        if (!is.null(model$summary) && !is.null(model$summary$statistics)) {
-            # Get means of stochastic parameters
-            means <- model$summary$statistics[, "Mean"]
-
-            # Filter for parameters that can be set as inits (beta, alpha, lambda, tau, rho)
-            # Avoid setting deterministic nodes or complex arrays if possible
-            # For simplicity, we try to set scalar parameters
-
-            # Helper to parse parameter name
-            # e.g. beta[1] -> name="beta", index=1
-            # But JAGS inits list expects named list of values/arrays
-
-            # A safer approach is to let JAGS initialize, or use a simple list if we can parse it easily.
-            # Given the complexity of parsing JAGS array indices from flat names,
-            # we might skip this for now unless we have a robust parser.
-            # However, we can try to set simple scalar parameters.
-
-            # Actually, rjags allows passing a function or a list of lists.
-            # Let's stick to random inits for robustness unless we are sure.
-            # But to address user concern, we can try to use the last samples if available?
-            # No, samples are from parallel chains, might be hard to map back to structure.
-
-            # Let's rely on the fact that we use n.burnin from the user.
-            # If the user provides a small n.burnin, they assume quick convergence.
-            # If we use random inits, we might need more burnin.
-
-            # COMPROMISE: We will use the provided n.burnin.
-            # If the user wants to speed it up, they can provide inits to phybase_run?
-            # But here we are inside phybase_waic.
-
-            # Let's just proceed with random inits but ensure we use the user's n.burnin.
-            # The user's point "will this not make run even longer" implies they want to avoid full re-run.
-            # But we MUST re-run to get WAIC if the model object is invalid.
-            # The best we can do is use the provided burnin.
-        }
-
-        # Recompile
-        jags_model <- rjags::jags.model(
-            model_file,
-            data = model$data,
-            n.chains = n_chains_new,
-            n.adapt = 1000, # Use a reasonable default adaptation
-            quiet = TRUE
+        # Extract log_lik matrix: rows = samples, columns = observations
+        # Combine all chains
+        log_lik <- do.call(
+            rbind,
+            lapply(model$samples, function(chain) {
+                chain[, log_lik_cols, drop = FALSE]
+            })
         )
 
-        # Burn-in using the provided n.burnin argument
-        if (n.burnin > 0) {
-            update(jags_model, n.iter = n.burnin)
-        }
-
-        # Try running again with recompiled model
-        samples <- run_jags_samples(jags_model)
+        # Remove chain and iteration labels from rownames if present
+        rownames(log_lik) <- NULL
+    } else {
+        stop("Model object has no MCMC samples.")
     }
 
-    if (is.null(samples$WAIC)) {
-        stop("JAGS did not return 'WAIC' monitor. Is 'dic' module loaded?")
+    # Number of observations and samples
+    n_obs <- ncol(log_lik)
+    n_samples <- nrow(log_lik)
+
+    if (n_samples < 100) {
+        warning(
+            "Only ",
+            n_samples,
+            " MCMC samples available. ",
+            "Standard errors may be unreliable. Consider using more iterations."
+        )
     }
 
-    samples$p_waic <- samples$WAIC
-    samples$waic <- samples$deviance + samples$p_waic
-    tmp <- sapply(samples, sum)
-    waic <- round(c(waic = tmp[["waic"]], p_waic = tmp[["p_waic"]]), 1)
+    # Compute WAIC following Vehtari et al. (2017)
 
-    return(waic)
+    # 1. Compute lpd (log pointwise predictive density)
+    #    For each observation: log(mean(exp(log_lik)))
+    lpd_i <- apply(log_lik, 2, function(ll_i) {
+        # Use log-sum-exp trick for numerical stability
+        max_ll <- max(ll_i)
+        log(mean(exp(ll_i - max_ll))) + max_ll
+    })
+
+    # 2. Compute p_waic (effective number of parameters)
+    #    For each observation: var(log_lik)
+    p_waic_i <- apply(log_lik, 2, var)
+
+    # 3. Compute elpd_waic (expected log pointwise predictive density)
+    elpd_waic_i <- lpd_i - p_waic_i
+
+    # 4. Compute pointwise WAIC
+    waic_i <- -2 * elpd_waic_i
+
+    # 5. Sum across observations for totals
+    elpd_waic <- sum(elpd_waic_i)
+    p_waic <- sum(p_waic_i)
+    waic <- sum(waic_i)
+
+    # 6. Compute standard errors
+    #    SE = sqrt(N * var(pointwise contributions))
+    se_elpd_waic <- sqrt(n_obs * var(elpd_waic_i))
+    se_p_waic <- sqrt(n_obs * var(p_waic_i))
+    se_waic <- sqrt(n_obs * var(waic_i))
+
+    # 7. Create result data frame
+    result <- data.frame(
+        Estimate = c(elpd_waic, p_waic, waic),
+        SE = c(se_elpd_waic, se_p_waic, se_waic),
+        row.names = c("elpd_waic", "p_waic", "waic")
+    )
+
+    # 8. Store pointwise values as attribute for model comparison
+    attr(result, "pointwise") <- data.frame(
+        elpd_waic = elpd_waic_i,
+        p_waic = p_waic_i,
+        waic = waic_i
+    )
+
+    # 9. Store dimensions
+    attr(result, "dims") <- c(n_obs = n_obs, n_samples = n_samples)
+
+    class(result) <- c("waic", "data.frame")
+
+    return(result)
+}
+
+#' @export
+print.waic <- function(x, digits = 1, ...) {
+    cat("WAIC with Standard Errors\n")
+    cat("-------------------------\n")
+
+    dims <- attr(x, "dims")
+    if (!is.null(dims)) {
+        cat(sprintf(
+            "N = %d observations, %d MCMC samples\n\n",
+            dims["n_obs"],
+            dims["n_samples"]
+        ))
+    }
+
+    # Print as data frame with custom formatting
+    x_print <- x
+    x_print$Estimate <- round(x_print$Estimate, digits)
+    x_print$SE <- round(x_print$SE, digits)
+
+    print.data.frame(x_print, ...)
+
+    cat("\nInterpretation:\n")
+    cat("  - Lower WAIC indicates better model fit\n")
+    cat(
+        "  - Compare models: difference significant if |WAIC1 - WAIC2| > 2*SE_diff\n"
+    )
+    cat("  - p_waic estimates effective number of parameters\n")
+
+    invisible(x)
 }

@@ -1,0 +1,136 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin20
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(phybaseR)
+> 
+> # Test log_lik monitoring with WAIC=TRUE
+> set.seed(123)
+> N <- 15
+> df <- data.frame(
++     SP = paste0("sp", 1:N),
++     Y = rnorm(N, mean = 10, sd = 2),
++     X = rnorm(N)
++ )
+> 
+> cat("=== Test 1: WAIC=FALSE (no log_lik monitoring) ===\n")
+=== Test 1: WAIC=FALSE (no log_lik monitoring) ===
+> fit1 <- phybase_run(
++     data = df,
++     id_col = "SP",
++     equations = list(Y ~ X),
++     WAIC = FALSE,
++     n.chains = 1,
++     n.iter = 100,
++     quiet = FALSE
++ )
+No structure/tree provided. Running standard (non-phylogenetic) SEM.
+No tree provided. Running standard (non-phylogenetic) SEM.
+Converted data.frame to list with 2 variables: Y, X
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 15
+   Unobserved stochastic nodes: 3
+   Total graph size: 309
+
+Initializing model
+
+Warning messages:
+1: In rjags::jags.model(model_file, data = data, n.chains = n.chains,  :
+  Unused variable "ID2" in data
+2: In phybase_run(data = df, id_col = "SP", equations = list(Y ~ X),  :
+  DIC and WAIC require at least 2 chains. Disabling calculation.
+> 
+> has_loglik1 <- any(grepl("log_lik", colnames(fit1$samples[[1]])))
+> cat("log_lik in samples:", has_loglik1, "\n")
+log_lik in samples: FALSE 
+> if (!has_loglik1) {
++     cat("✓ PASS: log_lik NOT monitored when WAIC=FALSE\n")
++ } else {
++     cat("✗ FAIL: log_lik WAS monitored when WAIC=FALSE\n")
++ }
+✓ PASS: log_lik NOT monitored when WAIC=FALSE
+> 
+> cat("\n=== Test 2: WAIC=TRUE (should monitor log_lik) ===\n")
+
+=== Test 2: WAIC=TRUE (should monitor log_lik) ===
+> fit2 <- phybase_run(
++     data = df,
++     id_col = "SP",
++     equations = list(Y ~ X),
++     WAIC = TRUE,
++     n.chains = 2,
++     n.iter = 100,
++     quiet = FALSE
++ )
+No structure/tree provided. Running standard (non-phylogenetic) SEM.
+No tree provided. Running standard (non-phylogenetic) SEM.
+Converted data.frame to list with 2 variables: Y, X
+Monitoring 1 pointwise log-likelihood parameter(s) for WAIC
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 15
+   Unobserved stochastic nodes: 3
+   Total graph size: 309
+
+Initializing model
+
+Warning messages:
+1: In rjags::jags.model(model_file, data = data, n.chains = n.chains,  :
+  Unused variable "ID2" in data
+2: In phybase_waic(result) :
+  Only 16 MCMC samples available. Standard errors may be unreliable. Consider using more iterations.
+> 
+> has_loglik2 <- any(grepl("log_lik", colnames(fit2$samples[[1]])))
+> cat("log_lik in samples:", has_loglik2, "\n")
+log_lik in samples: TRUE 
+> 
+> if (has_loglik2) {
++     # Count how many log_lik parameters
++     log_lik_cols <- grep("log_lik", colnames(fit2$samples[[1]]), value = TRUE)
++     cat("✓ PASS: log_lik monitored when WAIC=TRUE\n")
++     cat("  Found", length(log_lik_cols), "log_lik parameters\n")
++     cat("  Names:", paste(head(log_lik_cols, 3), collapse = ", "), "...\n")
++ 
++     # Check dimensions
++     cat(
++         "  Dimensions:",
++         nrow(fit2$samples[[1]]),
++         "samples ×",
++         length(log_lik_cols),
++         "observations\n"
++     )
++ } else {
++     cat("✗ FAIL: log_lik NOT monitored when WAIC=TRUE\n")
++ }
+✓ PASS: log_lik monitored when WAIC=TRUE
+  Found 15 log_lik parameters
+  Names: log_lik_Y[1], log_lik_Y[2], log_lik_Y[3] ...
+  Dimensions: 8 samples × 15 observations
+> 
+> cat("\n=== Summary ===\n")
+
+=== Summary ===
+> cat("Conditional monitoring working correctly!\n")
+Conditional monitoring working correctly!
+> 
+> proc.time()
+   user  system elapsed 
+  0.423   0.074   0.548 

@@ -4,7 +4,7 @@
 \alias{phybase_dsep}
 \title{Extract d-separation statements from a structural equation model}
 \usage{
-phybase_dsep(equations, latent = NULL)
+phybase_dsep(equations, latent = NULL, random_terms = list(), quiet = FALSE)
 }
 \arguments{
 \item{equations}{A list of model formulas (one per structural equation),
@@ -12,6 +12,11 @@ e.g., \code{list(Y ~ X1 + X2, Z ~ Y)}.}
 
 \item{latent}{Optional character vector of latent (unmeasured) variable names.
 If provided, the function converts the DAG to a MAG and returns m-separation tests.}
+
+\item{random_terms}{Optional list of random effects (group, type) parsed from equations.}
+
+\item{quiet}{Logical; if FALSE (default), print the basis set and MAG structure.
+If TRUE, suppress informational output.}
 }
 \value{
 If \code{latent} is NULL, returns a list of formulas representing
@@ -47,7 +52,6 @@ equations_latent <- list(X ~ Quality, Y ~ Quality)
 result <- phybase_dsep(equations_latent, latent = "Quality")
 # result$tests: m-separation tests
 # result$correlations: induced correlation between X and Y
-
 }
 \references{
 Shipley, B. (2000). A new inferential test for path models based on

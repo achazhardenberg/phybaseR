@@ -13,8 +13,11 @@
 #'   unit identifiers (species, individuals, sites, etc.). This is used to:
 #'   \itemize{
 #'     \item Match data rows to tree tip labels (for phylogenetic models)
-#'     \item Handle repeated measures (multiple rows per unit share the same covariance)
+#'     \item Link data to external spatial or custom covariance matrices.
 #'   }
+#'   **Note**: For standard random effects models (e.g. \code{random = ~(1|species)}) where no external structure
+#'   (like a tree) is provided, this argument is **not required**. The grouping column is read directly from the data.
+#'
 #'   If \code{NULL} (default): uses meaningful row names if available.
 #'   Ignored when \code{data} is already a list.
 #' @param structure The covariance structure for the model. Accepts:
@@ -31,7 +34,7 @@
 #'     \item \code{"interpretable"} (default): Monitor only scientifically meaningful parameters:
 #'           intercepts (alpha), regression coefficients (beta), phylogenetic signals (lambda) for
 #'          responses, and WAIC terms. Excludes variance components (tau) and auxiliary predictor parameters.
-#'     \item \code {"all"}: Monitor all model parameters including variance components and implicit equation parameters.
+#'     \item \code{"all"}: Monitor all model parameters including variance components and implicit equation parameters.
 #'     \item Custom vector: Provide a character vector of specific parameter names to monitor.
 #'     \item \code{NULL}: Auto-detect based on model structure (equivalent to "interpretable").
 #'   }
@@ -41,7 +44,7 @@
 #' @param n.thin Thinning rate (default = 10).
 #' @param DIC Logical; whether to compute DIC using \code{dic.samples()} (default = TRUE).
 #'   **Note**: DIC penalty will be inflated for models with measurement error or repeated measures
-#'   because latent variables are counted as parameters (penalty ≈ structural parameters + N).
+#'   because latent variables are counted as parameters (penalty ~ structural parameters + N).
 #'   For model comparison, use WAIC or compare mean deviance across models with similar structure.
 #' @param WAIC Logical; whether to sample values for WAIC and deviance (default = FALSE).
 #'   WAIC is generally more appropriate than DIC for hierarchical models with latent variables.
@@ -101,7 +104,8 @@
 #' @export
 #' @importFrom ape vcv.phylo branching.times
 #' @importFrom rjags jags.model coda.samples dic.samples jags.samples
-#' @importFrom stats na.omit update formula terms setNames
+#' @importFrom stats na.omit update formula terms setNames start var
+#' @importFrom utils capture.output
 #' @importFrom coda gelman.diag effectiveSize
 #' @import coda
 phybase_run <- function(
@@ -129,8 +133,12 @@ phybase_run <- function(
   n.cores = 1,
   cl = NULL,
   ic_recompile = TRUE,
-  optimise = TRUE
+  optimise = TRUE,
+  random = NULL # Global random effects applied to all equations
 ) {
+  # --- Input Validation & Setup ---
+  latent_method <- match.arg(latent_method)
+
   # Handle 'structure' alias
   if (is.null(tree) && !is.null(structure)) {
     tree <- structure
@@ -161,12 +169,81 @@ phybase_run <- function(
     stop("Argument 'equations' must be provided.")
   }
 
+  # --- Random Effects Parsing ---
+  # Extract (1|Group) and update equations to be fixed-effects only
+  parsed_random <- extract_random_effects(equations)
+  equations <- parsed_random$fixed_equations
+  # Start with equation-specific random terms
+  random_terms <- parsed_random$random_terms
+
+  # Parse global random argument if provided
+  if (!is.null(random)) {
+    global_random_terms <- parse_global_random(random, equations)
+    # Combine with equation-specific terms
+    random_terms <- c(random_terms, global_random_terms)
+
+    # Deduplicate terms (avoid adding same (1|Group) twice for same response)
+    # Create unique keys
+    if (length(random_terms) > 0) {
+      keys <- sapply(random_terms, function(x) {
+        paste(x$response, x$group, sep = "|")
+      })
+      random_terms <- random_terms[!duplicated(keys)]
+    }
+  }
+  random_structures <- list()
+
+  if (length(random_terms) > 0 & is.null(tree)) {
+    if (!quiet) {
+      message(
+        "Random effects detected. Enabling optimization by default if not specified."
+      )
+    }
+    if (is.null(optimise)) optimise <- TRUE
+  }
+
+  # --- Random Effects Data Prep ---
+  # Create structures for JAGS (indices, precisions)
+  if (length(random_terms) > 0) {
+    if (is.null(data)) {
+      stop("Data must be provided for random effects.")
+    }
+
+    # Needs to process data first if it's a list?
+    # data is converted to list later. We should do this on the data.frame first if possible.
+    # But code below handles data.frame to list conversion.
+    # We should perform structure creation using the original data.frame logic
+
+    # We'll rely on data being a data.frame or having the columns
+
+    rand_structs <- create_group_structures(data, random_terms)
+    random_structures <- rand_structs$structures
+
+    # We need to merge these updates into the final data list
+    # But `data` variable is modified below.
+    # We'll store updates and apply them after data is finalized
+    random_data_updates <- rand_structs$data_updates
+  } else {
+    random_data_updates <- list()
+  }
+
+  # Initialize result variables
+  dsep_tests <- NULL
+  dsep_results <- NULL
+  dsep_correlations <- NULL
+
   # --- Data Frame Preprocessing ---
   # If data is a data.frame, convert to list format expected by the model
   original_data <- data
   if (is.data.frame(data)) {
-    # Extract all variable names from equations
+    # Extract all variable names from fixed equations
     eq_vars <- unique(unlist(lapply(equations, all.vars)))
+
+    # Add variables from random terms (grouping factors)
+    if (length(random_terms) > 0) {
+      random_vars <- unique(sapply(random_terms, function(x) x$group))
+      eq_vars <- unique(c(eq_vars, random_vars))
+    }
 
     # Check which variables are in the data frame
     available_vars <- intersect(eq_vars, colnames(data))
@@ -236,7 +313,17 @@ phybase_run <- function(
 
     # Preserve any existing attributes
     data_attrs <- attributes(original_data)
-    data <- data_list
+    # Combine data_list with random effect data
+    data <- c(data_list, random_data_updates)
+
+    # Remove raw grouping variables from data passed to JAGS to avoid "Unused variable" warnings
+    if (length(random_terms) > 0) {
+      # Use setdiff to avoid error if variable not present (though they should be)
+      vars_to_remove <- intersect(names(data), random_vars)
+      if (length(vars_to_remove) > 0) {
+        data[vars_to_remove] <- NULL
+      }
+    }
 
     if (!quiet) {
       message(
@@ -383,7 +470,14 @@ phybase_run <- function(
   }
 
   data$ID <- diag(N)
-  data$ID2 <- diag(2)
+  if (
+    !is.null(latent_method) &&
+      latent_method == "correlations" &&
+      !is.null(latent) &&
+      length(latent) > 0
+  ) {
+    data$ID2 <- diag(2)
+  }
   data$N <- N
 
   # Handle multinomial and ordinal data
@@ -736,7 +830,12 @@ phybase_run <- function(
       }
     }
 
-    dsep_result <- phybase_dsep(equations, latent = latent)
+    dsep_result <- phybase_dsep(
+      equations,
+      latent = latent,
+      random_terms = random_terms,
+      quiet = !dsep
+    )
 
     # Extract tests and correlations
     if (!is.null(latent)) {
@@ -784,11 +883,14 @@ phybase_run <- function(
 
     # Define function to run a single d-sep test
     run_single_dsep_test <- function(i, test_eq, monitor_params) {
+      if (!quiet) {
+        message(paste("D-sep test eq:", deparse(test_eq)))
+      }
       # Run model for this single test
       # We pass dsep=FALSE to treat it as a standard model run
       # We pass parallel=FALSE to avoid nested parallelism
       fit <- phybase_run(
-        data = data,
+        data = original_data,
         tree = tree,
         equations = list(test_eq), # Pass as list of 1 equation
         monitor = monitor_params,
@@ -799,7 +901,7 @@ phybase_run <- function(
         DIC = FALSE, # DIC not needed for d-sep tests
         WAIC = FALSE,
         n.adapt = n.adapt,
-        quiet = TRUE, # Suppress output for individual runs
+        quiet = FALSE, # Suppress output for individual runs (temporarily ENABLED)
         dsep = FALSE,
         variability = variability,
         distribution = distribution,
@@ -808,7 +910,8 @@ phybase_run <- function(
         parallel = FALSE, # Disable nested parallelism
         n.cores = 1,
         cl = NULL,
-        ic_recompile = ic_recompile
+        ic_recompile = ic_recompile,
+        random = random # Pass global random effects to d-sep tests
       )
 
       # Extract samples, map, and model
@@ -839,7 +942,7 @@ phybase_run <- function(
       parallel::clusterExport(
         cl,
         c(
-          "data",
+          "original_data",
           "tree",
           "monitor",
           "n.chains",
@@ -863,9 +966,12 @@ phybase_run <- function(
         function(i) {
           test_eq <- dsep_tests[[i]]
           # Monitor betas for ALL predictors in the d-sep equation
-          # This ensures we capture the relevant test statistic regardless of variable order
-          test_vars <- all.vars(test_eq)
-          response <- as.character(test_eq)[2]
+          # We must exclude random effects grouping variables (which are not fixed predictors)
+          parsed_test_eq <- extract_random_effects(list(test_eq))
+          fixed_test_eq <- parsed_test_eq$fixed_equations[[1]]
+
+          test_vars <- all.vars(fixed_test_eq)
+          response <- as.character(fixed_test_eq)[2]
           predictors <- test_vars[test_vars != response]
 
           params_to_monitor <- character(0)
@@ -914,9 +1020,11 @@ phybase_run <- function(
       results <- lapply(seq_along(dsep_tests), function(i) {
         test_eq <- dsep_tests[[i]]
         # Monitor betas for ALL predictors in the d-sep equation
-        # This ensures we capture the relevant test statistic regardless of variable order
-        test_vars <- all.vars(test_eq)
-        response <- as.character(test_eq)[2]
+        parsed_test_eq <- extract_random_effects(list(test_eq))
+        fixed_test_eq <- parsed_test_eq$fixed_equations[[1]]
+
+        test_vars <- all.vars(fixed_test_eq)
+        response <- as.character(fixed_test_eq)[2]
         predictors <- test_vars[test_vars != response]
 
         params_to_monitor <- character(0)
@@ -1038,6 +1146,7 @@ phybase_run <- function(
       models = combined_models,
       dsep = TRUE,
       dsep_tests = dsep_tests,
+      dsep_results = results, # Store individual test results for summary
       induced_correlations = induced_cors
     )
     class(result) <- "phybase"
@@ -1063,7 +1172,12 @@ phybase_run <- function(
       # MAG approach: marginalize latents, use induced correlations
       # If not already computed by dsep, compute now
       if (is.null(induced_cors)) {
-        dsep_result <- phybase_dsep(equations, latent = latent)
+        dsep_result <- phybase_dsep(
+          equations,
+          latent = latent,
+          random_terms = random_terms,
+          quiet = !dsep
+        )
         induced_cors <- dsep_result$correlations
       }
 
@@ -1202,15 +1316,41 @@ phybase_run <- function(
     induced_correlations = induced_cors,
     latent = latent,
     standardize_latent = standardize_latent,
+
     optimise = optimise,
-    structure_names = structure_names
+    structure_names = structure_names,
+    random_structure_names = names(random_structures),
+    random_terms = random_terms
   )
 
   model_string <- model_output$model
   parameter_map <- model_output$parameter_map
 
   model_file <- tempfile(fileext = ".jg")
+  model_file <- tempfile(fileext = ".jg")
   writeLines(model_string, model_file)
+
+  # If latent variables are present and this is a standard run (dsep=FALSE),
+  # print the MAG structure and basis set for user verification, as requested.
+  if (!dsep && length(latent) > 0 && !quiet) {
+    message("--- Latent Variable Structure (MAG) ---")
+    # We call phybase_dsep just for its side effect (printing MAG info).
+    # We wrap it in tryCatch to ensure it doesn't block the main run if it fails.
+    tryCatch(
+      {
+        invisible(phybase_dsep(
+          equations,
+          latent = latent,
+          random_terms = random_terms,
+          quiet = FALSE
+        ))
+      },
+      error = function(e) {
+        warning("Could not generate MAG structure info: ", e$message)
+      }
+    )
+    message("---------------------------------------")
+  }
 
   # Monitor parameters
   # Handle monitor mode
@@ -1293,6 +1433,26 @@ phybase_run <- function(
     } else {
       # monitor_mode == "all" or NULL: include everything
       monitor <- all_params
+    }
+  }
+
+  # Add pointwise log-likelihood monitoring if WAIC requested
+  # (Future: LOO will also use this)
+  if (WAIC) {
+    # Extract log_lik parameters from model
+    log_lik_params <- unique(c(
+      extract_names("^\\s*log_lik")
+    ))
+
+    if (length(log_lik_params) > 0) {
+      monitor <- unique(c(monitor, log_lik_params))
+      if (!quiet) {
+        message(
+          "Monitoring ",
+          length(log_lik_params),
+          " pointwise log-likelihood parameter(s) for WAIC"
+        )
+      }
     }
   }
 
@@ -1415,6 +1575,11 @@ phybase_run <- function(
     model <- chain_results[[1]]$model
   } else {
     # Sequential execution (default)
+    if (!quiet) {
+      message("--- JAGS Model Code (Pre-Compile) ---")
+      message(paste(model_output$model, collapse = "\n"))
+      message("-------------------------------------")
+    }
     # Compile model
     model <- rjags::jags.model(
       model_file,
@@ -1531,6 +1696,25 @@ phybase_run <- function(
     )
   }
 
+  # Filter internal parameters (log_lik) from summary parameters
+  # We keep them in samples for WAIC calculation but hide them from the summary output
+  if (!is.null(sum_stats)) {
+    if (is.matrix(sum_stats$statistics)) {
+      rows_to_keep <- !grepl("^log_lik", rownames(sum_stats$statistics))
+      sum_stats$statistics <- sum_stats$statistics[rows_to_keep, , drop = FALSE]
+      sum_stats$quantiles <- sum_stats$quantiles[rows_to_keep, , drop = FALSE]
+    } else {
+      # Single parameter case (statistics is a vector)
+      # Check if the single parameter is log_lik
+      param_name <- colnames(samples[[1]])
+      if (length(param_name) == 1 && grepl("^log_lik", param_name)) {
+        # If the only parameter is log_lik, decided to return empty stats?
+        # Or handle appropriately. For now, empty seems safest or just nullify.
+        sum_stats <- NULL
+      }
+    }
+  }
+
   # Initialize result object
   result <- list(
     model = model,
@@ -1542,9 +1726,14 @@ phybase_run <- function(
     modfile = model_file,
     dsep = dsep,
     dsep_tests = dsep_tests,
+    dsep_results = dsep_results,
+    parameter_map = parameter_map,
     parameter_map = parameter_map,
     induced_correlations = induced_cors
   )
+
+  # Assign class immediately (needed for print/summary/waic methods)
+  class(result) <- "phybase"
 
   # Add DIC and WAIC
   # For parallel runs, recompile the model if ic_recompile=TRUE
@@ -1573,20 +1762,12 @@ phybase_run <- function(
       )
     }
 
-    # Compute WAIC
-    if (WAIC) {
-      waic_samples <- rjags::jags.samples(
-        ic_model,
-        c("WAIC", "deviance"),
-        type = "mean",
-        n.iter = min(n.iter - n.burnin, 1000),
-        thin = n.thin
-      )
-      waic_samples$p_waic <- waic_samples$WAIC
-      waic_samples$waic <- waic_samples$deviance + waic_samples$p_waic
-      tmp <- sapply(waic_samples, sum)
-      result$WAIC <- round(c(waic = tmp[["waic"]], p_waic = tmp[["p_waic"]]), 1)
-    }
+    # Compute WAIC using pointwise log-likelihoods
+    # Note: WAIC calculation generally uses the posterior samples already collected.
+    # We defer WAIC calculation to the common block at the end to ensure consistency.
+    # if (WAIC) {
+    #   result$WAIC <- phybase_waic(result)
+    # }
   } else if ((DIC || WAIC) && parallel && n.cores > 1 && n.chains > 1) {
     # Parallel without recompilation - warn user
     if (DIC) {
@@ -1596,32 +1777,26 @@ phybase_run <- function(
       result$DIC <- NULL
     }
     if (WAIC) {
-      warning(
-        "WAIC calculation disabled for parallel chains. Set ic_recompile=TRUE to compute WAIC."
-      )
-      result$WAIC <- NULL
+      # WAIC can be computed from pointwise log-likelihoods even with parallel chains
+      # Defer to common block
+      # result$WAIC <- phybase_waic(result)
     }
   } else {
     # Sequential execution - use standard approach
     if (DIC) {
       result$DIC <- rjags::dic.samples(model, n.iter = n.iter - n.burnin)
     }
-
-    if (WAIC) {
-      waic_samples <- rjags::jags.samples(
-        model,
-        c("WAIC", "deviance"),
-        type = "mean",
-        n.iter = n.iter - n.burnin,
-        thin = n.thin
-      )
-      waic_samples$p_waic <- waic_samples$WAIC
-      waic_samples$waic <- waic_samples$deviance + waic_samples$p_waic
-      tmp <- sapply(waic_samples, sum)
-      result$WAIC <- round(c(waic = tmp[["waic"]], p_waic = tmp[["p_waic"]]), 1)
-    }
+    # WAIC will be computed after class assignment
   }
 
-  class(result) <- "phybase"
+  # Assign class before WAIC computation (phybase_waic needs this)
+  # Already assigned earlier
+  # class(result) <- "phybase"
+
+  # Compute WAIC if requested (must be after class assignment)
+  if (WAIC) {
+    result$WAIC <- phybase_waic(result)
+  }
+
   return(result)
 }
