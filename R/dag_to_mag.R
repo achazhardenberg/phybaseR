@@ -112,8 +112,9 @@ basiSet.mag <- function(cgraph) {
   #cgraph has existing edges of 0-->1, 100<-->100 or 10--10
   #mag will have existing edges of 0-->1, 100<-->100 or 10--10
 
-  cat("Basis Set for MAG:", "\n")
-  cat("I(X,Y|Z) means X is m-separated from Y given the set Z in the MAG", "\n")
+  # Suppress prints - dsep_with_latents prints filtered version
+  # cat("Basis Set for MAG:", "\n")
+  # cat("I(X,Y|Z) means X is m-separated from Y given the set Z in the MAG", "\n")
   mag <- cgraph
 
   # Ensure mag is always a matrix (avoid R's automatic vector conversion)
@@ -158,7 +159,7 @@ basiSet.mag <- function(cgraph) {
         msep <- setdiff(msep, ed)
         b <- list(c(ed, msep))
         ind <- c(ind, b)
-        cat("I(", ed[1], ",", ed[2], "|", msep, ")", "\n")
+        # cat("I(", ed[1], ",", ed[2], "|", msep, ")", "\n")
       }
     }
   }

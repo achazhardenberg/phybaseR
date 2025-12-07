@@ -62,11 +62,17 @@ phybase_dsep <- function(
   equations,
   latent = NULL,
   random_terms = list(),
+  hierarchical_info = NULL,
   quiet = FALSE
 ) {
   # If no latents, use standard DAG d-separation
   if (is.null(latent)) {
-    return(dsep_standard(equations, random_terms = random_terms, quiet = quiet))
+    return(dsep_standard(
+      equations,
+      random_terms = random_terms,
+      hierarchical_info = hierarchical_info,
+      quiet = quiet
+    ))
   }
 
   # With latents: use MAG m-separation
@@ -74,12 +80,18 @@ phybase_dsep <- function(
     equations,
     latent,
     random_terms = random_terms,
+    hierarchical_info = hierarchical_info,
     quiet = quiet
   ))
 }
 
 # Standard d-separation for DAGs (original logic)
-dsep_standard <- function(equations, random_terms = list(), quiet = FALSE) {
+dsep_standard <- function(
+  equations,
+  random_terms = list(),
+  hierarchical_info = NULL,
+  quiet = FALSE
+) {
   # Parse equations to extract parent-child relationships
   parents <- list()
   children <- list()
@@ -230,23 +242,25 @@ dsep_with_latents <- function(
   equations,
   latent,
   random_terms = list(),
+  hierarchical_info = NULL,
   quiet = FALSE
 ) {
-  # Convert equations to ggm DAG format
-  dag <- equations_to_dag(equations)
-
-  # Call local DAG.to.MAG (suppress cat output when quiet=TRUE)
-  if (quiet) {
-    # Capture printed output and assign the result to 'mag'
-    invisible(capture.output(
-      {
-        mag <- suppressMessages(DAG.to.MAG(dag, latents = latent))
-      },
-      type = "output"
-    ))
-  } else {
-    mag <- suppressMessages(DAG.to.MAG(dag, latents = latent))
+  # Extract grouping variables from random terms to exclude from DAG
+  grouping_vars <- NULL
+  if (length(random_terms) > 0) {
+    grouping_vars <- unique(sapply(random_terms, function(x) x$group))
   }
+
+  # Convert equations to ggm DAG format (excluding grouping variables)
+  dag <- equations_to_dag(equations, exclude_vars = grouping_vars)
+
+  # Always suppress DAG.to.MAG output - we'll print our own filtered version
+  invisible(capture.output(
+    {
+      mag <- suppressMessages(DAG.to.MAG(dag, latents = latent))
+    },
+    type = "output"
+  ))
 
   # Extract basis set from MAG
   # Always capture output because basiSet.mag prints to stdout,
@@ -257,6 +271,25 @@ dsep_with_latents <- function(
     },
     type = "output"
   ))
+
+  # Filter out random effect grouping variables from basis set conditioning sets
+  # These should not be treated as causal/fixed predictors
+  if (length(random_terms) > 0 && !is.null(basis)) {
+    grouping_vars <- unique(sapply(random_terms, function(x) x$group))
+
+    # basis is a list where each element is c(var1, var2, cond_var1, cond_var2, ...)
+    # Remove grouping variables from conditioning sets (positions 3+)
+    basis <- lapply(basis, function(test) {
+      if (length(test) > 2) {
+        # Keep var1 and var2, filter conditioning variables
+        cond_vars <- test[3:length(test)]
+        filtered_cond <- cond_vars[!cond_vars %in% grouping_vars]
+        c(test[1:2], filtered_cond)
+      } else {
+        test
+      }
+    })
+  }
 
   # Identify variables that are direct children of latent variables
   # These should be predictors (not responses) in independence tests
@@ -274,6 +307,9 @@ dsep_with_latents <- function(
 
   # Convert to formula format, with variable ordering preference
   tests <- mag_basis_to_formulas(basis, latent_children = latent_children)
+
+  # Save tests without random effects for clean display
+  tests_for_display <- tests
 
   # Append random terms to MAG tests
   if (length(random_terms) > 0 && length(tests) > 0) {
@@ -323,16 +359,17 @@ dsep_with_latents <- function(
   correlations <- extract_bidirected_edges(mag)
 
   # Print basis set if not quiet (our own formatted version)
+  # Use tests_for_display (without random effects) to avoid showing grouping vars
   if (!quiet) {
     cat("Basis Set for MAG:", "\n")
     cat(
       "I(X,Y|Z) means X is m-separated from Y given the set Z in the MAG",
       "\n"
     )
-    if (length(tests) == 0) {
+    if (length(tests_for_display) == 0) {
       cat("No elements in the basis set", "\n")
     } else {
-      for (test in tests) {
+      for (test in tests_for_display) {
         cat(format_dsep_test(test), "\n")
       }
     }

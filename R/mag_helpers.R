@@ -1,16 +1,30 @@
 #' Convert phybaseR equations to ggm DAG adjacency matrix
 #'
 #' @param equations List of formulas
+#' @param exclude_vars Character vector of variable names to exclude (e.g., grouping variables)
 #' @return Named adjacency matrix in ggm format
 #' @keywords internal
-equations_to_dag <- function(equations) {
+equations_to_dag <- function(equations, exclude_vars = NULL) {
+    # Helper function to check if a term is a random effect term
+    is_random_term <- function(term) {
+        # Matches patterns like "(1|var)", "(1 | var)", etc.
+        grepl("\\(.*\\|.*\\)", term) || grepl("^\\d+\\s*\\|\\s*\\w+$", term)
+    }
+
     # Parse all variables from both sides of equations
     all_vars <- unique(c(
         sapply(equations, function(eq) as.character(eq[[2]])),
         unlist(lapply(equations, function(eq) {
-            attr(stats::terms(eq), "term.labels")
+            terms <- attr(stats::terms(eq), "term.labels")
+            # Filter out random effect terms
+            terms[!sapply(terms, is_random_term)]
         }))
     ))
+
+    # Exclude specified variables (e.g., grouping variables)
+    if (!is.null(exclude_vars)) {
+        all_vars <- setdiff(all_vars, exclude_vars)
+    }
 
     n <- length(all_vars)
     dag <- matrix(0, n, n, dimnames = list(all_vars, all_vars))
@@ -18,10 +32,24 @@ equations_to_dag <- function(equations) {
     # Fill adjacency matrix: parent -> child is coded as dag[parent, child] = 1
     for (eq in equations) {
         child <- as.character(eq[[2]])
+        # Skip if child was excluded
+        if (!child %in% all_vars) {
+            next
+        }
+
         parents <- attr(stats::terms(eq), "term.labels")
+        # Filter out random effect terms
+        parents <- parents[!sapply(parents, is_random_term)]
+        # Filter out excluded variables from parents
+        if (!is.null(exclude_vars)) {
+            parents <- setdiff(parents, exclude_vars)
+        }
 
         for (parent in parents) {
-            dag[parent, child] <- 1
+            # Only add edge if parent is in all_vars (wasn't excluded)
+            if (parent %in% all_vars) {
+                dag[parent, child] <- 1
+            }
         }
     }
 

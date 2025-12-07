@@ -134,7 +134,10 @@ phybase_run <- function(
   cl = NULL,
   ic_recompile = TRUE,
   optimise = TRUE,
-  random = NULL # Global random effects applied to all equations
+  random = NULL, # Global random effects applied to all equations
+  levels = NULL, # Hierarchical data: variable-to-level mapping
+  hierarchy = NULL, # Hierarchical data: level ordering (e.g., "site > individual")
+  link_vars = NULL # Hierarchical data: variables linking levels
 ) {
   # --- Input Validation & Setup ---
   latent_method <- match.arg(latent_method)
@@ -149,13 +152,7 @@ phybase_run <- function(
   # But we want to be explicit?
   # If both are NULL, we run as independent model.
 
-  if (is.null(tree)) {
-    if (!quiet) {
-      message(
-        "No structure/tree provided. Running standard (non-phylogenetic) SEM."
-      )
-    }
-  }
+  # Tree check moved to line 165
 
   # Validate inputs
   # Input validation
@@ -166,7 +163,49 @@ phybase_run <- function(
     message("No tree provided. Running standard (non-phylogenetic) SEM.")
   }
   if (is.null(equations)) {
-    stop("Argument 'equations' must be provided.")
+    stop("Argument 'equations' must be provided.\"")
+  }
+
+  # --- Hierarchical Data Detection & Validation ---
+  is_hierarchical <- is.list(data) && !is.data.frame(data)
+  hierarchical_info <- NULL
+
+  if (is_hierarchical) {
+    # Validate hierarchical data structure
+    validate_hierarchical_data(data, levels, hierarchy, link_vars)
+
+    # Try to infer hierarchy from random effects if not provided
+    if (is.null(hierarchy)) {
+      hierarchy <- parse_hierarchy_from_random(random, data)
+      if (is.null(hierarchy)) {
+        stop(
+          "Hierarchical data detected but 'hierarchy' not specified. ",
+          "Provide either:\n",
+          "  1. 'hierarchy' argument (e.g., \"site_year > individual\"), or\n",
+          "  2. Nested random effects (e.g., ~(1|site/individual))"
+        )
+      }
+    }
+
+    # Store hierarchical info for later use
+    hierarchical_info <- list(
+      data = data,
+      levels = levels,
+      hierarchy = hierarchy,
+      link_vars = link_vars
+    )
+
+    if (!quiet) {
+      message("Hierarchical data structure detected: ", hierarchy)
+    }
+  } else {
+    # Single-level data - ensure levels/hierarchy not mistakenly provided
+    if (!is.null(levels) || !is.null(hierarchy)) {
+      warning(
+        "'levels' or 'hierarchy' provided but 'data' is not hierarchical. ",
+        "Ignoring these arguments."
+      )
+    }
   }
 
   # --- Random Effects Parsing ---
@@ -194,11 +233,6 @@ phybase_run <- function(
   random_structures <- list()
 
   if (length(random_terms) > 0 & is.null(tree)) {
-    if (!quiet) {
-      message(
-        "Random effects detected. Enabling optimization by default if not specified."
-      )
-    }
     if (is.null(optimise)) optimise <- TRUE
   }
 
@@ -235,6 +269,47 @@ phybase_run <- function(
   # --- Data Frame Preprocessing ---
   # If data is a data.frame, convert to list format expected by the model
   original_data <- data
+
+  # --- Hierarchical Data Assembly ---
+  # If hierarchical data provided, assemble full dataset for main model run
+  if (is_hierarchical) {
+    # Get all variables needed across all equations
+    eq_vars <- unique(unlist(lapply(equations, all.vars)))
+
+    # Add random effect grouping variables
+    if (length(random_terms) > 0) {
+      random_vars <- unique(sapply(random_terms, function(x) x$group))
+      eq_vars <- unique(c(eq_vars, random_vars))
+    }
+
+    # Remove latent variables (not in data)
+    if (!is.null(latent)) {
+      eq_vars <- setdiff(eq_vars, latent)
+    }
+
+    # Get assembled dataset with all needed variables
+    data <- get_data_for_variables(
+      eq_vars,
+      hierarchical_info$data,
+      hierarchical_info$levels,
+      hierarchical_info$hierarchy,
+      hierarchical_info$link_vars
+    )
+
+    # Update original_data for later use
+    original_data <- data
+
+    if (!quiet) {
+      message(
+        "Assembled hierarchical data: ",
+        nrow(data),
+        " observations, ",
+        ncol(data),
+        " variables"
+      )
+    }
+  }
+
   if (is.data.frame(data)) {
     # Extract all variable names from fixed equations
     eq_vars <- unique(unlist(lapply(equations, all.vars)))
@@ -834,6 +909,7 @@ phybase_run <- function(
       equations,
       latent = latent,
       random_terms = random_terms,
+      hierarchical_info = hierarchical_info,
       quiet = !dsep
     )
 
@@ -886,11 +962,37 @@ phybase_run <- function(
       if (!quiet) {
         message(paste("D-sep test eq:", deparse(test_eq)))
       }
+
+      # Select appropriate dataset for this test
+      test_data <- original_data
+
+      if (!is.null(hierarchical_info)) {
+        # Extract variables from this test equation
+        test_vars <- all.vars(test_eq)
+
+        # Get appropriate dataset for these variables
+        test_data <- get_data_for_variables(
+          test_vars,
+          hierarchical_info$data,
+          hierarchical_info$levels,
+          hierarchical_info$hierarchy,
+          hierarchical_info$link_vars
+        )
+
+        if (!quiet) {
+          message(
+            "  Hierarchical data: using ",
+            nrow(test_data),
+            " observations for this test"
+          )
+        }
+      }
+
       # Run model for this single test
       # We pass dsep=FALSE to treat it as a standard model run
       # We pass parallel=FALSE to avoid nested parallelism
       fit <- phybase_run(
-        data = original_data,
+        data = test_data, # Use selected dataset
         tree = tree,
         equations = list(test_eq), # Pass as list of 1 equation
         monitor = monitor_params,
@@ -1176,6 +1278,7 @@ phybase_run <- function(
           equations,
           latent = latent,
           random_terms = random_terms,
+          hierarchical_info = hierarchical_info,
           quiet = !dsep
         )
         induced_cors <- dsep_result$correlations
@@ -1332,21 +1435,27 @@ phybase_run <- function(
 
   # If latent variables are present and this is a standard run (dsep=FALSE),
   # print the MAG structure and basis set for user verification, as requested.
-  if (!dsep && length(latent) > 0 && !quiet) {
+  # Display MAG structure for latent variable models (non-dsep runs)
+  if (!dsep && !is.null(latent) && length(latent) > 0 && !quiet) {
     message("--- Latent Variable Structure (MAG) ---")
     # We call phybase_dsep just for its side effect (printing MAG info).
     # We wrap it in tryCatch to ensure it doesn't block the main run if it fails.
     tryCatch(
       {
-        invisible(phybase_dsep(
-          equations,
-          latent = latent,
-          random_terms = random_terms,
-          quiet = FALSE
-        ))
+        if (length(equations) > 0) {
+          invisible(phybase_dsep(
+            equations,
+            latent = latent,
+            random_terms = random_terms,
+            quiet = FALSE
+          ))
+        }
       },
       error = function(e) {
-        warning("Could not generate MAG structure info: ", e$message)
+        # Silently skip if MAG display fails - not critical for main run
+        if (!quiet) {
+          message("(MAG structure display skipped)")
+        }
       }
     )
     message("---------------------------------------")
