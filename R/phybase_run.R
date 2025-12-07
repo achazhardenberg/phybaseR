@@ -13,8 +13,11 @@
 #'   unit identifiers (species, individuals, sites, etc.). This is used to:
 #'   \itemize{
 #'     \item Match data rows to tree tip labels (for phylogenetic models)
-#'     \item Handle repeated measures (multiple rows per unit share the same covariance)
+#'     \item Link data to external spatial or custom covariance matrices.
 #'   }
+#'   **Note**: For standard random effects models (e.g. \code{random = ~(1|species)}) where no external structure
+#'   (like a tree) is provided, this argument is **not required**. The grouping column is read directly from the data.
+#'
 #'   If \code{NULL} (default): uses meaningful row names if available.
 #'   Ignored when \code{data} is already a list.
 #' @param structure The covariance structure for the model. Accepts:
@@ -134,6 +137,8 @@ phybase_run <- function(
   random = NULL # Global random effects applied to all equations
 ) {
   # --- Input Validation & Setup ---
+  latent_method <- match.arg(latent_method)
+
   # Handle 'structure' alias
   if (is.null(tree) && !is.null(structure)) {
     tree <- structure
@@ -222,6 +227,11 @@ phybase_run <- function(
     random_data_updates <- list()
   }
 
+  # Initialize result variables
+  dsep_tests <- NULL
+  dsep_results <- NULL
+  dsep_correlations <- NULL
+
   # --- Data Frame Preprocessing ---
   # If data is a data.frame, convert to list format expected by the model
   original_data <- data
@@ -305,6 +315,15 @@ phybase_run <- function(
     data_attrs <- attributes(original_data)
     # Combine data_list with random effect data
     data <- c(data_list, random_data_updates)
+
+    # Remove raw grouping variables from data passed to JAGS to avoid "Unused variable" warnings
+    if (length(random_terms) > 0) {
+      # Use setdiff to avoid error if variable not present (though they should be)
+      vars_to_remove <- intersect(names(data), random_vars)
+      if (length(vars_to_remove) > 0) {
+        data[vars_to_remove] <- NULL
+      }
+    }
 
     if (!quiet) {
       message(
@@ -451,7 +470,14 @@ phybase_run <- function(
   }
 
   data$ID <- diag(N)
-  data$ID2 <- diag(2)
+  if (
+    !is.null(latent_method) &&
+      latent_method == "correlations" &&
+      !is.null(latent) &&
+      length(latent) > 0
+  ) {
+    data$ID2 <- diag(2)
+  }
   data$N <- N
 
   # Handle multinomial and ordinal data
@@ -857,11 +883,14 @@ phybase_run <- function(
 
     # Define function to run a single d-sep test
     run_single_dsep_test <- function(i, test_eq, monitor_params) {
+      if (!quiet) {
+        message(paste("D-sep test eq:", deparse(test_eq)))
+      }
       # Run model for this single test
       # We pass dsep=FALSE to treat it as a standard model run
       # We pass parallel=FALSE to avoid nested parallelism
       fit <- phybase_run(
-        data = data,
+        data = original_data,
         tree = tree,
         equations = list(test_eq), # Pass as list of 1 equation
         monitor = monitor_params,
@@ -872,7 +901,7 @@ phybase_run <- function(
         DIC = FALSE, # DIC not needed for d-sep tests
         WAIC = FALSE,
         n.adapt = n.adapt,
-        quiet = TRUE, # Suppress output for individual runs
+        quiet = FALSE, # Suppress output for individual runs (temporarily ENABLED)
         dsep = FALSE,
         variability = variability,
         distribution = distribution,
@@ -881,7 +910,8 @@ phybase_run <- function(
         parallel = FALSE, # Disable nested parallelism
         n.cores = 1,
         cl = NULL,
-        ic_recompile = ic_recompile
+        ic_recompile = ic_recompile,
+        random = random # Pass global random effects to d-sep tests
       )
 
       # Extract samples, map, and model
@@ -912,7 +942,7 @@ phybase_run <- function(
       parallel::clusterExport(
         cl,
         c(
-          "data",
+          "original_data",
           "tree",
           "monitor",
           "n.chains",
@@ -1116,6 +1146,7 @@ phybase_run <- function(
       models = combined_models,
       dsep = TRUE,
       dsep_tests = dsep_tests,
+      dsep_results = results, # Store individual test results for summary
       induced_correlations = induced_cors
     )
     class(result) <- "phybase"
@@ -1296,7 +1327,30 @@ phybase_run <- function(
   parameter_map <- model_output$parameter_map
 
   model_file <- tempfile(fileext = ".jg")
+  model_file <- tempfile(fileext = ".jg")
   writeLines(model_string, model_file)
+
+  # If latent variables are present and this is a standard run (dsep=FALSE),
+  # print the MAG structure and basis set for user verification, as requested.
+  if (!dsep && length(latent) > 0 && !quiet) {
+    message("--- Latent Variable Structure (MAG) ---")
+    # We call phybase_dsep just for its side effect (printing MAG info).
+    # We wrap it in tryCatch to ensure it doesn't block the main run if it fails.
+    tryCatch(
+      {
+        invisible(phybase_dsep(
+          equations,
+          latent = latent,
+          random_terms = random_terms,
+          quiet = FALSE
+        ))
+      },
+      error = function(e) {
+        warning("Could not generate MAG structure info: ", e$message)
+      }
+    )
+    message("---------------------------------------")
+  }
 
   # Monitor parameters
   # Handle monitor mode
@@ -1645,9 +1699,20 @@ phybase_run <- function(
   # Filter internal parameters (log_lik) from summary parameters
   # We keep them in samples for WAIC calculation but hide them from the summary output
   if (!is.null(sum_stats)) {
-    rows_to_keep <- !grepl("^log_lik", rownames(sum_stats$statistics))
-    sum_stats$statistics <- sum_stats$statistics[rows_to_keep, , drop = FALSE]
-    sum_stats$quantiles <- sum_stats$quantiles[rows_to_keep, , drop = FALSE]
+    if (is.matrix(sum_stats$statistics)) {
+      rows_to_keep <- !grepl("^log_lik", rownames(sum_stats$statistics))
+      sum_stats$statistics <- sum_stats$statistics[rows_to_keep, , drop = FALSE]
+      sum_stats$quantiles <- sum_stats$quantiles[rows_to_keep, , drop = FALSE]
+    } else {
+      # Single parameter case (statistics is a vector)
+      # Check if the single parameter is log_lik
+      param_name <- colnames(samples[[1]])
+      if (length(param_name) == 1 && grepl("^log_lik", param_name)) {
+        # If the only parameter is log_lik, decided to return empty stats?
+        # Or handle appropriately. For now, empty seems safest or just nullify.
+        sum_stats <- NULL
+      }
+    }
   }
 
   # Initialize result object
@@ -1661,6 +1726,8 @@ phybase_run <- function(
     modfile = model_file,
     dsep = dsep,
     dsep_tests = dsep_tests,
+    dsep_results = dsep_results,
+    parameter_map = parameter_map,
     parameter_map = parameter_map,
     induced_correlations = induced_cors
   )

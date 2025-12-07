@@ -63,27 +63,45 @@ summary.phybase <- function(object, ...) {
             stringsAsFactors = FALSE
         )
 
-        # Extract MCMC samples as matrix
-        samples_matrix <- as.matrix(object$samples)
+        dsep_results <- object$dsep_results
 
-        # Track which samples pass all tests (for joint probability)
-        n_samples <- nrow(samples_matrix)
+        # Check if results are available
+        if (is.null(dsep_results)) {
+            warning("No d-separation test results found in model object.")
+            return(invisible(NULL))
+        }
 
-        for (i in seq_along(tests)) {
+        for (i in seq_along(dsep_results)) {
+            res_i <- dsep_results[[i]]
+
+            # Skip if result is NULL (failed test?)
+            if (is.null(res_i)) {
+                next
+            }
+
             test_formula <- tests[[i]]
             test_var <- attr(test_formula, "test_var")
+            # If test_var is missing from attribute, try to guess from formula
+            if (is.null(test_var)) {
+                rhs <- labels(stats::terms(test_formula))
+                if (length(rhs) > 0) test_var <- rhs[1]
+            }
 
-            # The response variable in the test formula
             response <- as.character(test_formula)[2]
 
+            # Use local map from this specific test run
+            map_i <- res_i$param_map
+
             # Find the parameter name for this path (response ~ test_var)
-            # We filter by equation_index to handle cases where the same response/predictor pair
-            # appears in multiple equations (e.g. different d-sep tests)
-            param_row <- map[
-                map$response == response &
-                    map$predictor == test_var &
-                    map$equation_index == i,
+            param_row <- map_i[
+                map_i$response == response &
+                    map_i$predictor == test_var,
             ]
+
+            if (nrow(param_row) == 0) {
+                # Fallback: try to find ANY parameter for the test_var
+                param_row <- map_i[map_i$predictor == test_var, ]
+            }
 
             if (nrow(param_row) == 0) {
                 warning(paste(
@@ -93,49 +111,96 @@ summary.phybase <- function(object, ...) {
                 next
             }
 
-            param_name <- param_row$parameter
+            param_name <- param_row$parameter[1] # Take first match
 
-            # Extract from summary
-            if (param_name %in% rownames(summ$quantiles)) {
-                est <- summ$statistics[param_name, "Mean"]
-                lower <- summ$quantiles[param_name, "2.5%"]
-                upper <- summ$quantiles[param_name, "97.5%"]
+            # Summarize individual test samples
+            summ_i <- summary(res_i$samples)
 
-                # Get diagnostics for this parameter
-                p_rhat <- if (!is.null(rhat) && param_name %in% names(rhat)) {
-                    rhat[param_name]
-                } else {
-                    NA
+            # Handle edge case: single parameter returns vector, not matrix
+            if (!is.matrix(summ_i$statistics)) {
+                # Convert to matrix format
+                param_col_name <- colnames(res_i$samples[[1]])[1]
+                summ_i$statistics <- matrix(
+                    summ_i$statistics,
+                    nrow = 1,
+                    dimnames = list(param_col_name, names(summ_i$statistics))
+                )
+                summ_i$quantiles <- matrix(
+                    summ_i$quantiles,
+                    nrow = 1,
+                    dimnames = list(param_col_name, names(summ_i$quantiles))
+                )
+            }
+
+            # Extract statistics
+            if (param_name %in% rownames(summ_i$quantiles)) {
+                est <- summ_i$statistics[param_name, "Mean"]
+                lower <- summ_i$quantiles[param_name, "2.5%"]
+                upper <- summ_i$quantiles[param_name, "97.5%"]
+
+                # Diagnostics (locally computed for this chain list)
+                # n.chains for this specific run
+                n_chains_i <- coda::nchain(res_i$samples)
+
+                # Rhat
+                p_rhat <- NA
+                if (n_chains_i > 1) {
+                    # Try catch for single-parameter Rhat issues
+                    p_rhat <- tryCatch(
+                        {
+                            coda::gelman.diag(
+                                res_i$samples,
+                                multivariate = FALSE
+                            )$psrf[param_name, 1]
+                        },
+                        error = function(e) NA
+                    )
                 }
-                p_neff <- if (
-                    !is.null(eff_size) && param_name %in% names(eff_size)
-                ) {
-                    eff_size[param_name]
-                } else {
-                    NA
+
+                # Effective Size
+                p_neff <- NA
+                eff_size_i <- tryCatch(
+                    {
+                        coda::effectiveSize(res_i$samples)
+                    },
+                    error = function(e) NULL
+                )
+
+                if (!is.null(eff_size_i) && param_name %in% names(eff_size_i)) {
+                    p_neff <- eff_size_i[param_name]
                 }
 
-                # Independence check (if CI includes 0, they are independent)
+                # Independence check
                 indep <- if (lower > 0 || upper < 0) "No" else "Yes"
 
-                # Calculate Bayesian p-value: P(~0)
-                # This is the two-tailed probability of crossing zero
+                # P(~0)
+                samples_matrix <- as.matrix(res_i$samples)
+                n_samples <- nrow(samples_matrix)
                 param_samples <- samples_matrix[, param_name]
                 n_above <- sum(param_samples > 0)
                 n_below <- sum(param_samples < 0)
                 p_approx_0 <- 2 * min(n_above, n_below) / n_samples
 
-                rhs <- attr(stats::terms(test_formula), "term.labels")
-                cond_vars <- setdiff(rhs, test_var)
+                # Construct label - extract all RHS terms including random effects
+                # Use deparse to get full formula, then extract RHS
+                formula_str <- paste(deparse(test_formula), collapse = " ")
+                # Split on ~ and get RHS
+                rhs_full <- sub("^[^~]+~\\s*", "", formula_str)
+                # Split on + to get individual terms
+                all_terms <- trimws(strsplit(rhs_full, "\\+")[[1]])
+
+                # Separate test_var from conditioning vars
+                # Remove test_var from all_terms to get conditioning set
+                cond_terms <- all_terms[all_terms != test_var]
 
                 test_str <- paste0(
                     response,
                     " _||_ ",
                     test_var,
-                    if (length(cond_vars) > 0) {
-                        paste0(" | {", paste(cond_vars, collapse = ","), "}")
+                    if (length(cond_terms) > 0) {
+                        paste0(" | {", paste(cond_terms, collapse = ","), "}")
                     } else {
-                        ""
+                        " | {} "
                     }
                 )
 

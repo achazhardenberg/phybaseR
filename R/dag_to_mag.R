@@ -501,7 +501,9 @@ DAG.to.MAG <- function(full.DAG, latents = NA, conditioning.latents = NULL) {
       if (cgraph[i, j] == 100 & cgraph[j, i] == 100) {
         cat(observed.vars[i], "<->", observed.vars[j], "\n")
       }
-      if (cgraph[i, j] > 0) ind.vars[i] <- ind.vars[j] <- FALSE
+      if (cgraph[i, j] > 0 || cgraph[j, i] > 0) {
+        ind.vars[i] <- ind.vars[j] <- FALSE
+      }
     }
   }
   if (sum(ind.vars) > 0) {

@@ -1760,6 +1760,13 @@ phybase_model <- function(
             response,
             "[k]))"
           ),
+          paste0(
+            "    sigma_",
+            response,
+            "[k] <- 1/sqrt(tau_u_",
+            response,
+            "[k])"
+          ),
           "  }"
         )
       } else {

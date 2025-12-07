@@ -29,7 +29,8 @@ phybase_run(
   n.cores = 1,
   cl = NULL,
   ic_recompile = TRUE,
-  optimise = TRUE
+  optimise = TRUE,
+  random = NULL
 )
 }
 \arguments{
@@ -45,13 +46,16 @@ phybase_run(
 \item{equations}{A list of model formulas describing the structural equation model.}
 
 \item{id_col}{Character string specifying the column name in a data.frame containing
-unit identifiers (species, individuals, sites, etc.). This is used to:
-\itemize{
-  \item Match data rows to tree tip labels (for phylogenetic models)
-  \item Handle repeated measures (multiple rows per unit share the same covariance)
-}
-If \code{NULL} (default): uses meaningful row names if available.
-Ignored when \code{data} is already a list.}
+  unit identifiers (species, individuals, sites, etc.). This is used to:
+  \itemize{
+    \item Match data rows to tree tip labels (for phylogenetic models)
+    \item Link data to external spatial or custom covariance matrices.
+  }
+  **Note**: For standard random effects models (e.g. \code{random = ~(1|species)}) where no external structure
+  (like a tree) is provided, this argument is **not required**. The grouping column is read directly from the data.
+
+  If \code{NULL} (default): uses meaningful row names if available.
+  Ignored when \code{data} is already a list.}
 
 \item{structure}{The covariance structure for the model. Accepts:
 \itemize{

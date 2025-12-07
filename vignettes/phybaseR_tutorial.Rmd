@@ -24,7 +24,7 @@ vignette: >
     - Negative Binomial (overdispersed count data)
 *   **Categorical Predictors**: Automatic handling of factor variables with dummy coding.
 *   **Optimized Performance**: Fast random effects formulation (4.6× speedup) for large datasets.
-*   **Flexible Data Input**: Pass data as a `data.frame` (recommended) or a named `list`. When using a data.frame, you can specify an `id_col` to match observations to tree tips (supporting repeated measures).
+*   **Flexible Data Input**: Pass data as a `.data.frame` (recommended) or a named `list`. When using a phylogenetic tree or other external covariance structure, specify `id_col` to match data rows to the structure tips/dimensions. For standard random effects models, `id_col` is not required.
 
 This tutorial will guide you through the main features of the package.
 

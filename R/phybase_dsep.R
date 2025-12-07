@@ -248,20 +248,32 @@ dsep_with_latents <- function(
     mag <- suppressMessages(DAG.to.MAG(dag, latents = latent))
   }
 
-  # Extract basis set from MAG (suppress cat output when quiet=TRUE)
-  if (quiet) {
-    invisible(capture.output(
-      {
-        basis <- suppressMessages(basiSet.mag(mag))
-      },
-      type = "output"
-    ))
-  } else {
-    basis <- suppressMessages(basiSet.mag(mag))
+  # Extract basis set from MAG
+  # Always capture output because basiSet.mag prints to stdout,
+  # and we want to print our own modified version (with random effects) later.
+  invisible(capture.output(
+    {
+      basis <- suppressMessages(basiSet.mag(mag))
+    },
+    type = "output"
+  ))
+
+  # Identify variables that are direct children of latent variables
+  # These should be predictors (not responses) in independence tests
+  latent_children <- character(0)
+  if (!is.null(latent) && length(latent) > 0) {
+    all_vars <- rownames(dag)
+    for (lat in latent) {
+      if (lat %in% all_vars) {
+        # Find children of this latent (dag[latent, child] == 1)
+        children <- all_vars[dag[lat, ] == 1]
+        latent_children <- unique(c(latent_children, children))
+      }
+    }
   }
 
-  # Convert to formula format
-  tests <- mag_basis_to_formulas(basis)
+  # Convert to formula format, with variable ordering preference
+  tests <- mag_basis_to_formulas(basis, latent_children = latent_children)
 
   # Append random terms to MAG tests
   if (length(random_terms) > 0 && length(tests) > 0) {

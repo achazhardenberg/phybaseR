@@ -58,9 +58,10 @@ extract_bidirected_edges <- function(mag) {
 #' Convert MAG basis set to phybaseR formula format
 #'
 #' @param basis_set Basis set from basiSet.mag()
+#' @param latent_children Optional character vector of variables that are direct children of latents
 #' @return List of formulas with test_var attribute
 #' @keywords internal
-mag_basis_to_formulas <- function(basis_set) {
+mag_basis_to_formulas <- function(basis_set, latent_children = NULL) {
     if (is.null(basis_set) || length(basis_set) == 0) {
         return(list())
     }
@@ -72,6 +73,20 @@ mag_basis_to_formulas <- function(basis_set) {
         var1 <- test[1]
         var2 <- test[2]
         cond_vars <- if (length(test) > 2) test[3:length(test)] else NULL
+
+        # Apply ordering rule: if var1 is a latent child and var2 is not,
+        # swap them so the latent child becomes the predictor (test variable)
+        if (!is.null(latent_children)) {
+            var1_is_latent_child <- var1 %in% latent_children
+            var2_is_latent_child <- var2 %in% latent_children
+
+            # Swap if var1 is latent child but var2 is not
+            if (var1_is_latent_child && !var2_is_latent_child) {
+                temp <- var1
+                var1 <- var2
+                var2 <- temp
+            }
+        }
 
         # Build formula string
         if (is.null(cond_vars) || length(cond_vars) == 0) {
