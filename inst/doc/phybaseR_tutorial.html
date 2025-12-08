@@ -1,0 +1,1826 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>phybaseR: An R package to easily create and run PhyBaSE models</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">phybaseR: An R package to easily create and
+run PhyBaSE models</h1>
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p><strong>phybaseR</strong> is an R package designed to easily perform
+causal inference in phylogenetic comparative analyses implementing and
+extending the methods proposed in von Hardenberg &amp; Gonzalez-Voyer
+(2025). It allows you to fit Phylogenetic Bayesian Structural Equation
+Models (SEMs) that account for:</p>
+<ul>
+<li><strong>Phylogenetic Non-independence</strong>: Using the
+phylogenetic covariance matrix.</li>
+<li><strong>Measurement Error</strong>: Incorporating standard errors or
+repeated measures.</li>
+<li><strong>Missing Data</strong>: Automatically handling missing values
+in both predictors and responses.</li>
+<li><strong>Phylogenetic Uncertainty</strong>: Integrating over a
+posterior sample of trees.</li>
+<li><strong>Multiple Response Distributions</strong>:
+<ul>
+<li>Gaussian (continuous data)</li>
+<li>Binomial (binary/proportion data)</li>
+<li>Multinomial (unordered categorical data)</li>
+<li>Ordinal (ordered categorical data)</li>
+<li>Poisson (count data)</li>
+<li>Negative Binomial (overdispersed count data)</li>
+</ul></li>
+<li><strong>Categorical Predictors</strong>: Automatic handling of
+factor variables with dummy coding.</li>
+<li><strong>Optimized Performance</strong>: Fast random effects
+formulation (4.6× speedup) for large datasets.</li>
+<li><strong>Flexible Data Input</strong>: Pass data as a
+<code>.data.frame</code> (recommended) or a named <code>list</code>.
+When using a phylogenetic tree or other external covariance structure,
+specify <code>id_col</code> to match data rows to the structure
+tips/dimensions. For standard random effects models, <code>id_col</code>
+is not required.</li>
+</ul>
+<p>This tutorial will guide you through the main features of the
+package.</p>
+</div>
+<div id="setup" class="section level2">
+<h2>Setup</h2>
+<p>First, load the package:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(phybaseR)</span></code></pre></div>
+<p><strong>Note</strong>: <code>phybaseR</code> uses <code>ape</code>
+internally for phylogenetic calculations (it’s automatically loaded as a
+dependency). We’ll also load it explicitly here for the tutorial
+examples, since we use <code>ape</code> functions like
+<code>rtree()</code> and <code>rTraitCont()</code> to simulate data:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">library</span>(ape)</span></code></pre></div>
+<p><strong>Note on Tree Standardization</strong>: <code>phybaseR</code>
+automatically standardizes phylogenetic trees to have a maximum
+branching time of 1.0. This improves numerical stability and
+convergence. You’ll see a message like “Standardizing tree edge lengths
+(max branching time: 1.27 -&gt; 1.0)” when this occurs. This doesn’t
+affect your results—it’s just internal scaling.</p>
+</div>
+<div id="basic-usage-phylogenetic-regression-pgls" class="section level2">
+<h2>Basic Usage: Phylogenetic Regression (PGLS)</h2>
+<p>Let’s start with a simple example: a phylogenetic regression of
+<code>Y</code> on <code>X</code>. We’ll simulate some data for
+demonstration.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">50</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>tree <span class="ot">&lt;-</span> <span class="fu">rtree</span>(N)</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co"># Simulate traits and create a data.frame</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>my_data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>    <span class="at">species =</span> tree<span class="sc">$</span>tip.label,</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>    <span class="at">X =</span> <span class="fu">rTraitCont</span>(tree, <span class="at">model =</span> <span class="st">&quot;BM&quot;</span>, <span class="at">sigma =</span> <span class="dv">1</span>),</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>    <span class="at">Y =</span> <span class="fl">0.5</span> <span class="sc">+</span> <span class="fl">0.8</span> <span class="sc">*</span> <span class="fu">rTraitCont</span>(tree, <span class="at">model =</span> <span class="st">&quot;BM&quot;</span>, <span class="at">sigma =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>        <span class="fu">rTraitCont</span>(tree, <span class="at">model =</span> <span class="st">&quot;BM&quot;</span>, <span class="at">sigma =</span> <span class="fl">0.5</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>)</span></code></pre></div>
+<p>To run the model, we define the structural equations and pass them to
+<code>phybase_run()</code>. Note that we can pass a data.frame
+directly—phybaseR will automatically extract the needed variables from
+your equations:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Define equations</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>equations <span class="ot">&lt;-</span> <span class="fu">list</span>(Y <span class="sc">~</span> X)</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co"># Run model - pass the data.frame directly!</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>    <span class="at">data =</span> my_data,</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>    <span class="at">id_col =</span> <span class="st">&quot;species&quot;</span>, <span class="co"># Column with species names</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>    <span class="at">equations =</span> equations,</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">5000</span>,</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>    <span class="at">n.burnin =</span> <span class="dv">1000</span>,</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>    <span class="at">n.chains =</span> <span class="dv">3</span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>)</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="co"># View summary</span></span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="fu">summary</span>(fit)</span></code></pre></div>
+</div>
+<div id="mediation-analysis" class="section level2">
+<h2>Mediation Analysis</h2>
+<p>PhyBaSE shines at testing causal paths, such as mediation:
+<code>X -&gt; M -&gt; Y</code>.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Simulate mediator M</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>M <span class="ot">&lt;-</span> <span class="fl">0.3</span> <span class="sc">+</span> <span class="fl">0.6</span> <span class="sc">*</span> my_data<span class="sc">$</span>X <span class="sc">+</span> <span class="fu">rTraitCont</span>(tree, <span class="at">model =</span> <span class="st">&quot;BM&quot;</span>, <span class="at">sigma =</span> <span class="fl">0.5</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co"># Simulate Y affected by both X and M</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>Y_med <span class="ot">&lt;-</span> <span class="fl">0.5</span> <span class="sc">+</span> <span class="fl">0.4</span> <span class="sc">*</span> my_data<span class="sc">$</span>X <span class="sc">+</span> <span class="fl">0.5</span> <span class="sc">*</span> M <span class="sc">+</span> <span class="fu">rTraitCont</span>(tree, <span class="at">model =</span> <span class="st">&quot;BM&quot;</span>, <span class="at">sigma =</span> <span class="fl">0.5</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co"># Create data.frame with all variables</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>med_data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>    <span class="at">species =</span> tree<span class="sc">$</span>tip.label,</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>    <span class="at">X =</span> my_data<span class="sc">$</span>X,</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>    <span class="at">M =</span> M,</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>    <span class="at">Y =</span> Y_med</span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># Define DAG equations</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>equations_med <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>    M <span class="sc">~</span> X,</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>    Y <span class="sc">~</span> X <span class="sc">+</span> M</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>)</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>fit_med <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>    <span class="at">data =</span> med_data,</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>    <span class="at">id_col =</span> <span class="st">&quot;species&quot;</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>    <span class="at">equations =</span> equations_med</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>)</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="fu">summary</span>(fit_med)</span></code></pre></div>
+</div>
+<div id="understanding-parameter-names" class="section level2">
+<h2>Understanding Parameter Names</h2>
+<p><code>phybaseR</code> uses a systematic naming convention for all
+estimated parameters. Understanding this helps you interpret your
+results.</p>
+<div id="regression-coefficients" class="section level3">
+<h3>Regression Coefficients</h3>
+<p><strong>Format</strong>: <code>beta_Response_Predictor</code>
+(consistent for all models)</p>
+<ul>
+<li><code>beta_Y_X</code> - Effect of X on Y in model
+<code>Y ~ X</code></li>
+<li><code>beta_Y_M</code> - Effect of M on Y in model
+<code>Y ~ X + M</code></li>
+</ul>
+<p><strong>Special cases</strong>: -
+<strong>Multinomial/Ordinal</strong>:
+<code>beta_Response_Predictor[k]</code> - Effect on category k (k ≥ 2) -
+<strong>Intercepts</strong>: Always named <code>alpha_Response</code> or
+<code>alpha_Response[k]</code> for categorical responses</p>
+<p><strong>Naming convention</strong>: - <code>alpha</code> = intercepts
+- <code>beta</code> = regression coefficients (slopes)</p>
+</div>
+<div id="phylogenetic-signal" class="section level3">
+<h3>Phylogenetic Signal</h3>
+<p><strong>Format</strong>: <code>lambda_Variable</code> or
+<code>lambdaVariable</code></p>
+<ul>
+<li><code>lambdaX</code> - Pagel’s λ for variable X (0 = no signal, 1 =
+Brownian motion)</li>
+<li><code>lambda_Multi[k]</code>- Phylogenetic signal in category k of
+multinomial response</li>
+</ul>
+<p><strong>Range</strong>: 0 to 1 - <strong>0</strong> = No phylogenetic
+signal (pure residual variance) - <strong>1</strong> = Full Brownian
+motion (pure phylogenetic variance) - <strong>0.5</strong> = Equal
+phylogenetic and residual variance</p>
+</div>
+<div id="variance-components" class="section level3">
+<h3>Variance Components</h3>
+<p><strong>Precision parameters</strong> (inverse of variance):</p>
+<ul>
+<li><code>tau_Variable</code> or <code>tauVariable</code> - Overall
+precision (older parameter name)</li>
+<li><code>tau_u_Variable</code> - <strong>Phylogenetic</strong>
+precision (1 / phylogenetic variance)</li>
+<li><code>tau_e_Variable</code> - <strong>Residual</strong> precision (1
+/ residual variance)</li>
+</ul>
+<p><strong>Relationship</strong>: Higher precision = Lower variance =
+Less uncertainty</p>
+<p><strong>For categorical responses</strong> (multinomial, ordinal): -
+<code>tau_u_Response[k]</code> - Phylogenetic precision for category k -
+<code>tau_e_Response[k]</code> - Residual precision for category k</p>
+</div>
+<div id="ordinal-specific-parameters" class="section level3">
+<h3>Ordinal-Specific Parameters</h3>
+<ul>
+<li><code>cutpoint_Response[j]</code> - Threshold between categories j
+and j+1
+<ul>
+<li>Example: <code>cutpoint_IUCN[1]</code> separates LC from NT</li>
+</ul></li>
+</ul>
+</div>
+<div id="examples-in-context" class="section level3">
+<h3>Examples in Context</h3>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Model: Y ~ X + M</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>equations <span class="ot">&lt;-</span> <span class="fu">list</span>(Y <span class="sc">~</span> X <span class="sc">+</span> M)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co"># Key output parameters:</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="co"># alphaY         - Intercept for Y</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="co"># beta_Y_X       - Effect of X on Y (focal parameter)</span></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="co"># beta_Y_M       - Effect of M on Y (focal parameter)</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co"># lambdaY        - Phylogenetic signal in Y</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co"># tau_u_Y, tau_e_Y - Variance components for Y</span></span></code></pre></div>
+</div>
+<div id="auxiliary-parameters-for-predictors" class="section level3">
+<h3>Auxiliary Parameters for Predictors</h3>
+<p>If your model includes <strong>missing values in predictors</strong>
+or requires modeling <strong>phylogenetic structure in
+predictors</strong>, phybaseR automatically adds implicit equations
+(e.g., <code>X ~ 1</code>). This results in additional parameters:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Example: Y ~ X with missing values in X</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="co"># Implicit equation X ~ 1 is added automatically</span></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co"># You&#39;ll see these EXTRA parameters:</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="co"># alphaX         - Mean of X (auxiliary, not usually interpreted)</span></span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="co"># lambdaX        - Phylogenetic signal in X</span></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co"># tau_u_X, tau_e_X - Variance components for X</span></span></code></pre></div>
+<p><strong>When this happens</strong>: - ✅ Missing data in any
+predictor - ✅ Predictors with phylogenetic signal that needs to be
+accounted for</p>
+<p><strong>Interpretation</strong>: Focus on <code>beta</code>
+coefficients and <code>lambda</code> for responses. The auxiliary
+predictor parameters are needed for the model to work correctly but are
+rarely the focus of biological interpretation.</p>
+</div>
+<div id="controlling-output-with-monitor-modes" class="section level3">
+<h3>Controlling Output with <code>monitor</code> Modes</h3>
+<p>For cleaner output, use the <code>monitor</code> parameter to control
+which parameters are shown:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># Default: &quot;interpretable&quot; mode - shows only meaningful parameters</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">data =</span> data_list,</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="at">tree =</span> tree,</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  <span class="at">equations =</span> equations,</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>  <span class="at">monitor =</span> <span class="st">&quot;interpretable&quot;</span>  <span class="co"># or just omit (default)</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>)</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="co"># Output includes:</span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co"># - alphas (intercepts)</span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co"># - betas (regression coefficients)  </span></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co"># - lambdas for RESPONSES only</span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co"># But EXCLUDES:</span></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co"># - taus (variance components)</span></span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co"># - lambdas for auxiliary predictors</span></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="co"># To see ALL parameters including variance components:</span></span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a>fit_complete <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a>  <span class="at">data =</span> data_list,</span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a>  <span class="at">tree =</span> tree,</span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a>  <span class="at">equations =</span> equations,</span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a>  <span class="at">monitor =</span> <span class="st">&quot;all&quot;</span>  <span class="co"># Complete output</span></span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a>)</span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a></span>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a><span class="co"># Custom monitoring (advanced):</span></span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a>fit_custom <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a>  <span class="at">data =</span> data_list,</span>
+<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a>  <span class="at">tree =</span> tree,</span>
+<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a>  <span class="at">equations =</span> equations,</span>
+<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a>  <span class="at">monitor =</span> <span class="fu">c</span>(<span class="st">&quot;beta_Y_X&quot;</span>, <span class="st">&quot;lambdaY&quot;</span>, <span class="st">&quot;alphaY&quot;</span>)  <span class="co"># Specific parameters</span></span>
+<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+</div>
+<div id="measurement-error" class="section level2">
+<h2>Measurement Error</h2>
+<p>PhyBaSE can account for measurement error in your variables.</p>
+<div id="option-1-using-standard-errors-se" class="section level3">
+<h3>Option 1: Using Standard Errors (SE)</h3>
+<p>If you have known standard errors for your species means:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># Assume we have SEs for X</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>X_se <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fl">0.1</span>, N)</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>data_se <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">X =</span> X, <span class="at">Y =</span> Y, <span class="at">X_se =</span> X_se)</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>fit_se <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>    <span class="at">data =</span> data_se,</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(Y <span class="sc">~</span> X),</span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>    <span class="at">variability =</span> <span class="fu">c</span>(<span class="at">X =</span> <span class="st">&quot;se&quot;</span>) <span class="co"># Tell PhyBaSE that X has SEs</span></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a>)</span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="fu">summary</span>(fit_se)</span></code></pre></div>
+<p><strong>Note on DIC with measurement error</strong>: When using
+measurement error (either SE or repeated measures), the DIC penalty will
+be inflated because PhyBaSE creates latent “true” values for each
+species. The penalty will be approximately: structural parameters + N
+(number of species). This is expected behavior.</p>
+<ul>
+<li>For <strong>model comparison</strong>, use WAIC instead:
+<code>phybase_run(..., WAIC = TRUE)</code></li>
+<li>For <strong>fit quality</strong>, focus on the mean deviance (lower
+is better)</li>
+<li>The inflated penalty does not affect the validity of the model, only
+the DIC interpretation</li>
+</ul>
+</div>
+<div id="option-2-using-repeated-measures" class="section level3">
+<h3>Option 2: Using Repeated Measures</h3>
+<p>If you have raw data (multiple observations per species), PhyBaSE can
+estimate the observation error directly.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># Simulate unequal repeated measures (ragged array)</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="co"># Some species have 2 reps, some have 3</span></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>max_reps <span class="ot">&lt;-</span> <span class="dv">3</span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>X_obs <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> N, <span class="at">ncol =</span> max_reps)</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>    <span class="co"># Randomly decide if species has 2 or 3 reps</span></span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>    n_i <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">2</span><span class="sc">:</span><span class="dv">3</span>, <span class="dv">1</span>)</span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>    <span class="co"># Simulate data</span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>    vals <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n_i, <span class="at">mean =</span> X[i], <span class="at">sd =</span> <span class="fl">0.2</span>)</span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a></span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a>    <span class="co"># Fill matrix (padding with NA for missing reps)</span></span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a>    X_obs[i, <span class="dv">1</span><span class="sc">:</span>n_i] <span class="ot">&lt;-</span> vals</span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a>}</span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a></span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a>fit_reps <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a>    <span class="at">data =</span> <span class="fu">list</span>(<span class="at">X =</span> X_obs, <span class="at">Y =</span> Y),</span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(Y <span class="sc">~</span> X),</span>
+<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a>    <span class="at">variability =</span> <span class="fu">c</span>(<span class="at">X =</span> <span class="st">&quot;reps&quot;</span>)</span>
+<span id="cb11-22"><a href="#cb11-22" tabindex="-1"></a>)</span>
+<span id="cb11-23"><a href="#cb11-23" tabindex="-1"></a></span>
+<span id="cb11-24"><a href="#cb11-24" tabindex="-1"></a><span class="fu">summary</span>(fit_reps)</span>
+<span id="cb11-25"><a href="#cb11-25" tabindex="-1"></a></span>
+<span id="cb11-26"><a href="#cb11-26" tabindex="-1"></a><span class="co"># PhyBaSE automatically handles the NAs and counts valid replicates per species.</span></span></code></pre></div>
+</div>
+</div>
+<div id="binomial-variables" class="section level2">
+<h2>Binomial Variables</h2>
+<p>You can model binary traits (binomial) using a phylogenetic logistic
+regression framework.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># Simulate binary trait</span></span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>prob <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(<span class="sc">-</span>(<span class="fl">0.5</span> <span class="sc">+</span> <span class="fl">0.8</span> <span class="sc">*</span> X)))</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>BinaryTrait <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(N, <span class="dv">1</span>, prob)</span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>data_bin <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">X =</span> X, <span class="at">Bin =</span> BinaryTrait)</span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>fit_bin <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a>    <span class="at">data =</span> data_bin,</span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(Bin <span class="sc">~</span> X),</span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a>    <span class="at">distribution =</span> <span class="fu">c</span>(<span class="at">Bin =</span> <span class="st">&quot;binomial&quot;</span>), <span class="co"># Specify distribution</span></span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a>    <span class="at">WAIC =</span> <span class="cn">TRUE</span>, <span class="co"># Use WAIC for model comparison (recommended for non-Gaussian models)</span></span>
+<span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a>    <span class="at">DIC =</span> <span class="cn">FALSE</span> <span class="co"># DIC may produce NaN penalty with latent variable models</span></span>
+<span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a>)</span>
+<span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a></span>
+<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a><span class="fu">summary</span>(fit_bin)</span></code></pre></div>
+<p><strong>Note on Model Comparison</strong>: For binomial (and other
+non-Gaussian) models, DIC may produce <code>NaN</code> values for
+penalty because JAGS’s <code>dic.samples()</code> doesn’t handle latent
+variable models well. <strong>Use WAIC instead</strong>
+(<code>WAIC = TRUE</code>) for reliable model comparison with binomial,
+multinomial, ordinal, Poisson, and Negative Binomial distributions.</p>
+<p><strong>Note</strong>: Binomial variables should generally be child
+nodes (responses) in your DAG.</p>
+</div>
+<div id="multinomial-variables" class="section level2">
+<h2>Multinomial Variables</h2>
+<p>For categorical traits with more than two unordered levels (e.g.,
+diet type: Carnivore, Herbivore, Omnivore), you can use the multinomial
+distribution.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Simulate multinomial trait with phylogenetic signal (3 categories)</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="co"># Example: Diet type (Carnivore, Herbivore, Omnivore)</span></span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>VCV <span class="ot">&lt;-</span> ape<span class="sc">::</span><span class="fu">vcv.phylo</span>(tree)</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a></span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="co"># Phylogenetically structured errors for categories 2 and 3</span></span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="co"># (category 1 is the reference)</span></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a>lambda_2 <span class="ot">&lt;-</span> <span class="fl">0.6</span> <span class="co"># Phylogenetic signal for category 2</span></span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a>tau_u_2 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fl">0.5</span></span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a>tau_e_2 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fl">0.3</span></span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a>u_std_2 <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">mvrnorm</span>(<span class="dv">1</span>, <span class="at">mu =</span> <span class="fu">rep</span>(<span class="dv">0</span>, N), <span class="at">Sigma =</span> <span class="fu">solve</span>(VCV)))</span>
+<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a>err_2 <span class="ot">&lt;-</span> u_std_2 <span class="sc">/</span> <span class="fu">sqrt</span>(tau_u_2) <span class="sc">+</span> <span class="fu">rnorm</span>(N, <span class="dv">0</span>, <span class="fu">sqrt</span>(<span class="dv">1</span> <span class="sc">/</span> tau_e_2))</span>
+<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a></span>
+<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a>lambda_3 <span class="ot">&lt;-</span> <span class="fl">0.7</span> <span class="co"># Phylogenetic signal for category 3</span></span>
+<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a>tau_u_3 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fl">0.5</span></span>
+<span id="cb13-17"><a href="#cb13-17" tabindex="-1"></a>tau_e_3 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fl">0.3</span></span>
+<span id="cb13-18"><a href="#cb13-18" tabindex="-1"></a>u_std_3 <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">mvrnorm</span>(<span class="dv">1</span>, <span class="at">mu =</span> <span class="fu">rep</span>(<span class="dv">0</span>, N), <span class="at">Sigma =</span> <span class="fu">solve</span>(VCV)))</span>
+<span id="cb13-19"><a href="#cb13-19" tabindex="-1"></a>err_3 <span class="ot">&lt;-</span> u_std_3 <span class="sc">/</span> <span class="fu">sqrt</span>(tau_u_3) <span class="sc">+</span> <span class="fu">rnorm</span>(N, <span class="dv">0</span>, <span class="fu">sqrt</span>(<span class="dv">1</span> <span class="sc">/</span> tau_e_3))</span>
+<span id="cb13-20"><a href="#cb13-20" tabindex="-1"></a></span>
+<span id="cb13-21"><a href="#cb13-21" tabindex="-1"></a><span class="co"># Latent utilities for each category (with phylogenetic signal)</span></span>
+<span id="cb13-22"><a href="#cb13-22" tabindex="-1"></a>L1 <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span>, N) <span class="co"># Reference category (Carnivore)</span></span>
+<span id="cb13-23"><a href="#cb13-23" tabindex="-1"></a>L2 <span class="ot">&lt;-</span> <span class="sc">-</span><span class="dv">1</span> <span class="sc">+</span> <span class="fl">0.5</span> <span class="sc">*</span> X <span class="sc">+</span> err_2 <span class="co"># Category 2 (Herbivore)</span></span>
+<span id="cb13-24"><a href="#cb13-24" tabindex="-1"></a>L3 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fl">0.5</span> <span class="sc">*</span> X <span class="sc">+</span> err_3 <span class="co"># Category 3 (Omnivore)</span></span>
+<span id="cb13-25"><a href="#cb13-25" tabindex="-1"></a></span>
+<span id="cb13-26"><a href="#cb13-26" tabindex="-1"></a><span class="co"># Softmax transformation to get probabilities</span></span>
+<span id="cb13-27"><a href="#cb13-27" tabindex="-1"></a>exp_L1 <span class="ot">&lt;-</span> <span class="fu">exp</span>(L1)</span>
+<span id="cb13-28"><a href="#cb13-28" tabindex="-1"></a>exp_L2 <span class="ot">&lt;-</span> <span class="fu">exp</span>(L2)</span>
+<span id="cb13-29"><a href="#cb13-29" tabindex="-1"></a>exp_L3 <span class="ot">&lt;-</span> <span class="fu">exp</span>(L3)</span>
+<span id="cb13-30"><a href="#cb13-30" tabindex="-1"></a>sum_exp <span class="ot">&lt;-</span> exp_L1 <span class="sc">+</span> exp_L2 <span class="sc">+</span> exp_L3</span>
+<span id="cb13-31"><a href="#cb13-31" tabindex="-1"></a></span>
+<span id="cb13-32"><a href="#cb13-32" tabindex="-1"></a>P1 <span class="ot">&lt;-</span> exp_L1 <span class="sc">/</span> sum_exp <span class="co"># P(Carnivore)</span></span>
+<span id="cb13-33"><a href="#cb13-33" tabindex="-1"></a>P2 <span class="ot">&lt;-</span> exp_L2 <span class="sc">/</span> sum_exp <span class="co"># P(Herbivore)</span></span>
+<span id="cb13-34"><a href="#cb13-34" tabindex="-1"></a>P3 <span class="ot">&lt;-</span> exp_L3 <span class="sc">/</span> sum_exp <span class="co"># P(Omnivore)</span></span>
+<span id="cb13-35"><a href="#cb13-35" tabindex="-1"></a></span>
+<span id="cb13-36"><a href="#cb13-36" tabindex="-1"></a><span class="co"># Sample multinomial outcome</span></span>
+<span id="cb13-37"><a href="#cb13-37" tabindex="-1"></a>MultiTrait <span class="ot">&lt;-</span> <span class="fu">apply</span>(<span class="fu">cbind</span>(P1, P2, P3), <span class="dv">1</span>, <span class="cf">function</span>(p) <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="dv">1</span>, <span class="at">prob =</span> p))</span>
+<span id="cb13-38"><a href="#cb13-38" tabindex="-1"></a></span>
+<span id="cb13-39"><a href="#cb13-39" tabindex="-1"></a>data_multi <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">X =</span> X, <span class="at">Multi =</span> MultiTrait) <span class="co"># K is auto-detected</span></span>
+<span id="cb13-40"><a href="#cb13-40" tabindex="-1"></a></span>
+<span id="cb13-41"><a href="#cb13-41" tabindex="-1"></a>fit_multi <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb13-42"><a href="#cb13-42" tabindex="-1"></a>    <span class="at">data =</span> data_multi,</span>
+<span id="cb13-43"><a href="#cb13-43" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb13-44"><a href="#cb13-44" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(Multi <span class="sc">~</span> X),</span>
+<span id="cb13-45"><a href="#cb13-45" tabindex="-1"></a>    <span class="at">distribution =</span> <span class="fu">c</span>(<span class="at">Multi =</span> <span class="st">&quot;multinomial&quot;</span>),</span>
+<span id="cb13-46"><a href="#cb13-46" tabindex="-1"></a>    <span class="at">optimise =</span> <span class="cn">TRUE</span></span>
+<span id="cb13-47"><a href="#cb13-47" tabindex="-1"></a>)</span>
+<span id="cb13-48"><a href="#cb13-48" tabindex="-1"></a></span>
+<span id="cb13-49"><a href="#cb13-49" tabindex="-1"></a><span class="fu">summary</span>(fit_multi)</span>
+<span id="cb13-50"><a href="#cb13-50" tabindex="-1"></a></span>
+<span id="cb13-51"><a href="#cb13-51" tabindex="-1"></a><span class="co"># Check recovery of phylogenetic signal for each category</span></span>
+<span id="cb13-52"><a href="#cb13-52" tabindex="-1"></a><span class="co"># lambda parameters should be ~ 0.6 and 0.7</span></span>
+<span id="cb13-53"><a href="#cb13-53" tabindex="-1"></a>fit_multi<span class="sc">$</span>summary<span class="sc">$</span>statistics[<span class="fu">grep</span>(<span class="st">&quot;lambda&quot;</span>, <span class="fu">rownames</span>(fit_multi<span class="sc">$</span>summary<span class="sc">$</span>statistics)), ]</span></code></pre></div>
+<p><strong>Note</strong>: The summary will show parameters for each
+category <span class="math inline">\(k \ge 2\)</span> (e.g.,
+<code>beta_Multi_X[2]</code>, <code>beta_Multi_X[3]</code>), relative to
+the reference category <span class="math inline">\(k=1\)</span>. Key
+parameters to interpret: - <code>beta_Multi_X[k]</code> - Effects of X
+on each category - <code>lambda_Multi[k]</code> - Phylogenetic signal in
+each category</p>
+</div>
+<div id="ordinal-variables" class="section level2">
+<h2>Ordinal Variables</h2>
+<p>For <strong>ordered categorical data</strong> (e.g., IUCN Red List
+categories: LC &lt; NT &lt; VU &lt; EN &lt; CR), use the ordinal
+distribution. This respects the ordering of categories and is more
+appropriate than multinomial for such data.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># Simulate IUCN-like conservation status with phylogenetic signal</span></span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="co"># DAG: BodyMass -&gt; IUCN &lt;- HabitatLoss</span></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="co">#      BodyMass -&gt; HabitatLoss</span></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="co"># Implied independence: IUCN ⊥ BodyMass | HabitatLoss</span></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co"># Phylogenetically structured predictors</span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a>VCV <span class="ot">&lt;-</span> ape<span class="sc">::</span><span class="fu">vcv.phylo</span>(tree)</span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="co"># Body Mass (exogenous)</span></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a>lambda_mass <span class="ot">&lt;-</span> <span class="fl">0.6</span></span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a>Sigma_mass <span class="ot">&lt;-</span> lambda_mass <span class="sc">*</span> VCV <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">-</span> lambda_mass) <span class="sc">*</span> <span class="fu">diag</span>(N)</span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a>BodyMass <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">mvrnorm</span>(<span class="dv">1</span>, <span class="at">mu =</span> <span class="fu">rep</span>(<span class="dv">0</span>, N), <span class="at">Sigma =</span> Sigma_mass))</span>
+<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a></span>
+<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="co"># Habitat Loss (caused by body mass)</span></span>
+<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a>lambda_habitat <span class="ot">&lt;-</span> <span class="fl">0.5</span></span>
+<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a>tau_u_habitat <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fl">0.4</span></span>
+<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a>tau_e_habitat <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fl">0.3</span></span>
+<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a>u_std_habitat <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">mvrnorm</span>(<span class="dv">1</span>, <span class="at">mu =</span> <span class="fu">rep</span>(<span class="dv">0</span>, N), <span class="at">Sigma =</span> <span class="fu">solve</span>(VCV)))</span>
+<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a>HabitatLoss <span class="ot">&lt;-</span> <span class="fl">1.2</span> <span class="sc">+</span> <span class="fl">0.7</span> <span class="sc">*</span> BodyMass <span class="sc">+</span> u_std_habitat <span class="sc">/</span> <span class="fu">sqrt</span>(tau_u_habitat) <span class="sc">+</span></span>
+<span id="cb14-21"><a href="#cb14-21" tabindex="-1"></a>    <span class="fu">rnorm</span>(N, <span class="dv">0</span>, <span class="fu">sqrt</span>(<span class="dv">1</span> <span class="sc">/</span> tau_e_habitat))</span>
+<span id="cb14-22"><a href="#cb14-22" tabindex="-1"></a></span>
+<span id="cb14-23"><a href="#cb14-23" tabindex="-1"></a><span class="co"># IUCN status (ordinal response, caused by both predictors)</span></span>
+<span id="cb14-24"><a href="#cb14-24" tabindex="-1"></a>lambda_IUCN <span class="ot">&lt;-</span> <span class="fl">0.75</span></span>
+<span id="cb14-25"><a href="#cb14-25" tabindex="-1"></a>tau_u_IUCN <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fl">0.5</span></span>
+<span id="cb14-26"><a href="#cb14-26" tabindex="-1"></a>tau_e_IUCN <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fl">0.3</span></span>
+<span id="cb14-27"><a href="#cb14-27" tabindex="-1"></a>u_std_IUCN <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">mvrnorm</span>(<span class="dv">1</span>, <span class="at">mu =</span> <span class="fu">rep</span>(<span class="dv">0</span>, N), <span class="at">Sigma =</span> <span class="fu">solve</span>(VCV)))</span>
+<span id="cb14-28"><a href="#cb14-28" tabindex="-1"></a>phylo_error <span class="ot">&lt;-</span> u_std_IUCN <span class="sc">/</span> <span class="fu">sqrt</span>(tau_u_IUCN) <span class="sc">+</span> <span class="fu">rnorm</span>(N, <span class="dv">0</span>, <span class="fu">sqrt</span>(<span class="dv">1</span> <span class="sc">/</span> tau_e_IUCN))</span>
+<span id="cb14-29"><a href="#cb14-29" tabindex="-1"></a></span>
+<span id="cb14-30"><a href="#cb14-30" tabindex="-1"></a><span class="co"># Linear predictor: larger mass + more habitat loss -&gt; higher threat</span></span>
+<span id="cb14-31"><a href="#cb14-31" tabindex="-1"></a>eta <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fl">0.5</span> <span class="sc">*</span> BodyMass <span class="sc">+</span> <span class="fl">0.8</span> <span class="sc">*</span> HabitatLoss <span class="sc">+</span> phylo_error</span>
+<span id="cb14-32"><a href="#cb14-32" tabindex="-1"></a>cutpoints <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>) <span class="co"># Thresholds between categories</span></span>
+<span id="cb14-33"><a href="#cb14-33" tabindex="-1"></a></span>
+<span id="cb14-34"><a href="#cb14-34" tabindex="-1"></a><span class="co"># Calculate probabilities using cumulative logit</span></span>
+<span id="cb14-35"><a href="#cb14-35" tabindex="-1"></a>Q <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, <span class="at">nrow =</span> N, <span class="at">ncol =</span> <span class="dv">4</span>)</span>
+<span id="cb14-36"><a href="#cb14-36" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb14-37"><a href="#cb14-37" tabindex="-1"></a>    <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>) {</span>
+<span id="cb14-38"><a href="#cb14-38" tabindex="-1"></a>        Q[i, k] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(<span class="sc">-</span>(cutpoints[k] <span class="sc">-</span> eta[i])))</span>
+<span id="cb14-39"><a href="#cb14-39" tabindex="-1"></a>    }</span>
+<span id="cb14-40"><a href="#cb14-40" tabindex="-1"></a>}</span>
+<span id="cb14-41"><a href="#cb14-41" tabindex="-1"></a></span>
+<span id="cb14-42"><a href="#cb14-42" tabindex="-1"></a><span class="co"># Category probabilities</span></span>
+<span id="cb14-43"><a href="#cb14-43" tabindex="-1"></a>P <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, <span class="at">nrow =</span> N, <span class="at">ncol =</span> <span class="dv">5</span>)</span>
+<span id="cb14-44"><a href="#cb14-44" tabindex="-1"></a>P[, <span class="dv">1</span>] <span class="ot">&lt;-</span> Q[, <span class="dv">1</span>]</span>
+<span id="cb14-45"><a href="#cb14-45" tabindex="-1"></a><span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">4</span>) {</span>
+<span id="cb14-46"><a href="#cb14-46" tabindex="-1"></a>    P[, k] <span class="ot">&lt;-</span> Q[, k] <span class="sc">-</span> Q[, k <span class="sc">-</span> <span class="dv">1</span>]</span>
+<span id="cb14-47"><a href="#cb14-47" tabindex="-1"></a>}</span>
+<span id="cb14-48"><a href="#cb14-48" tabindex="-1"></a>P[, <span class="dv">5</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> Q[, <span class="dv">4</span>]</span>
+<span id="cb14-49"><a href="#cb14-49" tabindex="-1"></a></span>
+<span id="cb14-50"><a href="#cb14-50" tabindex="-1"></a><span class="co"># Sample ordinal outcome (1=LC, 2=NT, 3=VU, 4=EN, 5=CR)</span></span>
+<span id="cb14-51"><a href="#cb14-51" tabindex="-1"></a>IUCN <span class="ot">&lt;-</span> <span class="fu">apply</span>(P, <span class="dv">1</span>, <span class="cf">function</span>(p) <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="dv">1</span>, <span class="at">prob =</span> p))</span>
+<span id="cb14-52"><a href="#cb14-52" tabindex="-1"></a></span>
+<span id="cb14-53"><a href="#cb14-53" tabindex="-1"></a>data_ordinal <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb14-54"><a href="#cb14-54" tabindex="-1"></a>    <span class="at">BodyMass =</span> BodyMass,</span>
+<span id="cb14-55"><a href="#cb14-55" tabindex="-1"></a>    <span class="at">HabitatLoss =</span> HabitatLoss,</span>
+<span id="cb14-56"><a href="#cb14-56" tabindex="-1"></a>    <span class="at">IUCN =</span> IUCN,</span>
+<span id="cb14-57"><a href="#cb14-57" tabindex="-1"></a>    <span class="at">K_IUCN =</span> <span class="dv">5</span></span>
+<span id="cb14-58"><a href="#cb14-58" tabindex="-1"></a>)</span>
+<span id="cb14-59"><a href="#cb14-59" tabindex="-1"></a></span>
+<span id="cb14-60"><a href="#cb14-60" tabindex="-1"></a><span class="co"># Fit the DAG</span></span>
+<span id="cb14-61"><a href="#cb14-61" tabindex="-1"></a>fit_ordinal <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb14-62"><a href="#cb14-62" tabindex="-1"></a>    <span class="at">data =</span> data_ordinal,</span>
+<span id="cb14-63"><a href="#cb14-63" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb14-64"><a href="#cb14-64" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(</span>
+<span id="cb14-65"><a href="#cb14-65" tabindex="-1"></a>        IUCN <span class="sc">~</span> BodyMass <span class="sc">+</span> HabitatLoss,</span>
+<span id="cb14-66"><a href="#cb14-66" tabindex="-1"></a>        HabitatLoss <span class="sc">~</span> BodyMass</span>
+<span id="cb14-67"><a href="#cb14-67" tabindex="-1"></a>    ),</span>
+<span id="cb14-68"><a href="#cb14-68" tabindex="-1"></a>    <span class="at">distribution =</span> <span class="fu">c</span>(<span class="at">IUCN =</span> <span class="st">&quot;ordinal&quot;</span>),</span>
+<span id="cb14-69"><a href="#cb14-69" tabindex="-1"></a>    <span class="at">optimise =</span> <span class="cn">TRUE</span></span>
+<span id="cb14-70"><a href="#cb14-70" tabindex="-1"></a>)</span>
+<span id="cb14-71"><a href="#cb14-71" tabindex="-1"></a></span>
+<span id="cb14-72"><a href="#cb14-72" tabindex="-1"></a><span class="fu">summary</span>(fit_ordinal)</span>
+<span id="cb14-73"><a href="#cb14-73" tabindex="-1"></a></span>
+<span id="cb14-74"><a href="#cb14-74" tabindex="-1"></a><span class="co"># Check recovery of phylogenetic signal</span></span>
+<span id="cb14-75"><a href="#cb14-75" tabindex="-1"></a>fit_ordinal<span class="sc">$</span>summary<span class="sc">$</span>statistics[<span class="st">&quot;lambdaIUCN&quot;</span>, ]</span>
+<span id="cb14-76"><a href="#cb14-76" tabindex="-1"></a></span>
+<span id="cb14-77"><a href="#cb14-77" tabindex="-1"></a><span class="co"># Test d-separation: IUCN ⊥ BodyMass | HabitatLoss</span></span>
+<span id="cb14-78"><a href="#cb14-78" tabindex="-1"></a>fit_dsep <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb14-79"><a href="#cb14-79" tabindex="-1"></a>    <span class="at">data =</span> data_ordinal,</span>
+<span id="cb14-80"><a href="#cb14-80" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb14-81"><a href="#cb14-81" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(</span>
+<span id="cb14-82"><a href="#cb14-82" tabindex="-1"></a>        IUCN <span class="sc">~</span> BodyMass <span class="sc">+</span> HabitatLoss,</span>
+<span id="cb14-83"><a href="#cb14-83" tabindex="-1"></a>        HabitatLoss <span class="sc">~</span> BodyMass</span>
+<span id="cb14-84"><a href="#cb14-84" tabindex="-1"></a>    ),</span>
+<span id="cb14-85"><a href="#cb14-85" tabindex="-1"></a>    <span class="at">distribution =</span> <span class="fu">c</span>(<span class="at">IUCN =</span> <span class="st">&quot;ordinal&quot;</span>),</span>
+<span id="cb14-86"><a href="#cb14-86" tabindex="-1"></a>    <span class="at">dsep =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb14-87"><a href="#cb14-87" tabindex="-1"></a>    <span class="at">optimise =</span> <span class="cn">TRUE</span></span>
+<span id="cb14-88"><a href="#cb14-88" tabindex="-1"></a>)</span>
+<span id="cb14-89"><a href="#cb14-89" tabindex="-1"></a></span>
+<span id="cb14-90"><a href="#cb14-90" tabindex="-1"></a><span class="co"># Check if betaBodyMass is close to zero in the d-sep test</span></span>
+<span id="cb14-91"><a href="#cb14-91" tabindex="-1"></a><span class="fu">summary</span>(fit_dsep<span class="sc">$</span>samples)</span>
+<span id="cb14-92"><a href="#cb14-92" tabindex="-1"></a><span class="co"># If 95% CI of betaBodyMass includes zero -&gt; independence supported</span></span></code></pre></div>
+<p><strong>Key advantages of ordinal over multinomial</strong>: -
+Respects category ordering (statistical validity) - More parsimonious
+(fewer parameters) - Easier interpretation (single <span class="math inline">\(\beta\)</span> coefficient, not <span class="math inline">\(K-1\)</span>)</p>
+<p><strong>Note</strong>: You’ll see estimated cutpoints in the output
+(<code>cutpoint_IUCN[1]</code>, <code>cutpoint_IUCN[2]</code>, etc.),
+which define the thresholds between adjacent categories.</p>
+</div>
+<div id="poisson-variables-count-data" class="section level2">
+<h2>Poisson Variables (Count Data)</h2>
+<p>For <strong>count data</strong> (e.g., clutch size, litter size,
+number of vertebrae), use the Poisson distribution. These
+<strong>meristic traits</strong> are countable morphological or
+life-history features that show phylogenetic signal. The random effects
+formulation naturally handles <strong>overdispersion</strong> via the
+residual variance component.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="co"># Simulate count data with phylogenetic signal</span></span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="co"># Example: Clutch size (number of eggs) in birds</span></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="co"># DAG: BodyMass -&gt; ClutchSize &lt;- Latitude</span></span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="co">#      BodyMass -&gt; Latitude</span></span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="co"># Implied independence: ClutchSize ⊥ BodyMass | Latitude</span></span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a></span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a><span class="co"># Phylogenetically structured predictors</span></span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a>VCV <span class="ot">&lt;-</span> ape<span class="sc">::</span><span class="fu">vcv.phylo</span>(tree)</span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a></span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a><span class="co"># Body mass (log-scale, exogenous)</span></span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a>lambda_bm <span class="ot">&lt;-</span> <span class="fl">0.8</span></span>
+<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a>Sigma_bm <span class="ot">&lt;-</span> lambda_bm <span class="sc">*</span> VCV <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">-</span> lambda_bm) <span class="sc">*</span> <span class="fu">diag</span>(N)</span>
+<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a>BodyMass <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">mvrnorm</span>(<span class="dv">1</span>, <span class="at">mu =</span> <span class="fu">rep</span>(<span class="dv">4</span>, N), <span class="at">Sigma =</span> Sigma_bm))</span>
+<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a></span>
+<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a><span class="co"># Latitude (caused by body mass - Bergmann&#39;s rule proxy)</span></span>
+<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a>lambda_lat <span class="ot">&lt;-</span> <span class="fl">0.6</span></span>
+<span id="cb15-18"><a href="#cb15-18" tabindex="-1"></a>tau_u_lat <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fl">0.4</span></span>
+<span id="cb15-19"><a href="#cb15-19" tabindex="-1"></a>tau_e_lat <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fl">0.3</span></span>
+<span id="cb15-20"><a href="#cb15-20" tabindex="-1"></a>u_std_lat <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">mvrnorm</span>(<span class="dv">1</span>, <span class="at">mu =</span> <span class="fu">rep</span>(<span class="dv">0</span>, N), <span class="at">Sigma =</span> <span class="fu">solve</span>(VCV)))</span>
+<span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a>Latitude <span class="ot">&lt;-</span> <span class="dv">30</span> <span class="sc">-</span> <span class="fl">0.4</span> <span class="sc">*</span> BodyMass <span class="sc">+</span> u_std_lat <span class="sc">/</span> <span class="fu">sqrt</span>(tau_u_lat) <span class="sc">+</span></span>
+<span id="cb15-22"><a href="#cb15-22" tabindex="-1"></a>    <span class="fu">rnorm</span>(N, <span class="dv">0</span>, <span class="fu">sqrt</span>(<span class="dv">1</span> <span class="sc">/</span> tau_e_lat))</span>
+<span id="cb15-23"><a href="#cb15-23" tabindex="-1"></a></span>
+<span id="cb15-24"><a href="#cb15-24" tabindex="-1"></a><span class="co"># Phylogenetically structured error term for clutch size</span></span>
+<span id="cb15-25"><a href="#cb15-25" tabindex="-1"></a>lambda_clutch <span class="ot">&lt;-</span> <span class="fl">0.7</span> <span class="co"># True phylogenetic signal in clutch size</span></span>
+<span id="cb15-26"><a href="#cb15-26" tabindex="-1"></a>tau_u <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fl">0.5</span> <span class="co"># Phylogenetic variance</span></span>
+<span id="cb15-27"><a href="#cb15-27" tabindex="-1"></a>tau_e <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fl">0.3</span> <span class="co"># Residual variance</span></span>
+<span id="cb15-28"><a href="#cb15-28" tabindex="-1"></a>u_std <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">mvrnorm</span>(<span class="dv">1</span>, <span class="at">mu =</span> <span class="fu">rep</span>(<span class="dv">0</span>, N), <span class="at">Sigma =</span> <span class="fu">solve</span>(VCV)))</span>
+<span id="cb15-29"><a href="#cb15-29" tabindex="-1"></a>u <span class="ot">&lt;-</span> u_std <span class="sc">/</span> <span class="fu">sqrt</span>(tau_u)</span>
+<span id="cb15-30"><a href="#cb15-30" tabindex="-1"></a>epsilon <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N, <span class="dv">0</span>, <span class="fu">sqrt</span>(<span class="dv">1</span> <span class="sc">/</span> tau_e))</span>
+<span id="cb15-31"><a href="#cb15-31" tabindex="-1"></a>phylo_error <span class="ot">&lt;-</span> u <span class="sc">+</span> epsilon</span>
+<span id="cb15-32"><a href="#cb15-32" tabindex="-1"></a></span>
+<span id="cb15-33"><a href="#cb15-33" tabindex="-1"></a><span class="co"># True model: log(E[ClutchSize]) = 1.5 + 0.03*Latitude + phylo_error</span></span>
+<span id="cb15-34"><a href="#cb15-34" tabindex="-1"></a><span class="co"># Larger clutches at higher latitudes, body mass affects ONLY through latitude</span></span>
+<span id="cb15-35"><a href="#cb15-35" tabindex="-1"></a>log_clutch <span class="ot">&lt;-</span> <span class="fl">1.5</span> <span class="sc">+</span> <span class="fl">0.03</span> <span class="sc">*</span> Latitude <span class="sc">+</span> phylo_error</span>
+<span id="cb15-36"><a href="#cb15-36" tabindex="-1"></a>ClutchSize <span class="ot">&lt;-</span> <span class="fu">rpois</span>(N, <span class="at">lambda =</span> <span class="fu">exp</span>(log_clutch))</span>
+<span id="cb15-37"><a href="#cb15-37" tabindex="-1"></a></span>
+<span id="cb15-38"><a href="#cb15-38" tabindex="-1"></a>data_poisson <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb15-39"><a href="#cb15-39" tabindex="-1"></a>    <span class="at">BodyMass =</span> BodyMass,</span>
+<span id="cb15-40"><a href="#cb15-40" tabindex="-1"></a>    <span class="at">Latitude =</span> Latitude,</span>
+<span id="cb15-41"><a href="#cb15-41" tabindex="-1"></a>    <span class="at">ClutchSize =</span> ClutchSize</span>
+<span id="cb15-42"><a href="#cb15-42" tabindex="-1"></a>)</span>
+<span id="cb15-43"><a href="#cb15-43" tabindex="-1"></a></span>
+<span id="cb15-44"><a href="#cb15-44" tabindex="-1"></a><span class="co"># Fit the DAG</span></span>
+<span id="cb15-45"><a href="#cb15-45" tabindex="-1"></a>fit_poisson <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb15-46"><a href="#cb15-46" tabindex="-1"></a>    <span class="at">data =</span> data_poisson,</span>
+<span id="cb15-47"><a href="#cb15-47" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb15-48"><a href="#cb15-48" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(</span>
+<span id="cb15-49"><a href="#cb15-49" tabindex="-1"></a>        ClutchSize <span class="sc">~</span> Latitude,</span>
+<span id="cb15-50"><a href="#cb15-50" tabindex="-1"></a>        Latitude <span class="sc">~</span> BodyMass</span>
+<span id="cb15-51"><a href="#cb15-51" tabindex="-1"></a>    ),</span>
+<span id="cb15-52"><a href="#cb15-52" tabindex="-1"></a>    <span class="at">distribution =</span> <span class="fu">c</span>(<span class="at">ClutchSize =</span> <span class="st">&quot;poisson&quot;</span>),</span>
+<span id="cb15-53"><a href="#cb15-53" tabindex="-1"></a>    <span class="at">optimise =</span> <span class="cn">TRUE</span></span>
+<span id="cb15-54"><a href="#cb15-54" tabindex="-1"></a>)</span>
+<span id="cb15-55"><a href="#cb15-55" tabindex="-1"></a></span>
+<span id="cb15-56"><a href="#cb15-56" tabindex="-1"></a><span class="fu">summary</span>(fit_poisson)</span>
+<span id="cb15-57"><a href="#cb15-57" tabindex="-1"></a></span>
+<span id="cb15-58"><a href="#cb15-58" tabindex="-1"></a><span class="co"># Check recovery of phylogenetic signal</span></span>
+<span id="cb15-59"><a href="#cb15-59" tabindex="-1"></a><span class="co"># lambdaClutchSize should be ~ 0.7</span></span>
+<span id="cb15-60"><a href="#cb15-60" tabindex="-1"></a>fit_poisson<span class="sc">$</span>summary<span class="sc">$</span>statistics[<span class="st">&quot;lambdaClutchSize&quot;</span>, ]</span>
+<span id="cb15-61"><a href="#cb15-61" tabindex="-1"></a></span>
+<span id="cb15-62"><a href="#cb15-62" tabindex="-1"></a><span class="co"># Test d-separation: ClutchSize ⊥ BodyMass | Latitude</span></span>
+<span id="cb15-63"><a href="#cb15-63" tabindex="-1"></a>fit_dsep <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb15-64"><a href="#cb15-64" tabindex="-1"></a>    <span class="at">data =</span> data_poisson,</span>
+<span id="cb15-65"><a href="#cb15-65" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb15-66"><a href="#cb15-66" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(</span>
+<span id="cb15-67"><a href="#cb15-67" tabindex="-1"></a>        ClutchSize <span class="sc">~</span> Latitude,</span>
+<span id="cb15-68"><a href="#cb15-68" tabindex="-1"></a>        Latitude <span class="sc">~</span> BodyMass</span>
+<span id="cb15-69"><a href="#cb15-69" tabindex="-1"></a>    ),</span>
+<span id="cb15-70"><a href="#cb15-70" tabindex="-1"></a>    <span class="at">distribution =</span> <span class="fu">c</span>(<span class="at">ClutchSize =</span> <span class="st">&quot;poisson&quot;</span>),</span>
+<span id="cb15-71"><a href="#cb15-71" tabindex="-1"></a>    <span class="at">dsep =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb15-72"><a href="#cb15-72" tabindex="-1"></a>    <span class="at">optimise =</span> <span class="cn">TRUE</span></span>
+<span id="cb15-73"><a href="#cb15-73" tabindex="-1"></a>)</span>
+<span id="cb15-74"><a href="#cb15-74" tabindex="-1"></a></span>
+<span id="cb15-75"><a href="#cb15-75" tabindex="-1"></a><span class="co"># Check if betaBodyMass is close to zero in the d-sep test</span></span>
+<span id="cb15-76"><a href="#cb15-76" tabindex="-1"></a><span class="fu">summary</span>(fit_dsep<span class="sc">$</span>samples)</span>
+<span id="cb15-77"><a href="#cb15-77" tabindex="-1"></a><span class="co"># If 95% CI of betaBodyMass includes zero -&gt; independence supported</span></span></code></pre></div>
+<p><strong>Overdispersion handling</strong>: Unlike standard Poisson
+GLMs, the random effects formulation includes <code>tau_e</code>
+(residual precision), which absorbs extra-Poisson variation. This makes
+it equivalent to a <strong>quasi-Poisson</strong> model without needing
+an explicit overdispersion parameter.</p>
+<p><strong>When to use Poisson vs. Negative Binomial</strong>: -
+<strong>Poisson</strong>: Default for count data; handles moderate
+overdispersion - <strong>Negative Binomial</strong>: Heavy
+overdispersion (variance &gt;&gt; mean)</p>
+</div>
+<div id="negative-binomial-variables-overdispersed-counts" class="section level2">
+<h2>Negative Binomial Variables (Overdispersed Counts)</h2>
+<p>For <strong>heavily overdispersed count data</strong> where variance
+far exceeds the mean, use the Negative Binomial distribution. It
+includes an explicit <strong>size parameter</strong> (<code>r</code>)
+that controls overdispersion.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co"># Simulate heavily overdispersed count data with phylogenetic signal</span></span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="co"># DAG: HostSize -&gt; Parasites &lt;- Stress</span></span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a><span class="co">#      HostSize -&gt; Stress</span></span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="co"># Implied independence: Parasites ⊥ HostSize | Stress</span></span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a></span>
+<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a><span class="co"># Phylogenetically structured predictors</span></span>
+<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a>VCV <span class="ot">&lt;-</span> ape<span class="sc">::</span><span class="fu">vcv.phylo</span>(tree)</span>
+<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a></span>
+<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a><span class="co"># Host Size (exogenous)</span></span>
+<span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a>lambda_size <span class="ot">&lt;-</span> <span class="fl">0.4</span></span>
+<span id="cb16-12"><a href="#cb16-12" tabindex="-1"></a>Sigma_size <span class="ot">&lt;-</span> lambda_size <span class="sc">*</span> VCV <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">-</span> lambda_size) <span class="sc">*</span> <span class="fu">diag</span>(N)</span>
+<span id="cb16-13"><a href="#cb16-13" tabindex="-1"></a>HostSize <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">mvrnorm</span>(<span class="dv">1</span>, <span class="at">mu =</span> <span class="fu">rep</span>(<span class="dv">0</span>, N), <span class="at">Sigma =</span> Sigma_size))</span>
+<span id="cb16-14"><a href="#cb16-14" tabindex="-1"></a></span>
+<span id="cb16-15"><a href="#cb16-15" tabindex="-1"></a><span class="co"># Stress (caused by host size)</span></span>
+<span id="cb16-16"><a href="#cb16-16" tabindex="-1"></a>lambda_stress <span class="ot">&lt;-</span> <span class="fl">0.5</span></span>
+<span id="cb16-17"><a href="#cb16-17" tabindex="-1"></a>tau_u_stress <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fl">0.4</span></span>
+<span id="cb16-18"><a href="#cb16-18" tabindex="-1"></a>tau_e_stress <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fl">0.3</span></span>
+<span id="cb16-19"><a href="#cb16-19" tabindex="-1"></a>u_std_stress <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">mvrnorm</span>(<span class="dv">1</span>, <span class="at">mu =</span> <span class="fu">rep</span>(<span class="dv">0</span>, N), <span class="at">Sigma =</span> <span class="fu">solve</span>(VCV)))</span>
+<span id="cb16-20"><a href="#cb16-20" tabindex="-1"></a>Stress <span class="ot">&lt;-</span> <span class="fl">1.5</span> <span class="sc">+</span> <span class="fl">0.6</span> <span class="sc">*</span> HostSize <span class="sc">+</span> u_std_stress <span class="sc">/</span> <span class="fu">sqrt</span>(tau_u_stress) <span class="sc">+</span></span>
+<span id="cb16-21"><a href="#cb16-21" tabindex="-1"></a>    <span class="fu">rnorm</span>(N, <span class="dv">0</span>, <span class="fu">sqrt</span>(<span class="dv">1</span> <span class="sc">/</span> tau_e_stress))</span>
+<span id="cb16-22"><a href="#cb16-22" tabindex="-1"></a></span>
+<span id="cb16-23"><a href="#cb16-23" tabindex="-1"></a><span class="co"># Phylogenetically structured error term for parasites</span></span>
+<span id="cb16-24"><a href="#cb16-24" tabindex="-1"></a>lambda_parasites <span class="ot">&lt;-</span> <span class="fl">0.8</span> <span class="co"># True phylogenetic signal</span></span>
+<span id="cb16-25"><a href="#cb16-25" tabindex="-1"></a>tau_u <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fl">0.6</span></span>
+<span id="cb16-26"><a href="#cb16-26" tabindex="-1"></a>tau_e <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fl">0.4</span></span>
+<span id="cb16-27"><a href="#cb16-27" tabindex="-1"></a>u_std <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">mvrnorm</span>(<span class="dv">1</span>, <span class="at">mu =</span> <span class="fu">rep</span>(<span class="dv">0</span>, N), <span class="at">Sigma =</span> <span class="fu">solve</span>(VCV)))</span>
+<span id="cb16-28"><a href="#cb16-28" tabindex="-1"></a>u <span class="ot">&lt;-</span> u_std <span class="sc">/</span> <span class="fu">sqrt</span>(tau_u)</span>
+<span id="cb16-29"><a href="#cb16-29" tabindex="-1"></a>epsilon <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N, <span class="dv">0</span>, <span class="fu">sqrt</span>(<span class="dv">1</span> <span class="sc">/</span> tau_e))</span>
+<span id="cb16-30"><a href="#cb16-30" tabindex="-1"></a>phylo_error <span class="ot">&lt;-</span> u <span class="sc">+</span> epsilon</span>
+<span id="cb16-31"><a href="#cb16-31" tabindex="-1"></a></span>
+<span id="cb16-32"><a href="#cb16-32" tabindex="-1"></a><span class="co"># True model with overdispersion</span></span>
+<span id="cb16-33"><a href="#cb16-33" tabindex="-1"></a><span class="co"># Stress increases parasite load (HostSize affects load ONLY through Stress)</span></span>
+<span id="cb16-34"><a href="#cb16-34" tabindex="-1"></a>r_true <span class="ot">&lt;-</span> <span class="dv">2</span> <span class="co"># Size parameter (smaller = more overdispersed)</span></span>
+<span id="cb16-35"><a href="#cb16-35" tabindex="-1"></a>log_mu <span class="ot">&lt;-</span> <span class="dv">2</span> <span class="sc">+</span> <span class="fl">0.7</span> <span class="sc">*</span> Stress <span class="sc">+</span> phylo_error</span>
+<span id="cb16-36"><a href="#cb16-36" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="fu">exp</span>(log_mu)</span>
+<span id="cb16-37"><a href="#cb16-37" tabindex="-1"></a>parasite_count <span class="ot">&lt;-</span> <span class="fu">rnbinom</span>(N, <span class="at">size =</span> r_true, <span class="at">mu =</span> mu)</span>
+<span id="cb16-38"><a href="#cb16-38" tabindex="-1"></a></span>
+<span id="cb16-39"><a href="#cb16-39" tabindex="-1"></a>data_nb <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb16-40"><a href="#cb16-40" tabindex="-1"></a>    <span class="at">HostSize =</span> HostSize,</span>
+<span id="cb16-41"><a href="#cb16-41" tabindex="-1"></a>    <span class="at">Stress =</span> Stress,</span>
+<span id="cb16-42"><a href="#cb16-42" tabindex="-1"></a>    <span class="at">Parasites =</span> parasite_count</span>
+<span id="cb16-43"><a href="#cb16-43" tabindex="-1"></a>)</span>
+<span id="cb16-44"><a href="#cb16-44" tabindex="-1"></a></span>
+<span id="cb16-45"><a href="#cb16-45" tabindex="-1"></a><span class="co"># Fit the DAG</span></span>
+<span id="cb16-46"><a href="#cb16-46" tabindex="-1"></a>fit_nb <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb16-47"><a href="#cb16-47" tabindex="-1"></a>    <span class="at">data =</span> data_nb,</span>
+<span id="cb16-48"><a href="#cb16-48" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb16-49"><a href="#cb16-49" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(</span>
+<span id="cb16-50"><a href="#cb16-50" tabindex="-1"></a>        Parasites <span class="sc">~</span> Stress,</span>
+<span id="cb16-51"><a href="#cb16-51" tabindex="-1"></a>        Stress <span class="sc">~</span> HostSize</span>
+<span id="cb16-52"><a href="#cb16-52" tabindex="-1"></a>    ),</span>
+<span id="cb16-53"><a href="#cb16-53" tabindex="-1"></a>    <span class="at">distribution =</span> <span class="fu">c</span>(<span class="at">Parasites =</span> <span class="st">&quot;negbinomial&quot;</span>),</span>
+<span id="cb16-54"><a href="#cb16-54" tabindex="-1"></a>    <span class="at">optimise =</span> <span class="cn">TRUE</span></span>
+<span id="cb16-55"><a href="#cb16-55" tabindex="-1"></a>)</span>
+<span id="cb16-56"><a href="#cb16-56" tabindex="-1"></a></span>
+<span id="cb16-57"><a href="#cb16-57" tabindex="-1"></a><span class="fu">summary</span>(fit_nb)</span>
+<span id="cb16-58"><a href="#cb16-58" tabindex="-1"></a></span>
+<span id="cb16-59"><a href="#cb16-59" tabindex="-1"></a><span class="co"># Check recovery of phylogenetic signal</span></span>
+<span id="cb16-60"><a href="#cb16-60" tabindex="-1"></a><span class="co"># lambdaParasites should be ~ 0.8</span></span>
+<span id="cb16-61"><a href="#cb16-61" tabindex="-1"></a>fit_nb<span class="sc">$</span>summary<span class="sc">$</span>statistics[<span class="st">&quot;lambdaParasites&quot;</span>, ]</span>
+<span id="cb16-62"><a href="#cb16-62" tabindex="-1"></a></span>
+<span id="cb16-63"><a href="#cb16-63" tabindex="-1"></a><span class="co"># Test d-separation: Parasites ⊥ HostSize | Stress</span></span>
+<span id="cb16-64"><a href="#cb16-64" tabindex="-1"></a>fit_dsep <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb16-65"><a href="#cb16-65" tabindex="-1"></a>    <span class="at">data =</span> data_nb,</span>
+<span id="cb16-66"><a href="#cb16-66" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb16-67"><a href="#cb16-67" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(</span>
+<span id="cb16-68"><a href="#cb16-68" tabindex="-1"></a>        Parasites <span class="sc">~</span> Stress,</span>
+<span id="cb16-69"><a href="#cb16-69" tabindex="-1"></a>        Stress <span class="sc">~</span> HostSize</span>
+<span id="cb16-70"><a href="#cb16-70" tabindex="-1"></a>    ),</span>
+<span id="cb16-71"><a href="#cb16-71" tabindex="-1"></a>    <span class="at">distribution =</span> <span class="fu">c</span>(<span class="at">Parasites =</span> <span class="st">&quot;negbinomial&quot;</span>),</span>
+<span id="cb16-72"><a href="#cb16-72" tabindex="-1"></a>    <span class="at">dsep =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb16-73"><a href="#cb16-73" tabindex="-1"></a>    <span class="at">optimise =</span> <span class="cn">TRUE</span></span>
+<span id="cb16-74"><a href="#cb16-74" tabindex="-1"></a>)</span>
+<span id="cb16-75"><a href="#cb16-75" tabindex="-1"></a></span>
+<span id="cb16-76"><a href="#cb16-76" tabindex="-1"></a><span class="co"># Check if betaHostSize is close to zero in the d-sep test</span></span>
+<span id="cb16-77"><a href="#cb16-77" tabindex="-1"></a><span class="fu">summary</span>(fit_dsep<span class="sc">$</span>samples)</span>
+<span id="cb16-78"><a href="#cb16-78" tabindex="-1"></a><span class="co"># If 95% CI of betaHostSize includes zero -&gt; independence supported</span></span></code></pre></div>
+<p><strong>Understanding the size parameter (<code>r</code>)</strong>: -
+<strong>Smaller <code>r</code></strong> → More overdispersion (variance
+&gt;&gt; mean) - <strong>Larger <code>r</code></strong> → Less
+overdispersion (approaches Poisson) - <strong>Typical values</strong>: r
+= 0.5-5 for heavily overdispersed biological data</p>
+<pre><code>**Poisson vs. Negative Binomial decision tree**:
+1. **Variance ≈ Mean**: Use Poisson (simpler, fewer parameters)
+2. **Variance &gt; Mean** (2-5x): Poisson with random effects (handles it via `tau_e`)
+3. **Variance &gt;&gt; Mean** (&gt;5x): Negative Binomial (explicit overdispersion modeling)
+
+## Categorical Predictors
+
+`phybaseR` automatically handles categorical predictors (factor or character variables) by converting them to **dummy variables** and **auto-expanding** equations.
+
+
+``` r
+# Data with categorical predictor
+data &lt;- data.frame(
+    Species = tree$tip.label,
+    BodyMass = rnorm(N),
+    Diet = sample(c(&quot;Carnivore&quot;, &quot;Herbivore&quot;, &quot;Omnivore&quot;), N, replace = TRUE),
+    Habitat = factor(sample(c(&quot;Forest&quot;, &quot;Grassland&quot;), N, replace = TRUE))
+)
+
+# phybase_format_data automatically creates dummy variables
+data_list &lt;- phybase_format_data(data, tree = tree)
+# Messages:
+# Categorical variable &#39;Diet&#39; expanded to 2 dummy variable(s) | Reference: &#39;Carnivore&#39;
+# Categorical variable &#39;Habitat&#39; expanded to 1 dummy variable(s) | Reference: &#39;Forest&#39;
+
+# Use categorical variables DIRECTLY in equations - auto-expands!
+fit &lt;- phybase_run(
+    data = data_list,
+    tree = tree,
+    equations = list(BodyMass ~ Diet + Habitat) # Auto-expands to dummies!
+)
+# Messages:
+# Expanded &#39;Diet&#39; to: Diet_Herbivore, Diet_Omnivore
+# Expanded &#39;Habitat&#39; to: Habitat_Grassland
+
+summary(fit)</code></pre>
+<p><strong>Key points</strong>: - <strong>Auto-expansion</strong>: Write
+<code>Y ~ Diet</code>, get
+<code>Y ~ Diet_Herbivore + Diet_Omnivore</code> - <strong>Reference
+category</strong>: First level alphabetically (e.g., “Carnivore” for
+Diet) - <strong>K-1 encoding</strong>: K levels → K-1 dummy variables -
+<strong>Interpretation</strong>: Coefficients are effects relative to
+reference category</p>
+<p><strong>Example interpretation</strong>: -
+<code>beta_BodyMass_Diet_Herbivore = -0.65</code> → Herbivores 0.65
+units lighter than Carnivores -
+<code>beta_BodyMass_Habitat_Grassland = 0.56</code> → Grassland species
+0.56 units heavier than Forest</p>
+</div>
+<div id="missing-data" class="section level2">
+<h2>Missing Data</h2>
+<p>PhyBaSE fully supports missing data (<code>NA</code>) in both
+response and predictor variables. It uses a <strong>Latent Variable
+(GLMM)</strong> approach to impute missing values while preserving
+phylogenetic signal.</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="co"># Introduce missing values</span></span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a>X_miss <span class="ot">&lt;-</span> X</span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a>X_miss[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">10</span>)] <span class="ot">&lt;-</span> <span class="cn">NA</span> <span class="co"># Missing in predictor</span></span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a>Y_miss <span class="ot">&lt;-</span> Y</span>
+<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a>Y_miss[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">6</span>, <span class="dv">12</span>)] <span class="ot">&lt;-</span> <span class="cn">NA</span> <span class="co"># Missing in response</span></span>
+<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a></span>
+<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a>data_miss <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">X =</span> X_miss, <span class="at">Y =</span> Y_miss)</span>
+<span id="cb18-8"><a href="#cb18-8" tabindex="-1"></a></span>
+<span id="cb18-9"><a href="#cb18-9" tabindex="-1"></a><span class="co"># Just run it! No extra setup needed.</span></span>
+<span id="cb18-10"><a href="#cb18-10" tabindex="-1"></a>fit_miss <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb18-11"><a href="#cb18-11" tabindex="-1"></a>    <span class="at">data =</span> data_miss,</span>
+<span id="cb18-12"><a href="#cb18-12" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb18-13"><a href="#cb18-13" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(Y <span class="sc">~</span> X)</span>
+<span id="cb18-14"><a href="#cb18-14" tabindex="-1"></a>)</span>
+<span id="cb18-15"><a href="#cb18-15" tabindex="-1"></a></span>
+<span id="cb18-16"><a href="#cb18-16" tabindex="-1"></a><span class="fu">summary</span>(fit_miss)</span>
+<span id="cb18-17"><a href="#cb18-17" tabindex="-1"></a></span>
+<span id="cb18-18"><a href="#cb18-18" tabindex="-1"></a><span class="co"># PhyBaSE automatically detects NAs and handles them.</span></span></code></pre></div>
+</div>
+<div id="phylogenetic-uncertainty" class="section level2">
+<h2>Phylogenetic Uncertainty</h2>
+<p>To account for uncertainty in the phylogeny itself, simply pass a
+list of trees (e.g., a <code>multiPhylo</code> object) instead of a
+single tree.</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="co"># For demonstration, simulate multiple trees</span></span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a>num_trees <span class="ot">&lt;-</span> <span class="dv">20</span></span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a>trees <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span>num_trees, <span class="cf">function</span>(x) <span class="fu">rtree</span>(N))</span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a>fit_multi <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a>    <span class="at">data =</span> data_list,</span>
+<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a>    <span class="at">tree =</span> trees, <span class="co"># Pass list of trees</span></span>
+<span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a>    <span class="at">equations =</span> equations</span>
+<span id="cb19-9"><a href="#cb19-9" tabindex="-1"></a>)</span>
+<span id="cb19-10"><a href="#cb19-10" tabindex="-1"></a></span>
+<span id="cb19-11"><a href="#cb19-11" tabindex="-1"></a><span class="fu">summary</span>(fit_multi)</span></code></pre></div>
+</div>
+<div id="parallel-execution" class="section level2">
+<h2>Parallel Execution</h2>
+<p>Running MCMC chains in parallel can significantly speed up your
+analysis, especially for complex models or when using many
+iterations.</p>
+<div id="parallel-chains" class="section level3">
+<h3>Parallel Chains</h3>
+<p>To run chains in parallel, simply set <code>parallel = TRUE</code>
+and specify the number of cores with <code>n.cores</code>.</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a>fit_parallel <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>    <span class="at">data =</span> data_list,</span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a>    <span class="at">equations =</span> equations,</span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">10000</span>,</span>
+<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a>    <span class="at">n.chains =</span> <span class="dv">4</span>,</span>
+<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a>    <span class="at">parallel =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a>    <span class="at">n.cores =</span> <span class="dv">4</span> <span class="co"># Use 4 cores for 4 chains</span></span>
+<span id="cb20-9"><a href="#cb20-9" tabindex="-1"></a>)</span></code></pre></div>
+<p><strong>Note</strong>: When running in parallel, DIC and WAIC
+calculation requires a brief model recompilation step (enabled by
+default with <code>ic_recompile = TRUE</code>). This ensures you still
+get model comparison metrics.</p>
+</div>
+<div id="parallel-model-comparison" class="section level3">
+<h3>Parallel Model Comparison</h3>
+<p>If you have a list of models to compare, you can run them all in
+parallel using <code>phybase_compare()</code>.</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="co"># Define multiple models</span></span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a>models <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a>    <span class="at">model1 =</span> <span class="fu">list</span>(<span class="at">equations =</span> <span class="fu">list</span>(Y <span class="sc">~</span> X)),</span>
+<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a>    <span class="at">model2 =</span> <span class="fu">list</span>(<span class="at">equations =</span> <span class="fu">list</span>(Y <span class="sc">~</span> <span class="dv">1</span>)) <span class="co"># Null model</span></span>
+<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a>)</span>
+<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a></span>
+<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a><span class="co"># Run all models in parallel</span></span>
+<span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">phybase_compare</span>(</span>
+<span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a>    <span class="at">models =</span> models,</span>
+<span id="cb21-10"><a href="#cb21-10" tabindex="-1"></a>    <span class="at">data =</span> data_list,</span>
+<span id="cb21-11"><a href="#cb21-11" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb21-12"><a href="#cb21-12" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">5000</span>,</span>
+<span id="cb21-13"><a href="#cb21-13" tabindex="-1"></a>    <span class="at">n.cores =</span> <span class="dv">2</span> <span class="co"># Run 2 models at a time</span></span>
+<span id="cb21-14"><a href="#cb21-14" tabindex="-1"></a>)</span>
+<span id="cb21-15"><a href="#cb21-15" tabindex="-1"></a></span>
+<span id="cb21-16"><a href="#cb21-16" tabindex="-1"></a><span class="co"># Compare WAIC</span></span>
+<span id="cb21-17"><a href="#cb21-17" tabindex="-1"></a><span class="fu">print</span>(results<span class="sc">$</span>comparison)</span></code></pre></div>
+</div>
+</div>
+<div id="model-comparison-waic-with-standard-errors" class="section level2">
+<h2>Model Comparison (WAIC with Standard Errors)</h2>
+<p>The Widely Applicable Information Criterion (WAIC) is the recommended
+approach for model comparison in <code>phybaseR</code>. The package
+implements <strong>WAIC with standard errors</strong> following Vehtari,
+Gelman &amp; Gabry (2017), allowing you to assess whether model
+differences are statistically significant.</p>
+<div id="calculating-waic" class="section level3">
+<h3>Calculating WAIC</h3>
+<p>Set <code>WAIC = TRUE</code> in <code>phybase_run()</code> to
+calculate WAIC with standard errors automatically:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a>    <span class="at">data =</span> data,</span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a>    <span class="at">structure =</span> tree,</span>
+<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a>    <span class="at">id_col =</span> <span class="st">&quot;SP&quot;</span>,</span>
+<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(Y <span class="sc">~</span> X),</span>
+<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a>    <span class="at">WAIC =</span> <span class="cn">TRUE</span>, <span class="co"># Enable WAIC calculation</span></span>
+<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a>    <span class="at">n.chains =</span> <span class="dv">2</span>, <span class="co"># At least 2 chains recommended</span></span>
+<span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">2000</span></span>
+<span id="cb22-9"><a href="#cb22-9" tabindex="-1"></a>)</span>
+<span id="cb22-10"><a href="#cb22-10" tabindex="-1"></a></span>
+<span id="cb22-11"><a href="#cb22-11" tabindex="-1"></a><span class="co"># View WAIC results with standard errors</span></span>
+<span id="cb22-12"><a href="#cb22-12" tabindex="-1"></a>fit<span class="sc">$</span>WAIC</span>
+<span id="cb22-13"><a href="#cb22-13" tabindex="-1"></a><span class="co">#            Estimate   SE</span></span>
+<span id="cb22-14"><a href="#cb22-14" tabindex="-1"></a><span class="co"># elpd_waic   -617.3  12.4</span></span>
+<span id="cb22-15"><a href="#cb22-15" tabindex="-1"></a><span class="co"># p_waic        12.3   3.1</span></span>
+<span id="cb22-16"><a href="#cb22-16" tabindex="-1"></a><span class="co"># waic        1234.5  24.8</span></span></code></pre></div>
+<p><strong>Output interpretation</strong>: - <code>elpd_waic</code>:
+Expected log pointwise predictive density (higher is better) -
+<code>p_waic</code>: Effective number of parameters - <code>waic</code>:
+Widely Applicable Information Criterion (lower is better) -
+<code>SE</code>: Standard error for each metric</p>
+</div>
+<div id="comparing-models" class="section level3">
+<h3>Comparing Models</h3>
+<p>Compare fitted models using <code>phybase_compare()</code>, which
+returns a ranked table with WAIC, standard errors, differences, and
+Akaike weights.</p>
+<div id="option-1-compare-fitted-models" class="section level4">
+<h4>Option 1: Compare Fitted Models</h4>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="co"># Fit competing models</span></span>
+<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a>fit_complex <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(..., <span class="at">WAIC =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a>fit_simple <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(..., <span class="at">WAIC =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a></span>
+<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a><span class="co"># Compare results</span></span>
+<span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a>comp <span class="ot">&lt;-</span> <span class="fu">phybase_compare</span>(fit_complex, fit_simple)</span>
+<span id="cb23-7"><a href="#cb23-7" tabindex="-1"></a><span class="fu">print</span>(comp)</span>
+<span id="cb23-8"><a href="#cb23-8" tabindex="-1"></a></span>
+<span id="cb23-9"><a href="#cb23-9" tabindex="-1"></a><span class="co"># Output:</span></span>
+<span id="cb23-10"><a href="#cb23-10" tabindex="-1"></a><span class="co">#              WAIC   SE dWAIC  dSE p_waic weight</span></span>
+<span id="cb23-11"><a href="#cb23-11" tabindex="-1"></a><span class="co"># fit_complex 212.8 12.4   0.0  0.0   12.3  0.98</span></span>
+<span id="cb23-12"><a href="#cb23-12" tabindex="-1"></a><span class="co"># fit_simple  220.0 11.8   7.2  3.1   10.5  0.02</span></span></code></pre></div>
+<p><strong>Interpretation</strong>: - <strong>dWAIC</strong>: Difference
+from the best model. - <strong>dSE</strong>: Standard error of the
+difference. A difference is significant if
+<code>|dWAIC| &gt; 2 * dSE</code>. - <strong>weight</strong>:
+Probability that the model is the best among the set.</p>
+</div>
+<div id="option-2-run-and-compare-in-parallel" class="section level4">
+<h4>Option 2: Run and Compare in Parallel</h4>
+<p>You can also specify multiple models and run them in parallel (this
+automatically enables WAIC):</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="co"># Define model specifications</span></span>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a>specs <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a>    <span class="at">Full =</span> <span class="fu">list</span>(<span class="at">equations =</span> <span class="fu">list</span>(Y <span class="sc">~</span> X1 <span class="sc">+</span> X2)),</span>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a>    <span class="at">Reduced =</span> <span class="fu">list</span>(<span class="at">equations =</span> <span class="fu">list</span>(Y <span class="sc">~</span> X1)),</span>
+<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a>    <span class="at">Null =</span> <span class="fu">list</span>(<span class="at">equations =</span> <span class="fu">list</span>(Y <span class="sc">~</span> <span class="dv">1</span>))</span>
+<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a>)</span>
+<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a></span>
+<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a><span class="co"># Run batch in parallel</span></span>
+<span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">phybase_compare</span>(</span>
+<span id="cb24-10"><a href="#cb24-10" tabindex="-1"></a>    <span class="at">model_specs =</span> specs,</span>
+<span id="cb24-11"><a href="#cb24-11" tabindex="-1"></a>    <span class="at">data =</span> data,</span>
+<span id="cb24-12"><a href="#cb24-12" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb24-13"><a href="#cb24-13" tabindex="-1"></a>    <span class="at">n.cores =</span> <span class="dv">3</span> <span class="co"># Parallel execution</span></span>
+<span id="cb24-14"><a href="#cb24-14" tabindex="-1"></a>)</span>
+<span id="cb24-15"><a href="#cb24-15" tabindex="-1"></a></span>
+<span id="cb24-16"><a href="#cb24-16" tabindex="-1"></a><span class="co"># View comparison table</span></span>
+<span id="cb24-17"><a href="#cb24-17" tabindex="-1"></a><span class="fu">print</span>(results<span class="sc">$</span>comparison)</span></code></pre></div>
+</div>
+</div>
+<div id="notes-on-comparison" class="section level3">
+<h3>Notes on Comparison</h3>
+<ul>
+<li><strong>At least 2 chains</strong>: WAIC requires
+<code>n.chains &gt;= 2</code> for reliable standard errors</li>
+<li><strong>Sufficient samples</strong>: Use at least n.iter = 1000
+(preferably 2000+) for stable SE estimates</li>
+<li><strong>Lower is better</strong>: Choose the model with the lowest
+WAIC</li>
+<li><strong>Pointwise storage</strong>: Pointwise log-likelihoods are
+automatically stored for detailed model diagnostics</li>
+<li><strong>All distributions supported</strong>: Works with Gaussian,
+Poisson, Binomial, NegBin, Ordinal, Multinomial</li>
+</ul>
+<p><strong>Reference</strong>: Vehtari, A., Gelman, A. &amp; Gabry, J.
+(2017). Practical Bayesian model evaluation using leave-one-out
+cross-validation and WAIC. <em>Statistics and Computing</em>, 27(5),
+1413-1432.</p>
+</div>
+</div>
+<div id="model-validation-d-separation" class="section level2">
+<h2>Model Validation (d-separation)</h2>
+<p>You can validate your model structure by testing the conditional
+independence statements implied by your DAG. This is done using the
+d-separation (basis set) method.</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="co"># Define a path model: A -&gt; B -&gt; C</span></span>
+<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a><span class="co"># This implies: A is independent of C, conditional on B</span></span>
+<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a>A <span class="ot">&lt;-</span> <span class="fu">rTraitCont</span>(tree)</span>
+<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a>B <span class="ot">&lt;-</span> <span class="fl">0.5</span> <span class="sc">+</span> <span class="fl">0.8</span> <span class="sc">*</span> A <span class="sc">+</span> <span class="fu">rTraitCont</span>(tree)</span>
+<span id="cb25-5"><a href="#cb25-5" tabindex="-1"></a>C <span class="ot">&lt;-</span> <span class="fl">0.5</span> <span class="sc">+</span> <span class="fl">0.8</span> <span class="sc">*</span> B <span class="sc">+</span> <span class="fu">rTraitCont</span>(tree)</span>
+<span id="cb25-6"><a href="#cb25-6" tabindex="-1"></a></span>
+<span id="cb25-7"><a href="#cb25-7" tabindex="-1"></a>dsep_data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb25-8"><a href="#cb25-8" tabindex="-1"></a>    <span class="at">species =</span> tree<span class="sc">$</span>tip.label,</span>
+<span id="cb25-9"><a href="#cb25-9" tabindex="-1"></a>    <span class="at">A =</span> A, <span class="at">B =</span> B, <span class="at">C =</span> C</span>
+<span id="cb25-10"><a href="#cb25-10" tabindex="-1"></a>)</span>
+<span id="cb25-11"><a href="#cb25-11" tabindex="-1"></a></span>
+<span id="cb25-12"><a href="#cb25-12" tabindex="-1"></a>equations_dsep <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb25-13"><a href="#cb25-13" tabindex="-1"></a>    B <span class="sc">~</span> A,</span>
+<span id="cb25-14"><a href="#cb25-14" tabindex="-1"></a>    C <span class="sc">~</span> B</span>
+<span id="cb25-15"><a href="#cb25-15" tabindex="-1"></a>)</span>
+<span id="cb25-16"><a href="#cb25-16" tabindex="-1"></a></span>
+<span id="cb25-17"><a href="#cb25-17" tabindex="-1"></a><span class="co"># Run d-separation tests by setting dsep = TRUE</span></span>
+<span id="cb25-18"><a href="#cb25-18" tabindex="-1"></a>fit_dsep <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb25-19"><a href="#cb25-19" tabindex="-1"></a>    <span class="at">data =</span> dsep_data,</span>
+<span id="cb25-20"><a href="#cb25-20" tabindex="-1"></a>    <span class="at">id_col =</span> <span class="st">&quot;species&quot;</span>,</span>
+<span id="cb25-21"><a href="#cb25-21" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb25-22"><a href="#cb25-22" tabindex="-1"></a>    <span class="at">equations =</span> equations_dsep,</span>
+<span id="cb25-23"><a href="#cb25-23" tabindex="-1"></a>    <span class="at">dsep =</span> <span class="cn">TRUE</span> <span class="co"># &lt;--- This triggers d-sep testing</span></span>
+<span id="cb25-24"><a href="#cb25-24" tabindex="-1"></a>)</span>
+<span id="cb25-25"><a href="#cb25-25" tabindex="-1"></a></span>
+<span id="cb25-26"><a href="#cb25-26" tabindex="-1"></a><span class="co"># The summary will show the conditional independence tests</span></span>
+<span id="cb25-27"><a href="#cb25-27" tabindex="-1"></a><span class="fu">summary</span>(fit_dsep)</span></code></pre></div>
+<div id="note-on-sequential-testing" class="section level3">
+<h3>Note on Sequential Testing</h3>
+<p>In the original PhyBaSE methodology (von Hardenberg &amp;
+Gonzalez-Voyer, 2025), d-separation tests were proposed to be run within
+a single JAGS model by renaming variables (e.g., <code>BM</code>,
+<code>BM2</code>) to avoid cyclic dependencies in the Directed Acyclic
+Graph (DAG).</p>
+<p><code>phybaseR</code> automates this process by running each
+d-separation test <strong>sequentially</strong> as a separate JAGS
+model. This approach offers several advantages for automation:</p>
+<ol style="list-style-type: decimal">
+<li><strong>Computational Robustness</strong>: It completely avoids
+cyclic dependency errors (e.g., “Unable to resolve parameter”) that can
+occur in JAGS when multiple conditional independence tests imply
+conflicting directions of causality (e.g., testing <span class="math inline">\(X \perp Y | Z\)</span> and <span class="math inline">\(Y \perp X | W\)</span> simultaneously).</li>
+<li><strong>Statistical Validity</strong>: D-separation tests are tests
+of <em>local</em> conditional independence. Running them sequentially is
+statistically valid because each test evaluates a specific implication
+of the DAG using the observed data.</li>
+<li><strong>Local Imputation</strong>: For datasets with missing values,
+this approach implies that imputation is performed “locally” for each
+test based on the variables included in that specific test’s
+conditioning set (plus the phylogeny). This is a standard and valid
+approach for piecewise SEM, ensuring that each test correctly propagates
+uncertainty given the local model structure.</li>
+</ol>
+<p><strong>Output:</strong></p>
+<pre><code>PhyBaSE d-separation Tests
+==========================
+
+           Test Parameter Estimate LowerCI UpperCI Indep P_approx_0
+ C _||_ A | {B}     betaA   -0.090  -0.724   0.518   Yes      0.776
+
+Joint P(all tests ≈ 0) = 0.776
+
+Legend:
+  Indep: &#39;Yes&#39; = Conditionally Independent, &#39;No&#39; = Dependent (based on 95% CI)
+  P(≈0): Bayesian probability that effect crosses zero (0-1 scale)
+  Joint: Probability that ALL tests simultaneously support independence
+
+Note: For d-separation, we expect high P(≈0) and Joint values (close to 1).</code></pre>
+<p>The <code>P(≈0)</code> gives you a Bayesian measure of how plausible
+independence is for each individual test, while the <code>Joint</code>
+probability tells you how often ALL tests simultaneously support the
+model structure.</p>
+</div>
+</div>
+<div id="latent-variables" class="section level2">
+<h2>Latent Variables</h2>
+<p>PhyBaSE can handle <strong>unobserved (latent) variables</strong>
+using two different approaches:</p>
+<div id="approach-1-mag-correlations---default" class="section level3">
+<h3>Approach 1: MAG (Correlations) - <strong>Default</strong></h3>
+<p>The <strong>Maximal Ancestral Graph (MAG)</strong> approach
+marginalizes latent variables and models the <strong>induced
+correlations</strong> they create between observed variables.</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="co"># Suppose we have a latent variable L that affects both X and Y</span></span>
+<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="co"># L -&gt; X, L -&gt; Y (L is unmeasured)</span></span>
+<span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a></span>
+<span id="cb27-4"><a href="#cb27-4" tabindex="-1"></a>equations <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb27-5"><a href="#cb27-5" tabindex="-1"></a>    X <span class="sc">~</span> L,</span>
+<span id="cb27-6"><a href="#cb27-6" tabindex="-1"></a>    Y <span class="sc">~</span> L</span>
+<span id="cb27-7"><a href="#cb27-7" tabindex="-1"></a>)</span>
+<span id="cb27-8"><a href="#cb27-8" tabindex="-1"></a></span>
+<span id="cb27-9"><a href="#cb27-9" tabindex="-1"></a>fit_mag <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb27-10"><a href="#cb27-10" tabindex="-1"></a>    <span class="at">data =</span> data_list,</span>
+<span id="cb27-11"><a href="#cb27-11" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb27-12"><a href="#cb27-12" tabindex="-1"></a>    <span class="at">equations =</span> equations,</span>
+<span id="cb27-13"><a href="#cb27-13" tabindex="-1"></a>    <span class="at">latent =</span> <span class="st">&quot;L&quot;</span>,</span>
+<span id="cb27-14"><a href="#cb27-14" tabindex="-1"></a>    <span class="at">latent_method =</span> <span class="st">&quot;correlations&quot;</span>, <span class="co"># Default, can omit</span></span>
+<span id="cb27-15"><a href="#cb27-15" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">10000</span></span>
+<span id="cb27-16"><a href="#cb27-16" tabindex="-1"></a>)</span>
+<span id="cb27-17"><a href="#cb27-17" tabindex="-1"></a></span>
+<span id="cb27-18"><a href="#cb27-18" tabindex="-1"></a><span class="co"># Check induced correlations</span></span>
+<span id="cb27-19"><a href="#cb27-19" tabindex="-1"></a>fit_mag<span class="sc">$</span>induced_correlations</span>
+<span id="cb27-20"><a href="#cb27-20" tabindex="-1"></a><span class="co"># [[1]]</span></span>
+<span id="cb27-21"><a href="#cb27-21" tabindex="-1"></a><span class="co"># [1] &quot;X&quot; &quot;Y&quot;</span></span>
+<span id="cb27-22"><a href="#cb27-22" tabindex="-1"></a></span>
+<span id="cb27-23"><a href="#cb27-23" tabindex="-1"></a><span class="co"># The correlation parameter rho_X_Y is estimated</span></span>
+<span id="cb27-24"><a href="#cb27-24" tabindex="-1"></a><span class="fu">summary</span>(fit_mag)</span></code></pre></div>
+<p><strong>How it works</strong>: 1. Converts your DAG to a MAG 2.
+Identifies bidirected edges <code>X &lt;-&gt; Y</code> from latent
+common causes 3. Models correlations using correlated residuals in
+JAGS</p>
+<p><strong>Advantages</strong>: Consistent with Shipley’s d-separation
+framework, no need to worry about latent variable identification.</p>
+</div>
+<div id="approach-2-explicit-latent-variables" class="section level3">
+<h3>Approach 2: Explicit Latent Variables</h3>
+<p>Alternatively, you can model latents as <strong>actual JAGS
+nodes</strong> and estimate the structural paths from latents to
+observed variables.</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a>fit_explicit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a>    <span class="at">data =</span> data_list,</span>
+<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(X <span class="sc">~</span> L, Y <span class="sc">~</span> L),</span>
+<span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a>    <span class="at">latent =</span> <span class="st">&quot;L&quot;</span>,</span>
+<span id="cb28-6"><a href="#cb28-6" tabindex="-1"></a>    <span class="at">latent_method =</span> <span class="st">&quot;explicit&quot;</span>, <span class="co"># Model L as a node</span></span>
+<span id="cb28-7"><a href="#cb28-7" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">10000</span></span>
+<span id="cb28-8"><a href="#cb28-8" tabindex="-1"></a>)</span>
+<span id="cb28-9"><a href="#cb28-9" tabindex="-1"></a></span>
+<span id="cb28-10"><a href="#cb28-10" tabindex="-1"></a><span class="co"># Estimates betaX_L and betaY_L</span></span>
+<span id="cb28-11"><a href="#cb28-11" tabindex="-1"></a><span class="fu">summary</span>(fit_explicit)</span></code></pre></div>
+<p><strong>Advantages</strong>: More flexible, allows estimation of
+latent -&gt; observed paths.</p>
+<p><strong>Disadvantages</strong>: Requires careful consideration of
+identification and scaling.</p>
+<p><strong>Note</strong>: <code>phybaseR</code> automatically
+standardizes latent variables (fixes variance to 1) when using the
+explicit approach. This ensures identification and makes path
+coefficients interpretable as standardized effects. This is consistent
+with the recommendation to standardize all variables before running
+PhyBaSE models.</p>
+</div>
+<div id="understanding-identification-issues" class="section level3">
+<h3>Understanding Identification Issues</h3>
+<p>When using the <strong>explicit approach</strong>, latent variables
+have no inherent scale, leading to <strong>identification
+problems</strong> where multiple parameter combinations fit the data
+equally well.</p>
+<p><strong>Example</strong>: Consider <code>L -&gt; X</code> and
+<code>L -&gt; Y</code>: - You could double the scale of <code>L</code>
+and halve both path coefficients → <strong>same predictions</strong> -
+JAGS may struggle to converge or produce unreliable estimates</p>
+<p><strong>Why MAG avoids this</strong>: The MAG approach only estimates
+the <strong>correlation</strong> <code>rho_X_Y</code> induced by
+<code>L</code>, which is scale-invariant. You don’t need to worry about
+the scale of <code>L</code> or its individual paths.</p>
+<p><strong>How phybaseR handles this</strong>: When using
+<code>latent_method = &quot;explicit&quot;</code>, <code>phybaseR</code>
+automatically <strong>standardizes latent variables</strong> by fixing
+their variance to 1 (<code>tau_L &lt;- 1</code> in the JAGS model).
+This: - Ensures the model is identified (no scale ambiguity) - Makes
+path coefficients interpretable as standardized effects - Is consistent
+with the recommendation to standardize all variables</p>
+<p><strong>Example</strong>: With <code>L -&gt; X</code> and
+<code>L -&gt; Y</code>: - <code>L</code> has variance = 1 (standardized)
+- <code>betaX_L = 0.8</code> means “1 SD change in L → 0.8 SD change in
+X” - Path coefficients are directly comparable</p>
+</div>
+<div id="recommendations" class="section level3">
+<h3>Recommendations</h3>
+<ul>
+<li><strong>Default to MAG (correlations)</strong>: Safer, more
+interpretable, consistent with d-separation testing</li>
+<li><strong>Use explicit sparingly</strong>: Only when you have good
+reasons and understand the identification constraints</li>
+<li><strong>For model comparison</strong>: Use MAG method when comparing
+models with WAIC/DIC (see below)</li>
+</ul>
+</div>
+<div id="model-comparison-with-latent-variables" class="section level3">
+<h3>Model Comparison with Latent Variables</h3>
+<blockquote>
+<p><strong>IMPORTANT</strong>: Do not use WAIC/DIC to compare explicit
+latent variable models with models that don’t include latent
+variables.</p>
+</blockquote>
+<p><strong>Why this matters</strong>:</p>
+<p>When using <code>latent_method = &quot;explicit&quot;</code>, the latent
+variable values <code>L[1:N]</code> (one per species) are treated as
+<strong>model parameters</strong> in the WAIC/DIC calculation. This
+means:</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="co"># Model 1: No latent (e.g., BR and BM are independent predictors)</span></span>
+<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a>fit_no_latent <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a>  <span class="at">equations =</span> <span class="fu">list</span>(S <span class="sc">~</span> BM, G <span class="sc">~</span> BR, L <span class="sc">~</span> BR),</span>
+<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a>  <span class="at">WAIC =</span> <span class="cn">TRUE</span></span>
+<span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a>)</span>
+<span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a><span class="co"># WAIC calculated on observed data: S, G, L</span></span>
+<span id="cb29-7"><a href="#cb29-7" tabindex="-1"></a></span>
+<span id="cb29-8"><a href="#cb29-8" tabindex="-1"></a><span class="co"># Model 2: Explicit latent</span></span>
+<span id="cb29-9"><a href="#cb29-9" tabindex="-1"></a>fit_explicit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb29-10"><a href="#cb29-10" tabindex="-1"></a>  <span class="at">equations =</span> <span class="fu">list</span>(BR <span class="sc">~</span> Lat, BM <span class="sc">~</span> Lat, S <span class="sc">~</span> BM, G <span class="sc">~</span> BR, L <span class="sc">~</span> BR),</span>
+<span id="cb29-11"><a href="#cb29-11" tabindex="-1"></a>  <span class="at">latent =</span> <span class="fu">c</span>(<span class="st">&quot;Lat&quot;</span>),</span>
+<span id="cb29-12"><a href="#cb29-12" tabindex="-1"></a>  <span class="at">latent_method =</span> <span class="st">&quot;explicit&quot;</span>,</span>
+<span id="cb29-13"><a href="#cb29-13" tabindex="-1"></a>  <span class="at">WAIC =</span> <span class="cn">TRUE</span></span>
+<span id="cb29-14"><a href="#cb29-14" tabindex="-1"></a>)</span>
+<span id="cb29-15"><a href="#cb29-15" tabindex="-1"></a><span class="co"># WAIC calculated on: S, G, L, BR, BM, + N latent Lat[i] values</span></span></code></pre></div>
+<p><strong>The problem</strong>: Model 2 has effectively <strong>N more
+“data points”</strong> (the latent values) in its likelihood, making
+WAIC non-comparable. Lower WAIC doesn’t necessarily mean better fit—it
+might just reflect different effective sample sizes.</p>
+<p><strong>Solution: Use MAG for model comparison</strong></p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a><span class="co"># Safe comparison: Both use MAG</span></span>
+<span id="cb30-2"><a href="#cb30-2" tabindex="-1"></a>fit_independent <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb30-3"><a href="#cb30-3" tabindex="-1"></a>  <span class="at">equations =</span> <span class="fu">list</span>(S <span class="sc">~</span> BM, G <span class="sc">~</span> BR, L <span class="sc">~</span> BR),</span>
+<span id="cb30-4"><a href="#cb30-4" tabindex="-1"></a>  <span class="co"># BR and BM independent</span></span>
+<span id="cb30-5"><a href="#cb30-5" tabindex="-1"></a>  <span class="at">WAIC =</span> <span class="cn">TRUE</span></span>
+<span id="cb30-6"><a href="#cb30-6" tabindex="-1"></a>)</span>
+<span id="cb30-7"><a href="#cb30-7" tabindex="-1"></a></span>
+<span id="cb30-8"><a href="#cb30-8" tabindex="-1"></a>fit_with_latent <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb30-9"><a href="#cb30-9" tabindex="-1"></a>  <span class="at">equations =</span> <span class="fu">list</span>(BR <span class="sc">~</span> Lat, BM <span class="sc">~</span> Lat, S <span class="sc">~</span> BM, G <span class="sc">~</span> BR, L <span class="sc">~</span> BR),</span>
+<span id="cb30-10"><a href="#cb30-10" tabindex="-1"></a>  <span class="at">latent =</span> <span class="fu">c</span>(<span class="st">&quot;Lat&quot;</span>),</span>
+<span id="cb30-11"><a href="#cb30-11" tabindex="-1"></a>  <span class="at">latent_method =</span> <span class="st">&quot;correlations&quot;</span>,  <span class="co"># MAG (default)</span></span>
+<span id="cb30-12"><a href="#cb30-12" tabindex="-1"></a>  <span class="at">WAIC =</span> <span class="cn">TRUE</span></span>
+<span id="cb30-13"><a href="#cb30-13" tabindex="-1"></a>)</span>
+<span id="cb30-14"><a href="#cb30-14" tabindex="-1"></a></span>
+<span id="cb30-15"><a href="#cb30-15" tabindex="-1"></a><span class="co"># Valid comparison!</span></span>
+<span id="cb30-16"><a href="#cb30-16" tabindex="-1"></a>fit_independent<span class="sc">$</span>WAIC[<span class="st">&quot;waic&quot;</span>, <span class="st">&quot;Estimate&quot;</span>]  <span class="co"># Higher WAIC</span></span>
+<span id="cb30-17"><a href="#cb30-17" tabindex="-1"></a>fit_with_latent<span class="sc">$</span>WAIC[<span class="st">&quot;waic&quot;</span>, <span class="st">&quot;Estimate&quot;</span>]  <span class="co"># Lower WAIC → latent structure supported</span></span></code></pre></div>
+<p><strong>Why MAG works</strong>: The MAG approach marginalizes out
+latent variables, so WAIC is calculated <strong>only on observed
+data</strong> (S, G, L, BR, BM) in both models. This makes the
+information criteria directly comparable.</p>
+<p><strong>When explicit method is appropriate</strong>: - Theoretical
+interest in <strong>specific path coefficients</strong> from latent to
+observed (e.g., <code>beta_BR_Lat</code>) - <strong>NOT</strong> for
+routine model comparison</p>
+<p><strong>Summary</strong>: - ✅ <strong>MAG vs MAG</strong>: WAIC/DIC
+comparable - ✅ <strong>MAG vs No latent</strong>: WAIC/DIC
+comparable<br />
+- ❌ <strong>Explicit vs MAG/No latent</strong>: WAIC/DIC
+<strong>not</strong> comparable</p>
+</div>
+<div id="why-waic-instead-of-loo-cv" class="section level3">
+<h3>Why WAIC Instead of LOO-CV?</h3>
+<p><strong>WAIC (Widely Applicable Information Criterion)</strong> is
+the recommended approach for model comparison in <code>phybaseR</code>
+rather than LOO-CV (Leave-One-Out Cross-Validation).</p>
+<p><strong>Why?</strong></p>
+<p>In phylogenetic models, observations are <strong>not
+independent</strong> - they’re connected through the phylogenetical
+covariance matrix. This creates technical challenges for LOO:</p>
+<ol style="list-style-type: decimal">
+<li><strong>Pointwise likelihood is not well-defined</strong>: The
+likelihood for species <code>i</code> depends on ALL other species
+through phylogenetic correlation</li>
+<li><strong>Conditional likelihoods are complex</strong>: Computing
+<code>p(y_i | y_{-i})</code> requires N separate covariance matrix
+inversions</li>
+<li><strong>WAIC is already available</strong>: JAGS provides WAIC
+efficiently via the <code>dic</code> module</li>
+</ol>
+<p><strong>Best practice</strong>:</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="co"># Use WAIC for model comparison</span></span>
+<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a>fit1 <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(..., <span class="at">WAIC =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a>fit2 <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(..., <span class="at">WAIC =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a></span>
+<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a><span class="co"># Compare</span></span>
+<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a>fit1<span class="sc">$</span>WAIC  <span class="co"># Lower is better</span></span>
+<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a>fit2<span class="sc">$</span>WAIC</span></code></pre></div>
+<p><strong>Note</strong>: LOO-CV functionality may be added in future
+versions if there’s demand for it.</p>
+</div>
+<div id="limitations" class="section level3">
+<h3>Limitations</h3>
+<ul>
+<li>MAG approach currently supports <strong>pairwise
+correlations</strong> only</li>
+<li>Explicit approach requires constraints for identification with
+complex latent structures</li>
+</ul>
+</div>
+</div>
+<div id="generalized-covariance-structures" class="section level2">
+<h2>Generalized Covariance Structures</h2>
+<p>While PhyBaSE was originally designed for phylogenetic models,
+<code>phybaseR</code> now supports arbitrary covariance structures. You
+can specify the covariance structure using the <code>structure</code>
+argument (which replaces <code>tree</code> in newer versions).</p>
+<div id="independent-sems-non-phylogenetic" class="section level3">
+<h3>1. Independent SEMs (Non-Phylogenetic)</h3>
+<p>To run a standard Bayesian SEM without any phylogenetic or spatial
+structure, simply set <code>structure = NULL</code>. This is the default
+if <code>structure</code> or <code>tree</code> are not provided.</p>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a>fit_indep <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a>    <span class="at">data =</span> data_list,</span>
+<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a>    <span class="at">structure =</span> <span class="cn">NULL</span>, <span class="co"># Independent model</span></span>
+<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a>    <span class="at">equations =</span> equations</span>
+<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a>)</span></code></pre></div>
+<p>In this mode, <code>phybaseR</code> assumes independent residuals for
+all variables (Gaussian, Binomial, Multinomial, etc.).</p>
+</div>
+<div id="spatial-or-custom-covariance" class="section level3">
+<h3>2. Spatial or Custom Covariance</h3>
+<p>You can provide a custom covariance or precision matrix (e.g.,
+spatial connectivity) via the <code>structure</code> argument. The
+matrix must be <span class="math inline">\(N \times N\)</span> with
+row/column names matching your data.</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="co"># Create a spatial precision matrix</span></span>
+<span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a>spatial_prec <span class="ot">&lt;-</span> <span class="fu">solve</span>(<span class="fu">exp</span>(<span class="sc">-</span>dist_matrix <span class="sc">/</span> range))</span>
+<span id="cb33-3"><a href="#cb33-3" tabindex="-1"></a></span>
+<span id="cb33-4"><a href="#cb33-4" tabindex="-1"></a>fit_spatial <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb33-5"><a href="#cb33-5" tabindex="-1"></a>    <span class="at">data =</span> data_list,</span>
+<span id="cb33-6"><a href="#cb33-6" tabindex="-1"></a>    <span class="at">structure =</span> spatial_prec, <span class="co"># Pass matrix directly</span></span>
+<span id="cb33-7"><a href="#cb33-7" tabindex="-1"></a>    <span class="at">equations =</span> equations</span>
+<span id="cb33-8"><a href="#cb33-8" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="animal-models-pedigree" class="section level3">
+<h3>3. Animal Models (Pedigree)</h3>
+<p>For quantitative genetics (Animal Models), you can pass the inverse
+additive genetic relationship matrix (<span class="math inline">\(A^{-1}\)</span>) derived from a pedigree.</p>
+<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a><span class="co"># Using MCMCglmm to get A-inverse</span></span>
+<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a><span class="fu">library</span>(MCMCglmm)</span>
+<span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a>inv_A <span class="ot">&lt;-</span> <span class="fu">inverseA</span>(pedigree)<span class="sc">$</span>Ainv</span>
+<span id="cb34-4"><a href="#cb34-4" tabindex="-1"></a></span>
+<span id="cb34-5"><a href="#cb34-5" tabindex="-1"></a>fit_animal <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb34-6"><a href="#cb34-6" tabindex="-1"></a>    <span class="at">data =</span> data_list,</span>
+<span id="cb34-7"><a href="#cb34-7" tabindex="-1"></a>    <span class="at">structure =</span> <span class="fu">as.matrix</span>(inv_A),</span>
+<span id="cb34-8"><a href="#cb34-8" tabindex="-1"></a>    <span class="at">equations =</span> equations</span>
+<span id="cb34-9"><a href="#cb34-9" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="multiple-additive-structures-phylo-spatial" class="section level3">
+<h3>4. Multiple Additive Structures (Phylo + Spatial)</h3>
+<p>You can model multiple additive random effects (e.g., Phylogenetic +
+Spatial) by passing a named list to <code>structure</code>. The model
+will estimate separate variance components (<code>sigma_phylo</code>,
+<code>sigma_spatial</code>) for each structure.</p>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a>fit_multi <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a>    <span class="at">data =</span> data_list,</span>
+<span id="cb35-3"><a href="#cb35-3" tabindex="-1"></a>    <span class="at">structure =</span> <span class="fu">list</span>(</span>
+<span id="cb35-4"><a href="#cb35-4" tabindex="-1"></a>        <span class="at">phylo =</span> tree,</span>
+<span id="cb35-5"><a href="#cb35-5" tabindex="-1"></a>        <span class="at">spatial =</span> spatial_cov_matrix</span>
+<span id="cb35-6"><a href="#cb35-6" tabindex="-1"></a>    ),</span>
+<span id="cb35-7"><a href="#cb35-7" tabindex="-1"></a>    <span class="at">equations =</span> equations</span>
+<span id="cb35-8"><a href="#cb35-8" tabindex="-1"></a>)</span></code></pre></div>
+<blockquote>
+<p><strong>Note:</strong> Currently, support for multiple additive
+structures is optimized for <strong>Gaussian</strong> response variables
+and predictor imputation.</p>
+<p><strong>Limitation:</strong> Non-Gaussian families (Binomial,
+Multinomial, Ordinal) currently support only a <strong>single</strong>
+covariance structure. If you need to use these families, please ensure
+<code>structure</code> contains only one element (e.g., the phylogeny).
+Support for multiple structures in non-Gaussian models is planned for a
+future release.</p>
+</blockquote>
+</div>
+</div>
+<div id="random-effects-models-glmms" class="section level2">
+<h2>Random Effects Models (GLMMs)</h2>
+<p><code>phybaseR</code> supports <strong>Linear Mixed Models
+(LMMs)</strong> and <strong>Generalized Linear Mixed Models
+(GLMMs)</strong> using <code>lmer</code>-style syntax. This allows you
+to include random intercepts for grouping factors (e.g., species, site,
+year) alongside phylogenetic effects.</p>
+<div id="syntax" class="section level3">
+<h3>Syntax</h3>
+<p>To add a random intercept for a group, use <code>(1|Group)</code>
+inside your model equation:</p>
+<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" tabindex="-1"></a>equations <span class="ot">=</span> <span class="fu">list</span>(Y <span class="sc">~</span> X <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>Site))</span></code></pre></div>
+</div>
+<div id="example-gaussian-random-intercept" class="section level3">
+<h3>Example: Gaussian Random Intercept</h3>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a><span class="co"># Data with grouping factor &#39;Site&#39;</span></span>
+<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a>data_glmm <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb37-3"><a href="#cb37-3" tabindex="-1"></a>    <span class="at">Y =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>),</span>
+<span id="cb37-4"><a href="#cb37-4" tabindex="-1"></a>    <span class="at">X =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>),</span>
+<span id="cb37-5"><a href="#cb37-5" tabindex="-1"></a>    <span class="at">Site =</span> <span class="fu">sample</span>(LETTERS[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>], <span class="dv">100</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb37-6"><a href="#cb37-6" tabindex="-1"></a>)</span>
+<span id="cb37-7"><a href="#cb37-7" tabindex="-1"></a></span>
+<span id="cb37-8"><a href="#cb37-8" tabindex="-1"></a>fit_glmm <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb37-9"><a href="#cb37-9" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(Y <span class="sc">~</span> X <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>Site)),</span>
+<span id="cb37-10"><a href="#cb37-10" tabindex="-1"></a>    <span class="at">data =</span> data_glmm,</span>
+<span id="cb37-11"><a href="#cb37-11" tabindex="-1"></a>    <span class="at">n.chains =</span> <span class="dv">2</span>,</span>
+<span id="cb37-12"><a href="#cb37-12" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">1000</span></span>
+<span id="cb37-13"><a href="#cb37-13" tabindex="-1"></a>)</span>
+<span id="cb37-14"><a href="#cb37-14" tabindex="-1"></a></span>
+<span id="cb37-15"><a href="#cb37-15" tabindex="-1"></a><span class="fu">summary</span>(fit_glmm)</span></code></pre></div>
+<p><strong>Output Interpretation</strong>: - <code>sigma_Y_Site</code>:
+Standard deviation of the random effect (between-site variation). -
+<code>sigma_Y_res</code>: Residual standard deviation (within-site
+variation).</p>
+</div>
+<div id="multiple-random-effects" class="section level3">
+<h3>Multiple Random Effects</h3>
+<p>You can include multiple additive random effects in the same
+equation:</p>
+<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a>equations <span class="ot">=</span> <span class="fu">list</span>(Y <span class="sc">~</span> X <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>Site) <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>Year))</span></code></pre></div>
+<p>This estimates separate variance components for <code>Site</code>
+(<code>sigma_Y_Site</code>) and <code>Year</code>
+(<code>sigma_Y_Year</code>).</p>
+</div>
+<div id="glmms-non-gaussian" class="section level3">
+<h3>GLMMs (Non-Gaussian)</h3>
+<p>Random effects work seamlessly with all supported distributions
+(Poisson, Binomial, etc.), allowing you to fit phylogenetic GLMMs.</p>
+<p><strong>Example: Poisson GLMM with Overdispersion</strong></p>
+<div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a><span class="co"># Poisson count data with site-level random effects</span></span>
+<span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a>fit_pois_glmm <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb39-3"><a href="#cb39-3" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(Count <span class="sc">~</span> Temp <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>Site)),</span>
+<span id="cb39-4"><a href="#cb39-4" tabindex="-1"></a>    <span class="at">data =</span> data_counts,</span>
+<span id="cb39-5"><a href="#cb39-5" tabindex="-1"></a>    <span class="at">distribution =</span> <span class="fu">list</span>(<span class="at">Count =</span> <span class="st">&quot;poisson&quot;</span>)</span>
+<span id="cb39-6"><a href="#cb39-6" tabindex="-1"></a>)</span></code></pre></div>
+<p>In this model: - <code>alphaCount</code>: Global intercept -
+<code>beta_Count_Temp</code>: Effect of temperature -
+<code>sigma_Count_Site</code>: Variation between sites -
+<code>sigma_Count_res</code>: Overdispersion (residual variation beyond
+Poisson expectation)</p>
+</div>
+<div id="notes" class="section level3">
+<h3>Notes</h3>
+<ul>
+<li><strong>Random Slopes</strong>: Currently, only random intercepts
+<code>(1|Group)</code> are supported. Random slopes
+<code>(X|Group)</code> are not yet implemented and will default to a
+random intercept with a warning.</li>
+<li><strong>Optimization</strong>: Random effects models use the
+optimized JAGS implementation by default for speed.</li>
+</ul>
+</div>
+<div id="global-random-effects" class="section level3">
+<h3>Global Random Effects</h3>
+<p>If you want to apply the same random effect structure to
+<strong>all</strong> equations in your model (e.g., a block effect or
+random intercept for Site across all species), you can use the
+<code>random</code> argument in <code>phybase_run</code>. This is more
+convenient than adding <code>(1|Group)</code> to every equation and
+ensures consistent handling in d-separation tests.</p>
+<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" tabindex="-1"></a>fit_global <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb40-2"><a href="#cb40-2" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(</span>
+<span id="cb40-3"><a href="#cb40-3" tabindex="-1"></a>        Y1 <span class="sc">~</span> X1,</span>
+<span id="cb40-4"><a href="#cb40-4" tabindex="-1"></a>        Y2 <span class="sc">~</span> Y1 <span class="sc">+</span> X2</span>
+<span id="cb40-5"><a href="#cb40-5" tabindex="-1"></a>    ),</span>
+<span id="cb40-6"><a href="#cb40-6" tabindex="-1"></a>    <span class="at">data =</span> data_glmm,</span>
+<span id="cb40-7"><a href="#cb40-7" tabindex="-1"></a>    <span class="at">random =</span> <span class="sc">~</span> (<span class="dv">1</span><span class="sc">|</span>Site), <span class="co"># Applies (1|Site) to BOTH Y1 and Y2</span></span>
+<span id="cb40-8"><a href="#cb40-8" tabindex="-1"></a>    <span class="at">n.chains =</span> <span class="dv">2</span>,</span>
+<span id="cb40-9"><a href="#cb40-9" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">1000</span></span>
+<span id="cb40-10"><a href="#cb40-10" tabindex="-1"></a>)</span></code></pre></div>
+<p><strong>Note:</strong> <code>phybaseR</code> automatically detects
+overlapping random terms. If you specify <code>(1|Site)</code> in an
+equation AND in the global <code>random</code> argument, it will be
+handled correctly (deduplicated) to avoid double-counting.</p>
+</div>
+<div id="hierarchical-data-handling-multi-level-variables" class="section level3">
+<h3>Hierarchical Data: Handling Multi-Level Variables</h3>
+<p><strong>Problem</strong>: When variables are measured at different
+hierarchical levels (e.g., site-year vs individual), storing them in one
+dataset with replicated values can cause <strong>sample size
+inflation</strong> when testing relationships between higher-level
+variables.</p>
+<p><strong>Example scenario</strong>: - Individual-level measurements:
+<code>weight</code>, <code>age</code> (20 unique individuals) -
+Site-year measurements: <code>temperature</code>, <code>rainfall</code>
+(4 unique site-year combinations, replicated across individuals)</p>
+<p>When testing <code>temperature ~ rainfall</code> with replicated
+data, the model incorrectly sees 20 observations instead of 4.</p>
+<p><strong>Solution</strong>: phybaseR now supports hierarchical data
+structures automatically!</p>
+<div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a><span class="co"># Individual-level data</span></span>
+<span id="cb41-2"><a href="#cb41-2" tabindex="-1"></a>individual_data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb41-3"><a href="#cb41-3" tabindex="-1"></a>  <span class="at">individual_id =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">20</span>,</span>
+<span id="cb41-4"><a href="#cb41-4" tabindex="-1"></a>  <span class="at">site =</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">&quot;A&quot;</span>, <span class="st">&quot;B&quot;</span>), <span class="at">each =</span> <span class="dv">10</span>),</span>
+<span id="cb41-5"><a href="#cb41-5" tabindex="-1"></a>  <span class="at">year =</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">2020</span>, <span class="dv">2021</span>), <span class="dv">10</span>),</span>
+<span id="cb41-6"><a href="#cb41-6" tabindex="-1"></a>  <span class="at">weight =</span> <span class="fu">rnorm</span>(<span class="dv">20</span>, <span class="dv">50</span>, <span class="dv">10</span>),</span>
+<span id="cb41-7"><a href="#cb41-7" tabindex="-1"></a>  <span class="at">age =</span> <span class="fu">rnorm</span>(<span class="dv">20</span>, <span class="dv">5</span>, <span class="dv">2</span>)</span>
+<span id="cb41-8"><a href="#cb41-8" tabindex="-1"></a>)</span>
+<span id="cb41-9"><a href="#cb41-9" tabindex="-1"></a></span>
+<span id="cb41-10"><a href="#cb41-10" tabindex="-1"></a><span class="co"># Site-year level data (only 4 unique combinations!)</span></span>
+<span id="cb41-11"><a href="#cb41-11" tabindex="-1"></a>site_year_data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb41-12"><a href="#cb41-12" tabindex="-1"></a>  <span class="at">site =</span> <span class="fu">c</span>(<span class="st">&quot;A&quot;</span>, <span class="st">&quot;A&quot;</span>, <span class="st">&quot;B&quot;</span>, <span class="st">&quot;B&quot;</span>),</span>
+<span id="cb41-13"><a href="#cb41-13" tabindex="-1"></a>  <span class="at">year =</span> <span class="fu">c</span>(<span class="dv">2020</span>, <span class="dv">2021</span>, <span class="dv">2020</span>, <span class="dv">2021</span>),</span>
+<span id="cb41-14"><a href="#cb41-14" tabindex="-1"></a>  <span class="at">temperature =</span> <span class="fu">c</span>(<span class="dv">15</span>, <span class="dv">16</span>, <span class="dv">17</span>, <span class="dv">18</span>),</span>
+<span id="cb41-15"><a href="#cb41-15" tabindex="-1"></a>  <span class="at">rainfall =</span> <span class="fu">c</span>(<span class="dv">800</span>, <span class="dv">850</span>, <span class="dv">900</span>, <span class="dv">950</span>)</span>
+<span id="cb41-16"><a href="#cb41-16" tabindex="-1"></a>)</span>
+<span id="cb41-17"><a href="#cb41-17" tabindex="-1"></a></span>
+<span id="cb41-18"><a href="#cb41-18" tabindex="-1"></a><span class="co"># Specify hierarchical structure</span></span>
+<span id="cb41-19"><a href="#cb41-19" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb41-20"><a href="#cb41-20" tabindex="-1"></a>  <span class="at">data =</span> <span class="fu">list</span>(</span>
+<span id="cb41-21"><a href="#cb41-21" tabindex="-1"></a>    <span class="at">individual =</span> individual_data,</span>
+<span id="cb41-22"><a href="#cb41-22" tabindex="-1"></a>    <span class="at">site_year =</span> site_year_data</span>
+<span id="cb41-23"><a href="#cb41-23" tabindex="-1"></a>  ),</span>
+<span id="cb41-24"><a href="#cb41-24" tabindex="-1"></a>  <span class="at">levels =</span> <span class="fu">list</span>(</span>
+<span id="cb41-25"><a href="#cb41-25" tabindex="-1"></a>    <span class="at">individual =</span> <span class="fu">c</span>(<span class="st">&quot;weight&quot;</span>, <span class="st">&quot;age&quot;</span>),</span>
+<span id="cb41-26"><a href="#cb41-26" tabindex="-1"></a>    <span class="at">site_year =</span> <span class="fu">c</span>(<span class="st">&quot;temperature&quot;</span>, <span class="st">&quot;rainfall&quot;</span>)</span>
+<span id="cb41-27"><a href="#cb41-27" tabindex="-1"></a>  ),</span>
+<span id="cb41-28"><a href="#cb41-28" tabindex="-1"></a>  <span class="at">hierarchy =</span> <span class="st">&quot;site_year &gt; individual&quot;</span>,</span>
+<span id="cb41-29"><a href="#cb41-29" tabindex="-1"></a>  <span class="at">link_vars =</span> <span class="fu">c</span>(<span class="st">&quot;site&quot;</span>, <span class="st">&quot;year&quot;</span>),</span>
+<span id="cb41-30"><a href="#cb41-30" tabindex="-1"></a>  <span class="at">equations =</span> <span class="fu">list</span>(</span>
+<span id="cb41-31"><a href="#cb41-31" tabindex="-1"></a>    weight <span class="sc">~</span> age <span class="sc">+</span> temperature,</span>
+<span id="cb41-32"><a href="#cb41-32" tabindex="-1"></a>    age <span class="sc">~</span> rainfall</span>
+<span id="cb41-33"><a href="#cb41-33" tabindex="-1"></a>  ),</span>
+<span id="cb41-34"><a href="#cb41-34" tabindex="-1"></a>  <span class="at">dsep =</span> <span class="cn">TRUE</span></span>
+<span id="cb41-35"><a href="#cb41-35" tabindex="-1"></a>)</span></code></pre></div>
+<p><strong>How it works</strong>: - phybaseR automatically joins
+datasets for the main model (20 observations) - For d-separation tests,
+each test uses the appropriate dataset: -
+<code>weight _||_ rainfall | age, temperature</code> → 20 observations
+(needs individual level) - <code>temperature _||_ rainfall |</code> → 4
+observations (site-year only!) - Sample sizes are correct for all
+tests</p>
+<p><strong>Key parameters</strong>: - <code>levels</code>: Maps
+variables to hierarchical levels - <code>hierarchy</code>: Specifies
+nesting (e.g., “site_year &gt; individual”) - <code>link_vars</code>:
+Variables that link levels (e.g., site, year)</p>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

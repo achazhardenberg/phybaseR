@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Achaz von Hardenberg" />
+
+<meta name="date" content="2025-12-07" />
+
+<title>Getting Started with phybaseR</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Getting Started with phybaseR</h1>
+<h4 class="author">Achaz von Hardenberg</h4>
+<h4 class="date">2025-12-07</h4>
+
+
+
+<div id="welcome-to-phybaser" class="section level1">
+<h1>Welcome to phybaseR</h1>
+<p><strong>phybaseR</strong> is an R package for phylogenetic Bayesian
+structural equation modeling (SEM). It combines the flexibility of path
+analysis with phylogenetic comparative methods and Bayesian
+inference.</p>
+<div id="quick-start" class="section level2">
+<h2>Quick Start</h2>
+<div id="installation" class="section level3">
+<h3>Installation</h3>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># Install from GitHub</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">&quot;your-repo/phybaseR&quot;</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">library</span>(phybaseR)</span></code></pre></div>
+</div>
+<div id="your-first-model" class="section level3">
+<h3>Your First Model</h3>
+<p>Here’s a simple example testing causal relationships between three
+variables:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># Example data</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="at">species =</span> <span class="fu">paste0</span>(<span class="st">&quot;sp_&quot;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">50</span>),</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="at">body_size =</span> <span class="fu">rnorm</span>(<span class="dv">50</span>, <span class="dv">100</span>, <span class="dv">20</span>),</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="at">range_size =</span> <span class="fu">rnorm</span>(<span class="dv">50</span>, <span class="dv">500</span>, <span class="dv">100</span>),</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>  <span class="at">population =</span> <span class="fu">rnorm</span>(<span class="dv">50</span>, <span class="dv">1000</span>, <span class="dv">200</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>)</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co"># Hypothesized model:</span></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co"># body_size → range_size → population</span></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>equations <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>  range_size <span class="sc">~</span> body_size,</span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>  population <span class="sc">~</span> range_size <span class="sc">+</span> body_size</span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>)</span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co"># Fit the model</span></span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a>  <span class="at">equations =</span> equations,</span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a>  <span class="at">data =</span> data,</span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a>  <span class="at">dsep =</span> <span class="cn">TRUE</span>,  <span class="co"># Test model fit with d-separation</span></span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a>  <span class="at">n.chains =</span> <span class="dv">2</span>,</span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a>  <span class="at">n.iter =</span> <span class="dv">2000</span></span>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a>)</span>
+<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a></span>
+<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a><span class="co"># View results</span></span>
+<span id="cb2-26"><a href="#cb2-26" tabindex="-1"></a><span class="fu">summary</span>(fit)</span></code></pre></div>
+</div>
+</div>
+<div id="key-concepts" class="section level2">
+<h2>Key Concepts</h2>
+<div id="structural-equations" class="section level3">
+<h3>Structural Equations</h3>
+<p>Define causal relationships using R’s formula syntax:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>response <span class="sc">~</span> predictor1 <span class="sc">+</span> predictor2</span></code></pre></div>
+</div>
+<div id="d-separation-tests" class="section level3">
+<h3>D-Separation Tests</h3>
+<p>phybaseR automatically tests your model’s conditional independence
+assumptions:</p>
+<ul>
+<li>Tests whether implied independencies hold in the data</li>
+<li>Helps identify model misspecification</li>
+<li>Based on graphical separation in your causal DAG</li>
+</ul>
+</div>
+<div id="phylogenetic-correlation" class="section level3">
+<h3>Phylogenetic Correlation</h3>
+<p>Include phylogenetic structure with a phylogeny:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="at">equations =</span> equations,</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">data =</span> data,</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">tree =</span> my_phylo,  <span class="co"># ape phylo object</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="at">dsep =</span> <span class="cn">TRUE</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+</div>
+<div id="what-phybaser-can-do" class="section level2">
+<h2>What phybaseR Can Do</h2>
+<p>✅ <strong>Standard SEM</strong> - Path analysis without
+phylogeny<br />
+✅ <strong>Phylogenetic SEM</strong> - Account for evolutionary
+relationships<br />
+✅ <strong>Mixed Models</strong> - Random effects for grouped data<br />
+✅ <strong>Latent Variables</strong> - Measurement error and unobserved
+constructs<br />
+✅ <strong>Hierarchical Data</strong> - Multi-level variables (e.g.,
+site vs individual)<br />
+✅ <strong>Polynomial Terms</strong> - Non-linear relationships with
+<code>I(x^2)</code><br />
+✅ <strong>Model Comparison</strong> - DIC, WAIC, d-separation tests</p>
+</div>
+<div id="vignette-index" class="section level2">
+<h2>Vignette Index</h2>
+<p>This package includes comprehensive documentation organized into
+focused topic vignettes. Here’s your guide to finding what you need:</p>
+<div id="core-concepts-start-here" class="section level3">
+<h3>Core Concepts (Start Here!)</h3>
+<div id="d-separation-and-causal-inference" class="section level4">
+<h4><a href="dseparation.html">D-Separation and Causal
+Inference</a></h4>
+<p><strong>Essential reading for all users.</strong> Learn how phybaseR
+tests causal models using d-separation. Covers: - What d-separation is
+and why it matters - The three path rules (chains, forks, colliders) -
+Reading and interpreting d-separation test results - Diagnosing model
+misspecification - Practical workflow for causal inference</p>
+<p><strong>When to read</strong>: Before analyzing any data.
+D-separation is the foundation of causal SEM.</p>
+<hr />
+</div>
+</div>
+<div id="data-structures" class="section level3">
+<h3>Data Structures</h3>
+<div id="phylogenetic-models" class="section level4">
+<h4><a href="phylogenetic_models.html">Phylogenetic Models</a></h4>
+<p>How to incorporate evolutionary relationships into your models.
+Covers: - Phylogenetic VCV matrices - Tree preparation and matching -
+Phylogenetic uncertainty (multiple trees) - Phylogenetic signal testing
+- Comparing phylogenetic vs non-phylogenetic models</p>
+<p><strong>When to read</strong>: When analyzing comparative data across
+species.</p>
+</div>
+<div id="alternative-covariance-structures" class="section level4">
+<h4><a href="covariance_structures.html">Alternative Covariance
+Structures</a></h4>
+<p>Beyond phylogeny: spatial, genetic, and social structures. Covers: -
+<strong>Spatial autocorrelation</strong> (geographic dependencies) -
+<strong>Pedigrees &amp; animal models</strong> (quantitative genetics) -
+<strong>Social networks</strong> (behavioral dependencies) -
+<strong>Temporal autocorrelation</strong> (time series) - Custom
+similarity matrices</p>
+<p><strong>When to read</strong>: When your data has spatial, genetic,
+social, or temporal structure.</p>
+</div>
+<div id="hierarchical-data" class="section level4">
+<h4><a href="hierarchical_data.html">Hierarchical Data</a></h4>
+<p>Multi-level data with variables at different hierarchical levels.
+Covers: - Preventing sample size inflation - Specifying hierarchy and
+data levels - Automatic dataset selection for d-separation tests -
+Combining with random effects</p>
+<p><strong>When to read</strong>: When variables are measured at
+different scales (e.g., site-level climate, individual-level
+traits).</p>
+<hr />
+</div>
+</div>
+<div id="response-variables" class="section level3">
+<h3>Response Variables</h3>
+<div id="non-gaussian-distributions" class="section level4">
+<h4><a href="distributions.html">Non-Gaussian Distributions</a></h4>
+<p>Modeling different data types beyond continuous/normal. Covers: -
+<strong>Binary &amp; proportions</strong>: Binomial distribution -
+<strong>Count data</strong>: Poisson and negative binomial -
+<strong>Positive continuous</strong>: Gamma distribution -
+<strong>Unordered categories</strong>: Multinomial distribution (3+
+levels) - <strong>Ordered categories</strong>: Ordinal distribution
+(condition scores, Likert scales) - Decision trees for choosing
+distributions</p>
+<p><strong>When to read</strong>: When your response variables aren’t
+continuous and normally distributed.</p>
+<hr />
+</div>
+</div>
+<div id="advanced-features" class="section level3">
+<h3>Advanced Features</h3>
+<div id="advanced-model-specifications" class="section level4">
+<h4><a href="advanced_models.html">Advanced Model
+Specifications</a></h4>
+<p>Complex model features for specialized analyses. Covers: -
+<strong>Random effects</strong> (mixed models, nested designs) -
+<strong>Polynomial transformations</strong> (<code>I(x^2)</code> syntax
+for non-linear relationships) - <strong>Interaction terms</strong>
+(categorical × continuous, continuous × continuous) -
+<strong>Categorical predictors</strong> (factor variables)</p>
+<p><strong>When to read</strong>: When you need mixed models, non-linear
+relationships, or interactions.</p>
+</div>
+<div id="latent-variables-and-mag" class="section level4">
+<h4><a href="latent_variables.html">Latent Variables and MAG</a></h4>
+<p>Unobserved constructs and measurement models. Covers: - What latent
+variables are and when to use them - Measurement models (multiple
+indicators) - M-separation for models with latents - Induced
+correlations from latent confounders - Standardizing latent
+variables</p>
+<p><strong>When to read</strong>: When you have unmeasured theoretical
+constructs or measurement error.</p>
+<hr />
+</div>
+</div>
+<div id="model-evaluation" class="section level3">
+<h3>Model Evaluation</h3>
+<div id="model-diagnostics" class="section level4">
+<h4><a href="model_diagnostics.html">Model Diagnostics</a></h4>
+<p>Checking convergence, comparing models, and interpreting results.
+Covers: - <strong>Convergence diagnostics</strong>: Rhat, effective
+sample size, trace plots - <strong>Model comparison</strong>: DIC and
+WAIC - <strong>Parameter interpretation</strong>: Credible intervals,
+effect sizes - Troubleshooting common issues - Reporting results</p>
+<p><strong>When to read</strong>: After fitting models, to ensure they
+converged and interpret results correctly.</p>
+<hr />
+</div>
+</div>
+<div id="quick-navigation-by-task" class="section level3">
+<h3>Quick Navigation by Task</h3>
+<p><strong>I want to…</strong></p>
+<ul>
+<li><strong>Test a causal hypothesis</strong> → <a href="dseparation.html">D-Separation</a></li>
+<li><strong>Account for phylogeny</strong> → <a href="phylogenetic_models.html">Phylogenetic Models</a></li>
+<li><strong>Model spatial data</strong> → <a href="covariance_structures.html">Alternative Covariance</a></li>
+<li><strong>Analyze pedigree/genetic data</strong> → <a href="covariance_structures.html">Alternative Covariance</a></li>
+<li><strong>Handle multi-level data</strong> → <a href="hierarchical_data.html">Hierarchical Data</a></li>
+<li><strong>Model binary/count outcomes</strong> → <a href="distributions.html">Non-Gaussian Distributions</a></li>
+<li><strong>Include random effects</strong> → <a href="advanced_models.html">Advanced Models</a></li>
+<li><strong>Test non-linear relationships</strong> → <a href="advanced_models.html">Advanced Models</a></li>
+<li><strong>Model latent variables</strong> → <a href="latent_variables.html">Latent Variables</a></li>
+<li><strong>Check if my model converged</strong> → <a href="model_diagnostics.html">Model Diagnostics</a></li>
+</ul>
+</div>
+<div id="example-workflow" class="section level3">
+<h3>Example Workflow</h3>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># 1. Specify your causal model</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>equations <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  trait_b <span class="sc">~</span> trait_a,</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  trait_c <span class="sc">~</span> trait_a <span class="sc">+</span> trait_b</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>)</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="co"># 2. Fit the model</span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>  <span class="at">equations =</span> equations,</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>  <span class="at">data =</span> my_data,</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>  <span class="at">tree =</span> my_tree,</span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>  <span class="at">dsep =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>  <span class="at">n.chains =</span> <span class="dv">3</span>,</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>  <span class="at">n.iter =</span> <span class="dv">5000</span></span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>)</span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a></span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a><span class="co"># 3. Check convergence</span></span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a><span class="fu">summary</span>(fit)  <span class="co"># Look at Rhat values (should be &lt; 1.1)</span></span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a></span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a><span class="co"># 4. Interpret d-separation tests</span></span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a><span class="co"># High P(~0) values indicate independence (good!)</span></span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a><span class="co"># Low values suggest missing paths</span></span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a></span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a><span class="co"># 5. Extract coefficients</span></span>
+<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a><span class="co"># Beta estimates show strength and direction of paths</span></span></code></pre></div>
+</div>
+</div>
+<div id="getting-help" class="section level2">
+<h2>Getting Help</h2>
+<ul>
+<li><strong>Issues</strong>: Report bugs on GitHub</li>
+<li><strong>Questions</strong>: Check vignettes or open a
+discussion</li>
+<li><strong>Examples</strong>: See <code>examples/</code> directory</li>
+</ul>
+</div>
+<div id="next-steps" class="section level2">
+<h2>Next Steps</h2>
+<ol style="list-style-type: decimal">
+<li>Read the <strong><a href="advanced_models.html">Advanced Model
+Specifications</a></strong> vignette to learn about random effects and
+polynomials</li>
+<li>Explore <strong><a href="hierarchical_data.html">Hierarchical
+Data</a></strong> if you have multi-level variables</li>
+<li>Check <strong><a href="latent_variables.html">Latent
+Variables</a></strong> for measurement models</li>
+<li>See <strong><a href="model_diagnostics.html">Model
+Diagnostics</a></strong> for interpretation guidance</li>
+</ol>
+<p>Happy modeling! 🎉</p>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
