@@ -1,0 +1,362 @@
+---
+title: "Latent Variables and MAG"
+author: "Achaz von Hardenberg"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{08. Latent Variables and MAG}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+    collapse = TRUE,
+    comment = "#>"
+)
+```
+
+# Latent Variables and Maximal Ancestral Graphs
+
+Latent variables represent unobserved constructs that cannot be directly measured. phybaseR uses Maximal Ancestral Graphs (MAGs) for m-separation testing when latent variables are present.
+
+## What Are Latent Variables?
+
+**Latent variables** are theoretical constructs inferred from observed variables but not directly measured.
+
+**Examples**:
+- **"Quality"** inferred from survival, reproduction, condition
+- **"Resource availability"** inferred from temperature, rainfall, NDVI
+- **Measurement error** in imperfect measurements
+
+## Basic Latent Variable Model
+
+### Specification
+
+Variables not in your data are automatically treated as latent:
+
+```{r, eval=FALSE}
+data <- data.frame(
+    x = rnorm(100),
+    y = rnorm(100),
+    z = rnorm(100)
+)
+
+# "quality" is latent (not in data)
+fit <- phybase_run(
+    equations = list(
+        quality ~ x, # x affects quality
+        y ~ quality, # quality affects y
+        z ~ quality # quality affects z
+    ),
+    data = data,
+    latent = c("quality"), # Explicit declaration (optional)
+    dsep = TRUE
+)
+```
+
+### What Happens
+
+1. **DAG → MAG conversion**: Latent variables marginalized out
+2. **M-separation tests**: Test conditional independencies in the MAG
+3. **Induced correlations**: phybaseR models correlations induced by latent variables
+
+## Measurement Models
+
+### Single Latent with Multiple Indicators
+
+```{r, eval=FALSE}
+# "body_condition" measured by three indicators
+fit <- phybase_run(
+    equations = list(
+        body_condition ~ mass, # Cause
+        fat_reserves ~ body_condition, # Indicator 1
+        muscle_mass ~ body_condition, # Indicator 2
+        immune_function ~ body_condition # Indicator 3
+    ),
+    data = data,
+    latent = c("body_condition"),
+    dsep = TRUE
+)
+```
+
+**Interpretation**: The three indicators are correlated through their shared cause (body_condition).
+
+### Reflective vs Formative
+
+**Reflective** (indicators caused BY latent):
+```{r, eval=FALSE}
+# Intelligence causes test scores
+equations <- list(
+    intelligence ~ education,
+    math_score ~ intelligence,
+    verbal_score ~ intelligence
+)
+```
+
+**Formative** (latent caused BY indicators):
+```{r, eval=FALSE}
+# SES composed of income, education, occupation
+equations <- list(
+    SES ~ income + education + occupation,
+    health ~ SES
+)
+```
+
+phybaseR handles both naturally through equation specification.
+
+## Maximal Ancestral Graphs (MAG)
+
+### Why MAG?
+
+When latent variables exist, standard d-separation doesn't work. MAGs represent:
+- **Directed edges** (→): Causal relationships
+- **Bidirected edges** (↔): Induced correlations from latent confounders
+
+### M-Separation
+
+Like d-separation but for MAGs. Tests conditional independence in the presence of latent variables.
+
+**phybaseR automatically**:
+1. Converts your DAG to MAG (marginalizing latents)
+2. Derives m-separation tests
+3. Runs tests on your data
+4. Reports results
+
+### Example
+
+```{r, eval=FALSE}
+# Model with latent confounder
+equations <- list(
+    latent ~ x1,
+    x2 ~ latent,
+    x3 ~ latent,
+    y ~ x2 + x3
+)
+
+fit <- phybase_run(
+    equations = equations,
+    data = data, # "latent" not in data
+    dsep = TRUE
+)
+
+# M-separation tests check:
+# - Are x2 and x3 correlated? (induced by latent)
+# - Conditional independencies given latent structure
+```
+
+## Standardizing Latent Variables
+
+Latent variables have arbitrary scale. Standardize for interpretability:
+
+```{r, eval=FALSE}
+fit <- phybase_run(
+    equations = equations,
+    data = data,
+    latent = c("quality"),
+    standardize_latent = TRUE, # Scale latent to mean=0, SD=1
+    dsep = TRUE
+)
+```
+
+**Benefits**:
+- Latent effects interpretable as standardized coefficients
+- Comparable across studies
+- Bayesian estimation more stable
+
+## Induced Correlations
+
+Latent confounders create correlations between their effects.
+
+### Example: Shared Environment
+
+```{r, eval=FALSE}
+# "environment" affects both traits
+# Not in data (unmeasured!)
+equations <- list(
+    environment ~ rainfall,
+    trait_a ~ environment,
+    trait_b ~ environment,
+    fitness ~ trait_a + trait_b
+)
+
+fit <- phybase_run(
+    equations = equations,
+    data = data, # environment is latent
+    dsep = TRUE
+)
+```
+
+**Result**: `trait_a` and `trait_b` will be correlated due to shared environmental influence, even if no direct causal link.
+
+phybaseR models this induced correlation in the JAGS model.
+
+## Complex Latent Structures
+
+### Multiple Latent Variables
+
+```{r, eval=FALSE}
+equations <- list(
+    # Two latents: resources and predation
+    resources ~ rainfall,
+    predation ~ forest_cover,
+
+    # Observable consequences
+    food_availability ~ resources,
+    shelter ~ resources,
+    mortality ~ predation,
+    vigilance ~ predation,
+
+    # Fitness outcome
+    reproduction ~ food_availability + mortality
+)
+
+fit <- phybase_run(
+    equations = equations,
+    data = data,
+    latent = c("resources", "predation"),
+    dsep = TRUE
+)
+```
+
+### Hierarchical Latents
+
+```{r, eval=FALSE}
+# Nested latent structure
+equations <- list(
+    quality ~ environment, # quality caused by environment
+    environment ~ temperature, # Both latent!
+    survival ~ quality,
+    reproduction ~ quality
+)
+
+fit <- phybase_run(
+    equations = equations,
+    data = data,
+    latent = c("quality", "environment"),
+    dsep = TRUE
+)
+```
+
+## Interpreting M-Separation Results
+
+### Reading the Output
+
+```r
+M-separation Tests
+==================
+                   Test     Parameter Estimate P(~0)
+ x2 _||_ x3 | {latent}  rho_x2_x3      0.45    0.001
+```
+
+**Interpretation**:
+- Testing if x2 ⊥ x3 given latent
+- They're NOT independent (low P(~0))
+- This is EXPECTED if latent causes both!
+- **No model misspecification**
+
+### Expected vs Unexpected
+
+**Expected correlations** (induced by model):
+- Variables sharing latent causes
+- These correlations support your model!
+
+**Unexpected independence** (model failure):
+- Variables that should be correlated aren't
+- Suggests missing paths or wrong structure
+
+## Best Practices
+
+### 1. Theory-Driven
+
+Only include latent variables based on strong theory:
+```{r, eval=FALSE}
+# Good: Well-justified theoretical construct
+latent <- c("habitat_quality")
+
+# Bad: Adding latents just to improve fit
+latent <- c("latent1", "latent2", "latent3") # No theory!
+```
+
+### 2. Multiple Indicators
+
+Latent variables should have multiple observed indicators:
+```{r, eval=FALSE}
+# Good: 3+ indicators
+equations <- list(
+    quality ~ x,
+    indicator1 ~ quality,
+    indicator2 ~ quality,
+    indicator3 ~ quality
+)
+
+# Weak: Only 1 indicator
+equations <- list(
+    quality ~ x,
+    indicator1 ~ quality # Underidentified!
+)
+```
+
+### 3. Check Convergence
+
+Latent variable models can be harder to fit:
+```{r, eval=FALSE}
+# Use more iterations
+fit <- phybase_run(
+    equations = equations,
+    data = data,
+    latent = latent_vars,
+    n.chains = 4, # More chains
+    n.iter = 10000, # More iterations
+    n.burnin = 5000 # Longer burn-in
+)
+```
+
+### 4. Compare to Observed Models
+
+Test if latent is necessary:
+```{r, eval=FALSE}
+# Model WITH latent
+fit_latent <- phybase_run(equations_with_latent, data, latent = "quality")
+
+# Model WITHOUT latent (direct paths instead)
+fit_direct <- phybase_run(equations_direct, data)
+
+# Compare DIC/WAIC
+fit_latent$DIC
+fit_direct$DIC
+```
+
+## Troubleshooting
+
+### Error: "Latent variable appears in data"
+
+**Cause**: Variable declared as latent but exists in data
+
+**Solution**: Remove from data or don't declare as latent
+
+### Poor convergence
+
+**Causes**: 
+- Too few indicators for latent
+- Weak relationships
+- Model too complex
+
+**Solutions**:
+- More iterations/chains
+- Informative priors
+- Simplify model
+
+### Counterintuitive m-separation results
+
+**Not necessarily bad!** 
+
+Latent confounders CREATE correlations. If your m-separation shows dependencies where you expected independence, check if:
+1. Dependence is induced by your latent structure (expected!)
+2. You're testing the right conditional independencies
+
+## See Also
+
+- **[Phylogenetic Models](03_phylogenetic_models.html)** - Combining phylogeny with latents  
+- **[Model Diagnostics](09_model_diagnostics.html)** - Convergence and interpretation
+- **[Getting Started](01_getting_started.html)** - Basic usage

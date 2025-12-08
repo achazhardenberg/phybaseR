@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Achaz von Hardenberg" />
+
+<meta name="date" content="2025-12-07" />
+
+<title>Phylogenetic Models</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Phylogenetic Models</h1>
+<h4 class="author">Achaz von Hardenberg</h4>
+<h4 class="date">2025-12-07</h4>
+
+
+
+<div id="phylogenetic-structural-equation-models" class="section level1">
+<h1>Phylogenetic Structural Equation Models</h1>
+<p>The core strength of phybaseR is combining structural equation
+modeling with phylogenetic comparative methods. This accounts for the
+non-independence of species data due to shared evolutionary history.</p>
+<div id="why-phylogenetic-correction" class="section level2">
+<h2>Why Phylogenetic Correction?</h2>
+<p>Species are not independent data points - they share evolutionary
+history. Closely related species are more similar than distantly related
+ones, violating standard statistical assumptions.</p>
+<p><strong>Without phylogenetic correction</strong>: Inflated Type I
+error, incorrect parameter estimates</p>
+<p><strong>With phylogenetic correction</strong>: Proper statistical
+inference accounting for evolutionary relationships</p>
+</div>
+<div id="basic-phylogenetic-sem" class="section level2">
+<h2>Basic Phylogenetic SEM</h2>
+<div id="requirements" class="section level3">
+<h3>Requirements</h3>
+<ol style="list-style-type: decimal">
+<li><strong>Phylogenetic tree</strong>: An <code>ape::phylo</code>
+object</li>
+<li><strong>Species matching</strong>: Tree tip labels must match data
+row names or ID column</li>
+<li><strong>Structural model</strong>: Your hypothesized causal
+relationships</li>
+</ol>
+</div>
+<div id="simple-example" class="section level3">
+<h3>Simple Example</h3>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(phybaseR)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(ape)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="co"># Load or create phylogeny</span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>tree <span class="ot">&lt;-</span> <span class="fu">read.tree</span>(<span class="st">&quot;my_phylogeny.nwk&quot;</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="co"># Species data (row names = species names matching tree)</span></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>    <span class="at">species =</span> tree<span class="sc">$</span>tip.label,</span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>    <span class="at">body_size =</span> <span class="fu">rnorm</span>(<span class="fu">length</span>(tree<span class="sc">$</span>tip.label), <span class="dv">100</span>, <span class="dv">20</span>),</span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a>    <span class="at">range_size =</span> <span class="fu">rnorm</span>(<span class="fu">length</span>(tree<span class="sc">$</span>tip.label), <span class="dv">500</span>, <span class="dv">100</span>),</span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a>    <span class="at">population =</span> <span class="fu">rnorm</span>(<span class="fu">length</span>(tree<span class="sc">$</span>tip.label), <span class="dv">1000</span>, <span class="dv">200</span>),</span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a>    <span class="at">row.names =</span> <span class="st">&quot;species&quot;</span></span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a>)</span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a><span class="co"># Phylogenetic SEM</span></span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(</span>
+<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a>        range_size <span class="sc">~</span> body_size,</span>
+<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a>        population <span class="sc">~</span> range_size <span class="sc">+</span> body_size</span>
+<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a>    ),</span>
+<span id="cb1-22"><a href="#cb1-22" tabindex="-1"></a>    <span class="at">data =</span> data,</span>
+<span id="cb1-23"><a href="#cb1-23" tabindex="-1"></a>    <span class="at">tree =</span> tree, <span class="co"># Include phylogeny!</span></span>
+<span id="cb1-24"><a href="#cb1-24" tabindex="-1"></a>    <span class="at">dsep =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb1-25"><a href="#cb1-25" tabindex="-1"></a>    <span class="at">n.chains =</span> <span class="dv">3</span>,</span>
+<span id="cb1-26"><a href="#cb1-26" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">5000</span></span>
+<span id="cb1-27"><a href="#cb1-27" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+</div>
+<div id="how-it-works" class="section level2">
+<h2>How It Works</h2>
+<div id="variance-covariance-matrix-vcv" class="section level3">
+<h3>Variance-Covariance Matrix (VCV)</h3>
+<p>phybaseR uses the phylogenetic VCV matrix to model evolutionary
+correlations:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># Internally computed from your tree:</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>VCV <span class="ot">&lt;-</span> ape<span class="sc">::</span><span class="fu">vcv.phylo</span>(tree, <span class="at">corr =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co"># Used in JAGS to model phylogenetic correlations</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co"># between residuals</span></span></code></pre></div>
+</div>
+<div id="the-model-structure" class="section level3">
+<h3>The Model Structure</h3>
+<p>For each response variable, the model includes:</p>
+<ol style="list-style-type: decimal">
+<li><strong>Structural relationships</strong> (your equations)</li>
+<li><strong>Phylogenetic correlation</strong> (from VCV matrix)</li>
+<li><strong>Residual variance</strong> (species-specific
+deviations)</li>
+</ol>
+<p><strong>JAGS representation</strong>:</p>
+<pre><code># Phylogenetically structured errors
+epsilon ~ MVN(0, Sigma_phylo)
+
+# Where Sigma_phylo = sigma^2 * VCV</code></pre>
+</div>
+</div>
+<div id="tree-preparation" class="section level2">
+<h2>Tree Preparation</h2>
+<div id="matching-species" class="section level3">
+<h3>Matching Species</h3>
+<p>Tree tips must match data:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Option 1: Row names</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">rownames</span>(data) <span class="ot">&lt;-</span> data<span class="sc">$</span>species</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>data<span class="sc">$</span>species <span class="ot">&lt;-</span> <span class="cn">NULL</span> <span class="co"># Remove column</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co"># Option 2: Specify id_col</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>    <span class="at">equations =</span> equations,</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>    <span class="at">data =</span> data,</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>    <span class="at">id_col =</span> <span class="st">&quot;species&quot;</span> <span class="co"># Column name with species IDs</span></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="pruning-the-tree" class="section level3">
+<h3>Pruning the Tree</h3>
+<p>If your data don’t include all tree species:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Prune tree to match data</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">library</span>(ape)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>tree_pruned <span class="ot">&lt;-</span> <span class="fu">keep.tip</span>(tree, <span class="fu">rownames</span>(data))</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co"># Or use geiger for matching</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="fu">library</span>(geiger)</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>matched <span class="ot">&lt;-</span> <span class="fu">treedata</span>(tree, data, <span class="at">sort =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>tree_clean <span class="ot">&lt;-</span> matched<span class="sc">$</span>phy</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>data_clean <span class="ot">&lt;-</span> matched<span class="sc">$</span>data</span></code></pre></div>
+</div>
+<div id="tree-requirements" class="section level3">
+<h3>Tree Requirements</h3>
+<p>✅ <strong>Ultrametric</strong>: All tips at same distance from root
+(for time-calibrated analyses) ✅ <strong>Bifurcating</strong>: No
+polytomies (resolve with <code>ape::multi2di()</code>) ✅ <strong>Branch
+lengths</strong>: Present and positive</p>
+<p><strong>Check your tree</strong>:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">is.ultrametric</span>(tree) <span class="co"># Should be TRUE</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">is.binary</span>(tree) <span class="co"># Should be TRUE</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="fu">all</span>(tree<span class="sc">$</span>edge.length <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="co"># Should be TRUE</span></span></code></pre></div>
+</div>
+</div>
+<div id="multiple-trees-phylogenetic-uncertainty" class="section level2">
+<h2>Multiple Trees (Phylogenetic Uncertainty)</h2>
+<p>Account for phylogenetic uncertainty with multiple trees:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Load multiple trees (e.g., from BEAST posterior)</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>trees <span class="ot">&lt;-</span> <span class="fu">read.nexus</span>(<span class="st">&quot;posterior_trees.nex&quot;</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co"># Sample subset for computational efficiency</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>sampled_trees <span class="ot">&lt;-</span> <span class="fu">sample</span>(trees, <span class="at">size =</span> <span class="dv">100</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="co"># Fit model</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>    <span class="at">equations =</span> equations,</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>    <span class="at">data =</span> data,</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>    <span class="at">tree =</span> sampled_trees, <span class="co"># List of trees!</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>    <span class="at">dsep =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>    <span class="at">n.chains =</span> <span class="dv">3</span>,</span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">5000</span></span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>)</span></code></pre></div>
+<p><strong>What happens</strong>: - Each MCMC iteration samples a random
+tree - Integrates over phylogenetic uncertainty - More robust parameter
+estimates</p>
+</div>
+<div id="optimization-vs.-full-bayes" class="section level2">
+<h2>Optimization vs. Full Bayes</h2>
+<div id="full-bayesian-default" class="section level3">
+<h3>Full Bayesian (default)</h3>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>    <span class="at">equations =</span> equations,</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>    <span class="at">data =</span> data,</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>    <span class="at">optimise =</span> <span class="cn">FALSE</span> <span class="co"># Full MCMC</span></span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>)</span></code></pre></div>
+<ul>
+<li>Samples full posterior distribution</li>
+<li>Slower but complete inference</li>
+<li>Best for final analyses</li>
+</ul>
+</div>
+<div id="optimization-mode" class="section level3">
+<h3>Optimization Mode</h3>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>    <span class="at">equations =</span> equations,</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>    <span class="at">data =</span> data,</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>    <span class="at">optimise =</span> <span class="cn">TRUE</span> <span class="co"># Faster!</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>)</span></code></pre></div>
+<ul>
+<li>Uses VCV matrix directly in JAGS</li>
+<li>Much faster</li>
+<li>Good for exploratory analyses</li>
+<li>Recommended for large trees (&gt;100 species)</li>
+</ul>
+</div>
+</div>
+<div id="comparing-non-phylogenetic-vs-phylogenetic" class="section level2">
+<h2>Comparing Non-Phylogenetic vs Phylogenetic</h2>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># Model without phylogeny</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>fit_nophy <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>    <span class="at">equations =</span> equations,</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>    <span class="at">data =</span> data,</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>    <span class="co"># No tree!</span></span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>    <span class="at">n.chains =</span> <span class="dv">3</span>,</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">5000</span></span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>)</span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co"># Model with phylogeny</span></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>fit_phy <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>    <span class="at">equations =</span> equations,</span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a>    <span class="at">data =</span> data,</span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>    <span class="at">tree =</span> tree, <span class="co"># With tree</span></span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>    <span class="at">n.chains =</span> <span class="dv">3</span>,</span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">5000</span></span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a>)</span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a></span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a><span class="co"># Compare estimates</span></span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="fu">summary</span>(fit_nophy)</span>
+<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a><span class="fu">summary</span>(fit_phy)</span></code></pre></div>
+<p><strong>Common patterns</strong>: - Phylogenetic models often have
+wider credible intervals (more conservative) - Effect sizes may differ
+if phylogenetic signal is strong - Non-phylogenetic models may show
+spurious correlations</p>
+</div>
+<div id="phylogenetic-signal" class="section level2">
+<h2>Phylogenetic Signal</h2>
+<div id="lambda-pagels-λ" class="section level3">
+<h3>Lambda (Pagel’s λ)</h3>
+<p>Not currently implemented in phybaseR, but you can:</p>
+<ol style="list-style-type: decimal">
+<li><strong>Test beforehand</strong> using
+<code>phytools::phylosig()</code></li>
+<li><strong>Transform tree</strong> to reduce/increase signal:</li>
+</ol>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">library</span>(geiger)</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="co"># Reduce phylogenetic signal</span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>tree_lambda <span class="ot">&lt;-</span> <span class="fu">rescale</span>(tree, <span class="st">&quot;lambda&quot;</span>, <span class="fl">0.5</span>) <span class="co"># λ = 0.5</span></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="co"># Use transformed tree</span></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>    <span class="at">equations =</span> equations,</span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>    <span class="at">data =</span> data,</span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>    <span class="at">tree =</span> tree_lambda</span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="when-phylogenetic-correction-matters" class="section level3">
+<h3>When Phylogenetic Correction Matters</h3>
+<p><strong>High phylogenetic signal</strong> (closely related species
+similar): - Phylogenetic correction critical - Large difference between
+phylo/non-phylo estimates</p>
+<p><strong>Low phylogenetic signal</strong> (species evolution
+independent): - Less critical but still recommended - Similar results
+with/without phylogeny</p>
+<p><strong>Check signal</strong>:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">library</span>(phytools)</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="co"># Pagel&#39;s lambda for each variable</span></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a><span class="fu">phylosig</span>(tree, data<span class="sc">$</span>body_size, <span class="at">method =</span> <span class="st">&quot;lambda&quot;</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a><span class="fu">phylosig</span>(tree, data<span class="sc">$</span>range_size, <span class="at">method =</span> <span class="st">&quot;lambda&quot;</span>)</span></code></pre></div>
+</div>
+</div>
+<div id="beyond-phylogeny-other-covariance-structures" class="section level2">
+<h2>Beyond Phylogeny: Other Covariance Structures</h2>
+<p>phybaseR’s <code>tree</code> argument accepts <strong>any covariance
+structure</strong>, not just phylogenies! You can model: - Spatial
+autocorrelation - Pedigrees (animal models / quantitative genetics) -
+Social networks - Custom similarity matrices</p>
+<div id="spatial-autocorrela" class="section level3">
+<h3>Spatial Autocorrela</h3>
+<p>tion</p>
+<p>Model spatial non-independence using geographic distances:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">library</span>(sp)</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="fu">library</span>(geosphere)</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="co"># Your data with coordinates</span></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>    <span class="at">site_id =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">50</span>,</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>    <span class="at">latitude =</span> <span class="fu">runif</span>(<span class="dv">50</span>, <span class="dv">40</span>, <span class="dv">50</span>),</span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>    <span class="at">longitude =</span> <span class="fu">runif</span>(<span class="dv">50</span>, <span class="sc">-</span><span class="dv">10</span>, <span class="dv">10</span>),</span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a>    <span class="at">temperature =</span> <span class="fu">rnorm</span>(<span class="dv">50</span>, <span class="dv">15</span>, <span class="dv">3</span>),</span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a>    <span class="at">species_richness =</span> <span class="fu">rpois</span>(<span class="dv">50</span>, <span class="dv">20</span>)</span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a>)</span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a></span>
+<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a><span class="co"># Create spatial distance matrix</span></span>
+<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a>coords <span class="ot">&lt;-</span> <span class="fu">cbind</span>(data<span class="sc">$</span>longitude, data<span class="sc">$</span>latitude)</span>
+<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a>distances <span class="ot">&lt;-</span> <span class="fu">distm</span>(coords) <span class="sc">/</span> <span class="dv">1000</span> <span class="co"># km</span></span>
+<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a></span>
+<span id="cb13-17"><a href="#cb13-17" tabindex="-1"></a><span class="co"># Convert to covariance (exponential decay)</span></span>
+<span id="cb13-18"><a href="#cb13-18" tabindex="-1"></a>spatial_sigma <span class="ot">&lt;-</span> <span class="dv">100</span> <span class="co"># Spatial scale parameter (km)</span></span>
+<span id="cb13-19"><a href="#cb13-19" tabindex="-1"></a>spatial_cov <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="sc">-</span>distances <span class="sc">/</span> spatial_sigma)</span>
+<span id="cb13-20"><a href="#cb13-20" tabindex="-1"></a></span>
+<span id="cb13-21"><a href="#cb13-21" tabindex="-1"></a><span class="co"># Ensure proper format (row names match data)</span></span>
+<span id="cb13-22"><a href="#cb13-22" tabindex="-1"></a><span class="fu">rownames</span>(spatial_cov) <span class="ot">&lt;-</span> data<span class="sc">$</span>site_id</span>
+<span id="cb13-23"><a href="#cb13-23" tabindex="-1"></a><span class="fu">colnames</span>(spatial_cov) <span class="ot">&lt;-</span> data<span class="sc">$</span>site_id</span>
+<span id="cb13-24"><a href="#cb13-24" tabindex="-1"></a><span class="fu">rownames</span>(data) <span class="ot">&lt;-</span> data<span class="sc">$</span>site_id</span>
+<span id="cb13-25"><a href="#cb13-25" tabindex="-1"></a></span>
+<span id="cb13-26"><a href="#cb13-26" tabindex="-1"></a><span class="co"># Use as &quot;tree&quot; argument!</span></span>
+<span id="cb13-27"><a href="#cb13-27" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb13-28"><a href="#cb13-28" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(</span>
+<span id="cb13-29"><a href="#cb13-29" tabindex="-1"></a>        species_richness <span class="sc">~</span> temperature</span>
+<span id="cb13-30"><a href="#cb13-30" tabindex="-1"></a>    ),</span>
+<span id="cb13-31"><a href="#cb13-31" tabindex="-1"></a>    <span class="at">data =</span> data,</span>
+<span id="cb13-32"><a href="#cb13-32" tabindex="-1"></a>    <span class="at">tree =</span> spatial_cov, <span class="co"># Spatial covariance matrix</span></span>
+<span id="cb13-33"><a href="#cb13-33" tabindex="-1"></a>    <span class="at">dsep =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb13-34"><a href="#cb13-34" tabindex="-1"></a>    <span class="at">n.chains =</span> <span class="dv">3</span>,</span>
+<span id="cb13-35"><a href="#cb13-35" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">5000</span></span>
+<span id="cb13-36"><a href="#cb13-36" tabindex="-1"></a>)</span></code></pre></div>
+<p><strong>What it does</strong>: Accounts for spatial autocorrelation -
+nearby sites are more similar than distant ones.</p>
+<p><strong>Common spatial models</strong>: -
+<strong>Exponential</strong>: <code>exp(-distance/σ)</code> -
+<strong>Gaussian</strong>: <code>exp(-(distance/σ)²)</code> -
+<strong>Matérn</strong>: More complex, flexible decay</p>
+</div>
+<div id="pedigrees-animal-models" class="section level3">
+<h3>Pedigrees (Animal Models)</h3>
+<p>Use pedigree-based relatedness matrices for quantitative
+genetics:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="fu">library</span>(kinship2) <span class="co"># or nadiv</span></span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="co"># Pedigree data</span></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>pedigree <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a>    <span class="at">id =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">100</span>,</span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>    <span class="at">sire =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="cn">NA</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, ...), <span class="co"># Father IDs</span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a>    <span class="at">dam =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="cn">NA</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">4</span>, ...) <span class="co"># Mother IDs</span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a>)</span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="co"># Phenotype data</span></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a>    <span class="at">individual =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">100</span>,</span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a>    <span class="at">body_size =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>, <span class="dv">50</span>, <span class="dv">10</span>),</span>
+<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a>    <span class="at">litter_size =</span> <span class="fu">rpois</span>(<span class="dv">100</span>, <span class="dv">5</span>),</span>
+<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a>    <span class="at">food_availability =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>, <span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a>)</span>
+<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a></span>
+<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a><span class="co"># Calculate additive genetic relatedness matrix (A-matrix)</span></span>
+<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a>ped <span class="ot">&lt;-</span> <span class="fu">pedigree</span>(</span>
+<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a>    <span class="at">id =</span> pedigree<span class="sc">$</span>id,</span>
+<span id="cb14-21"><a href="#cb14-21" tabindex="-1"></a>    <span class="at">dadid =</span> pedigree<span class="sc">$</span>sire,</span>
+<span id="cb14-22"><a href="#cb14-22" tabindex="-1"></a>    <span class="at">momid =</span> pedigree<span class="sc">$</span>dam</span>
+<span id="cb14-23"><a href="#cb14-23" tabindex="-1"></a>)</span>
+<span id="cb14-24"><a href="#cb14-24" tabindex="-1"></a>A_matrix <span class="ot">&lt;-</span> <span class="fu">kinship</span>(ped) <span class="sc">*</span> <span class="dv">2</span> <span class="co"># A = 2 × kinship</span></span>
+<span id="cb14-25"><a href="#cb14-25" tabindex="-1"></a></span>
+<span id="cb14-26"><a href="#cb14-26" tabindex="-1"></a><span class="co"># Ensure matching</span></span>
+<span id="cb14-27"><a href="#cb14-27" tabindex="-1"></a><span class="fu">rownames</span>(A_matrix) <span class="ot">&lt;-</span> pedigree<span class="sc">$</span>id</span>
+<span id="cb14-28"><a href="#cb14-28" tabindex="-1"></a><span class="fu">colnames</span>(A_matrix) <span class="ot">&lt;-</span> pedigree<span class="sc">$</span>id</span>
+<span id="cb14-29"><a href="#cb14-29" tabindex="-1"></a><span class="fu">rownames</span>(data) <span class="ot">&lt;-</span> data<span class="sc">$</span>individual</span>
+<span id="cb14-30"><a href="#cb14-30" tabindex="-1"></a></span>
+<span id="cb14-31"><a href="#cb14-31" tabindex="-1"></a><span class="co"># Quantitative genetics SEM!</span></span>
+<span id="cb14-32"><a href="#cb14-32" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb14-33"><a href="#cb14-33" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(</span>
+<span id="cb14-34"><a href="#cb14-34" tabindex="-1"></a>        body_size <span class="sc">~</span> food_availability,</span>
+<span id="cb14-35"><a href="#cb14-35" tabindex="-1"></a>        litter_size <span class="sc">~</span> body_size</span>
+<span id="cb14-36"><a href="#cb14-36" tabindex="-1"></a>    ),</span>
+<span id="cb14-37"><a href="#cb14-37" tabindex="-1"></a>    <span class="at">data =</span> data,</span>
+<span id="cb14-38"><a href="#cb14-38" tabindex="-1"></a>    <span class="at">tree =</span> A_matrix, <span class="co"># Genetic relatedness</span></span>
+<span id="cb14-39"><a href="#cb14-39" tabindex="-1"></a>    <span class="at">dsep =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb14-40"><a href="#cb14-40" tabindex="-1"></a>    <span class="at">n.chains =</span> <span class="dv">3</span>,</span>
+<span id="cb14-41"><a href="#cb14-41" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">5000</span></span>
+<span id="cb14-42"><a href="#cb14-42" tabindex="-1"></a>)</span></code></pre></div>
+<p><strong>What it does</strong>: Partitions variance into genetic and
+environmental components, accounting for relatedness among
+individuals.</p>
+<p><strong>Applications</strong>: - Heritability estimation - Breeding
+values - Genetic correlations - Selection gradients</p>
+</div>
+<div id="social-networks" class="section level3">
+<h3>Social Networks</h3>
+<p>Model dependencies from social structure:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">library</span>(igraph)</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="co"># Social network adjacency matrix</span></span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="co"># (who interacts with whom)</span></span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>social_network <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, <span class="dv">30</span>, <span class="dv">30</span>)</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="co"># ... fill with interaction data ...</span></span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a></span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a><span class="co"># Convert to correlation matrix (or use directly)</span></span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a>social_cov <span class="ot">&lt;-</span> <span class="fu">cov2cor</span>(social_network <span class="sc">%*%</span> <span class="fu">t</span>(social_network))</span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a></span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a><span class="co"># Behavioral data</span></span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a>    <span class="at">individual =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">30</span>,</span>
+<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a>    <span class="at">dominance_rank =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">30</span>,</span>
+<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a>    <span class="at">mating_success =</span> <span class="fu">rpois</span>(<span class="dv">30</span>, <span class="dv">3</span>),</span>
+<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a>    <span class="at">foraging_efficiency =</span> <span class="fu">rnorm</span>(<span class="dv">30</span>, <span class="dv">100</span>, <span class="dv">20</span>)</span>
+<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a>)</span>
+<span id="cb15-18"><a href="#cb15-18" tabindex="-1"></a></span>
+<span id="cb15-19"><a href="#cb15-19" tabindex="-1"></a><span class="fu">rownames</span>(social_cov) <span class="ot">&lt;-</span> data<span class="sc">$</span>individual</span>
+<span id="cb15-20"><a href="#cb15-20" tabindex="-1"></a><span class="fu">colnames</span>(social_cov) <span class="ot">&lt;-</span> data<span class="sc">$</span>individual</span>
+<span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a><span class="fu">rownames</span>(data) <span class="ot">&lt;-</span> data<span class="sc">$</span>individual</span>
+<span id="cb15-22"><a href="#cb15-22" tabindex="-1"></a></span>
+<span id="cb15-23"><a href="#cb15-23" tabindex="-1"></a><span class="co"># Account for social structure</span></span>
+<span id="cb15-24"><a href="#cb15-24" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb15-25"><a href="#cb15-25" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(</span>
+<span id="cb15-26"><a href="#cb15-26" tabindex="-1"></a>        mating_success <span class="sc">~</span> dominance_rank,</span>
+<span id="cb15-27"><a href="#cb15-27" tabindex="-1"></a>        foraging_efficiency <span class="sc">~</span> dominance_rank</span>
+<span id="cb15-28"><a href="#cb15-28" tabindex="-1"></a>    ),</span>
+<span id="cb15-29"><a href="#cb15-29" tabindex="-1"></a>    <span class="at">data =</span> data,</span>
+<span id="cb15-30"><a href="#cb15-30" tabindex="-1"></a>    <span class="at">tree =</span> social_cov,</span>
+<span id="cb15-31"><a href="#cb15-31" tabindex="-1"></a>    <span class="at">n.chains =</span> <span class="dv">3</span>,</span>
+<span id="cb15-32"><a href="#cb15-32" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">5000</span></span>
+<span id="cb15-33"><a href="#cb15-33" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="custom-similarity-matrices" class="section level3">
+<h3>Custom Similarity Matrices</h3>
+<p>Any similarity/covariance structure works:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co"># Functional similarity (trait-based)</span></span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="co"># Morphological distances</span></span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a><span class="co"># Ecological niche overlap</span></span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="co"># Genomic similarity (SNPs)</span></span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a><span class="co"># Temporal autocorrelation</span></span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a></span>
+<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a><span class="co"># Just ensure:</span></span>
+<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a><span class="co"># 1. Symmetric matrix</span></span>
+<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a><span class="co"># 2. Positive semi-definite</span></span>
+<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a><span class="co"># 3. Row/column names match data</span></span>
+<span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a><span class="co"># 4. Diagonal typically = 1 (correlation) or max (covariance)</span></span>
+<span id="cb16-12"><a href="#cb16-12" tabindex="-1"></a></span>
+<span id="cb16-13"><a href="#cb16-13" tabindex="-1"></a>custom_cov <span class="ot">&lt;-</span> <span class="fu">your_similarity_function</span>(data)</span>
+<span id="cb16-14"><a href="#cb16-14" tabindex="-1"></a><span class="fu">rownames</span>(custom_cov) <span class="ot">&lt;-</span> data<span class="sc">$</span>id</span>
+<span id="cb16-15"><a href="#cb16-15" tabindex="-1"></a><span class="fu">colnames</span>(custom_cov) <span class="ot">&lt;-</span> data<span class="sc">$</span>id</span>
+<span id="cb16-16"><a href="#cb16-16" tabindex="-1"></a></span>
+<span id="cb16-17"><a href="#cb16-17" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb16-18"><a href="#cb16-18" tabindex="-1"></a>    <span class="at">equations =</span> equations,</span>
+<span id="cb16-19"><a href="#cb16-19" tabindex="-1"></a>    <span class="at">data =</span> data,</span>
+<span id="cb16-20"><a href="#cb16-20" tabindex="-1"></a>    <span class="at">tree =</span> custom_cov,</span>
+<span id="cb16-21"><a href="#cb16-21" tabindex="-1"></a>    <span class="at">n.chains =</span> <span class="dv">3</span>,</span>
+<span id="cb16-22"><a href="#cb16-22" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">5000</span></span>
+<span id="cb16-23"><a href="#cb16-23" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="multiple-covariance-structures" class="section level3">
+<h3>Multiple Covariance Structures</h3>
+<p>Combine phylogeny with other structures using random effects:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="co"># Phylogeny for species + random effects for space</span></span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(</span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a>        trait <span class="sc">~</span> environment <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">|</span> site)</span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a>    ),</span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a>    <span class="at">data =</span> data,</span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a>    <span class="at">tree =</span> phylo_tree, <span class="co"># Phylogenetic correlation</span></span>
+<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a>    <span class="at">random =</span> <span class="sc">~</span> (<span class="dv">1</span> <span class="sc">|</span> site), <span class="co"># Spatial grouping</span></span>
+<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a>    <span class="at">n.chains =</span> <span class="dv">3</span>,</span>
+<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">5000</span></span>
+<span id="cb17-11"><a href="#cb17-11" tabindex="-1"></a>)</span></code></pre></div>
+<p><strong>Or</strong> provide multiple matrices (advanced - may require
+custom JAGS):</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="co"># Phylogenetic + spatial</span></span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a><span class="co"># Genetic + environmental</span></span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a><span class="co"># Multiple levels of structure</span></span></code></pre></div>
+</div>
+<div id="requirements-for-custom-matrices" class="section level3">
+<h3>Requirements for Custom Matrices</h3>
+<p>✅ <strong>Symmetric</strong>:
+<code>all(cov_matrix == t(cov_matrix))</code><br />
+✅ <strong>Positive semi-definite</strong>: All eigenvalues ≥ 0<br />
+✅ <strong>Proper dimensions</strong>: n × n for n observations<br />
+✅ <strong>Named</strong>: Row/column names match data IDs<br />
+✅ <strong>Scaled appropriately</strong>: Typically correlation matrix
+(diagonal = 1)</p>
+<p><strong>Check your matrix</strong>:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="co"># Is it symmetric?</span></span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a><span class="fu">isSymmetric</span>(my_matrix)</span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a><span class="co"># Is it positive semi-definite?</span></span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">eigen</span>(my_matrix)<span class="sc">$</span>values <span class="sc">&gt;=</span> <span class="sc">-</span><span class="fl">1e-8</span>) <span class="co"># Allow tiny negative for numerical error</span></span>
+<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a><span class="co"># Are dimensions correct?</span></span>
+<span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a><span class="fu">nrow</span>(my_matrix) <span class="sc">==</span> <span class="fu">nrow</span>(data)</span>
+<span id="cb19-9"><a href="#cb19-9" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" tabindex="-1"></a><span class="co"># Do names match?</span></span>
+<span id="cb19-11"><a href="#cb19-11" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">rownames</span>(my_matrix) <span class="sc">%in%</span> <span class="fu">rownames</span>(data))</span></code></pre></div>
+</div>
+</div>
+<div id="combining-with-other-features" class="section level2">
+<h2>Combining with Other Features</h2>
+<div id="phylogenetic-random-effects" class="section level3">
+<h3>Phylogenetic + Random Effects</h3>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="co"># Account for phylogeny AND repeated measures</span></span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a>    <span class="at">equations =</span> <span class="fu">list</span>(</span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a>        trait <span class="sc">~</span> environment <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">|</span> population)</span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a>    ),</span>
+<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a>    <span class="at">data =</span> data,</span>
+<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a>    <span class="at">random =</span> <span class="sc">~</span> (<span class="dv">1</span> <span class="sc">|</span> species), <span class="co"># Additional random effect</span></span>
+<span id="cb20-9"><a href="#cb20-9" tabindex="-1"></a>    <span class="at">n.chains =</span> <span class="dv">3</span>,</span>
+<span id="cb20-10"><a href="#cb20-10" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">5000</span></span>
+<span id="cb20-11"><a href="#cb20-11" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="phylogenetic-hierarchical-data" class="section level3">
+<h3>Phylogenetic + Hierarchical Data</h3>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="co"># Species-level phylogeny with individual-level data</span></span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a>    <span class="at">data =</span> <span class="fu">list</span>(</span>
+<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a>        <span class="at">species =</span> species_data,</span>
+<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a>        <span class="at">individual =</span> individual_data</span>
+<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a>    ),</span>
+<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a>    <span class="at">levels =</span> <span class="fu">list</span>(</span>
+<span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a>        <span class="at">species =</span> <span class="fu">c</span>(<span class="st">&quot;range_size&quot;</span>, <span class="st">&quot;habitat&quot;</span>),</span>
+<span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a>        <span class="at">individual =</span> <span class="fu">c</span>(<span class="st">&quot;body_mass&quot;</span>, <span class="st">&quot;age&quot;</span>)</span>
+<span id="cb21-10"><a href="#cb21-10" tabindex="-1"></a>    ),</span>
+<span id="cb21-11"><a href="#cb21-11" tabindex="-1"></a>    <span class="at">hierarchy =</span> <span class="st">&quot;species &gt; individual&quot;</span>,</span>
+<span id="cb21-12"><a href="#cb21-12" tabindex="-1"></a>    <span class="at">link_vars =</span> <span class="st">&quot;species_id&quot;</span>,</span>
+<span id="cb21-13"><a href="#cb21-13" tabindex="-1"></a>    <span class="at">tree =</span> tree, <span class="co"># Applied at species level</span></span>
+<span id="cb21-14"><a href="#cb21-14" tabindex="-1"></a>    <span class="at">equations =</span> equations</span>
+<span id="cb21-15"><a href="#cb21-15" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+</div>
+<div id="troubleshooting" class="section level2">
+<h2>Troubleshooting</h2>
+<div id="error-tree-tips-dont-match-data" class="section level3">
+<h3>Error: “Tree tips don’t match data”</h3>
+<p><strong>Solution</strong>: Check matching</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="co"># What&#39;s in tree?</span></span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a>tree<span class="sc">$</span>tip.label</span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a></span>
+<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a><span class="co"># What&#39;s in data?</span></span>
+<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a><span class="fu">rownames</span>(data) <span class="co"># or data$species</span></span>
+<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a></span>
+<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a><span class="co"># Find mismatches</span></span>
+<span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a><span class="fu">setdiff</span>(tree<span class="sc">$</span>tip.label, <span class="fu">rownames</span>(data)) <span class="co"># In tree but not data</span></span>
+<span id="cb22-9"><a href="#cb22-9" tabindex="-1"></a><span class="fu">setdiff</span>(<span class="fu">rownames</span>(data), tree<span class="sc">$</span>tip.label) <span class="co"># In data but not tree</span></span></code></pre></div>
+</div>
+<div id="error-tree-is-not-ultrametric" class="section level3">
+<h3>Error: “Tree is not ultrametric”</h3>
+<p><strong>Solution</strong>: Make ultrametric</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="fu">library</span>(ape)</span>
+<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a>tree_ultra <span class="ot">&lt;-</span> <span class="fu">chronos</span>(tree) <span class="co"># Date the tree</span></span></code></pre></div>
+</div>
+<div id="warning-tree-has-polytomies" class="section level3">
+<h3>Warning: “Tree has polytomies”</h3>
+<p><strong>Solution</strong>: Resolve polytomies</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a>tree_binary <span class="ot">&lt;-</span> <span class="fu">multi2di</span>(tree) <span class="co"># Randomly resolve</span></span></code></pre></div>
+</div>
+<div id="poor-convergence-with-large-trees" class="section level3">
+<h3>Poor convergence with large trees</h3>
+<p><strong>Solution</strong>: Use optimization</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">phybase_run</span>(</span>
+<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a>    <span class="at">equations =</span> equations,</span>
+<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a>    <span class="at">data =</span> data,</span>
+<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a>    <span class="at">tree =</span> tree,</span>
+<span id="cb25-5"><a href="#cb25-5" tabindex="-1"></a>    <span class="at">optimise =</span> <span class="cn">TRUE</span>, <span class="co"># Much faster for large trees</span></span>
+<span id="cb25-6"><a href="#cb25-6" tabindex="-1"></a>    <span class="at">n.chains =</span> <span class="dv">3</span>,</span>
+<span id="cb25-7"><a href="#cb25-7" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">5000</span></span>
+<span id="cb25-8"><a href="#cb25-8" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+</div>
+<div id="best-practices" class="section level2">
+<h2>Best Practices</h2>
+<ol style="list-style-type: decimal">
+<li><strong>Always visualize your tree first</strong></li>
+</ol>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="fu">plot</span>(tree)</span></code></pre></div>
+<ol start="2" style="list-style-type: decimal">
+<li><strong>Check tree-data matching carefully</strong></li>
+<li><strong>Start with optimization mode</strong> for large trees</li>
+<li><strong>Compare phylo vs non-phylo</strong> to assess impact</li>
+<li><strong>Test phylogenetic signal</strong> in your traits</li>
+<li><strong>Use multiple trees</strong> if available (phylogenetic
+uncertainty)</li>
+</ol>
+</div>
+<div id="see-also" class="section level2">
+<h2>See Also</h2>
+<ul>
+<li><strong><a href="getting_started.html">Getting Started</a></strong>
+- Basic usage</li>
+<li><strong><a href="advanced_models.html">Advanced Models</a></strong>
+- Random effects and polynomials</li>
+<li><strong><a href="model_diagnostics.html">Model
+Diagnostics</a></strong> - Interpreting results</li>
+<li><strong><a href="latent_variables.html">Latent
+Variables</a></strong> - Measurement models</li>
+</ul>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

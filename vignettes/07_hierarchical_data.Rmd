@@ -1,0 +1,290 @@
+---
+title: "Hierarchical Data Structures"
+author: "Achaz von Hardenberg"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{07. Hierarchical Data Structures}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+    collapse = TRUE,
+    comment = "#>"
+)
+```
+
+# Hierarchical Data Structures
+
+When variables are measured at different hierarchical levels, phybaseR automatically handles sample size management to prevent inflation and ensure correct statistical inference.
+
+## The Problem: Sample Size Inflation
+
+**Scenario**: You have measurements at different hierarchical levels:
+- **Individual level**: body mass, age (100 observations)  
+- **Site-year level**: temperature, rainfall (4 unique site-year combinations, but replicated across 100 individuals)
+
+**Without proper handling**: Testing `temperature ~ rainfall` would use 100 observations when you really only have 4 unique data points. This inflates sample size and underestimates uncertainty.
+
+## The Solution
+
+phybaseR automatically uses the appropriate dataset for each model and test.
+
+### Basic Setup
+
+```{r, eval=FALSE}
+# Individual-level data (finest grain)
+individual_data <- data.frame(
+    individual_id = 1:100,
+    site = rep(c("A", "B"), each = 50),
+    year = rep(c(2020, 2021), 50),
+    body_mass = rnorm(100, 50, 10),
+    age = rnorm(100, 5, 2)
+)
+
+# Site-year level data (only 4 unique combinations!)
+site_year_data <- data.frame(
+    site = c("A", "A", "B", "B"),
+    year = c(2020, 2021, 2020, 2021),
+    temperature = c(15, 16, 17, 18),
+    rainfall = c(800, 850, 900, 950)
+)
+
+# Specify hierarchical structure
+fit <- phybase_run(
+    data = list(
+        individual = individual_data,
+        site_year = site_year_data
+    ),
+    levels = list(
+        individual = c("body_mass", "age"),
+        site_year = c("temperature", "rainfall")
+    ),
+    hierarchy = "site_year > individual",
+    link_vars = c("site", "year"),
+    equations = list(
+        body_mass ~ age + temperature,
+        age ~ rainfall
+    ),
+    dsep = TRUE
+)
+```
+
+## How It Works
+
+### 1. Main Model Run
+
+phybaseR automatically joins the datasets:
+
+```r
+# Internally creates:
+# - Joins site_year_data to individual_data using site + year
+# - Result: 100 observations with all variables
+```
+
+### 2. D-Separation Tests
+
+Each test uses the appropriate dataset:
+
+| Test | Variables | Dataset Used | N |
+|------|-----------|--------------|---|
+| `body_mass _||_ rainfall \| age, temp` | Mixed levels | Joined | 100 |
+| `age _||_ temperature \| rainfall` | Mixed levels | Joined | 100 |
+| **`temperature _||_ rainfall \| `** | **Site-year only** | **site_year** | **4** ✓ |
+
+**Key benefit**: The test between site-year variables correctly uses only 4 observations!
+
+## Parameters Explained
+
+### `data`
+A named list of data.frames, one per hierarchical level:
+
+```r
+data = list(
+  individual = individual_df,
+  site_year = site_year_df
+)
+```
+
+### `levels`
+Maps variables to their hierarchical level:
+
+```r
+levels = list(
+  individual = c("body_mass", "age", "sex"),
+  site_year = c("temperature", "rainfall", "elevation")
+)
+```
+
+### `hierarchy`
+Specifies the nesting structure (coarse to fine):
+
+```r
+hierarchy = "site_year > individual"
+```
+
+For more complex nesting:
+
+```r
+hierarchy = "region > site > plot > individual"
+```
+
+### `link_vars`
+Variables that link the hierarchical levels:
+
+```r
+link_vars = c("site", "year")  # Must be present in ALL datasets
+```
+
+## Common Use Cases
+
+### Ecological Field Data
+
+```{r, eval=FALSE}
+# Plot-level: soil, vegetation
+# Individual-level: plant traits
+
+fit <- phybase_run(
+    data = list(
+        plot = plot_data,
+        individual = plant_data
+    ),
+    levels = list(
+        plot = c("soil_pH", "canopy_cover"),
+        individual = c("height", "leaf_area")
+    ),
+    hierarchy = "plot > individual",
+    link_vars = "plot_id"
+)
+```
+
+### Longitudinal Studies
+
+```{r, eval=FALSE}
+# Year-level: climate
+# Visit-level: measurements
+
+fit <- phybase_run(
+    data = list(
+        year = yearly_climate,
+        visit = individual_visits
+    ),
+    levels = list(
+        year = c("temperature", "rainfall"),
+        visit = c("weight", "condition")
+    ),
+    hierarchy = "year > visit",
+    link_vars = "year"
+)
+```
+
+### Spatial Hierarchy
+
+```{r, eval=FALSE}
+# Region > Site > Quadrat
+
+fit <- phybase_run(
+    data = list(
+        region = region_data,
+        site = site_data,
+        quadrat = quadrat_data
+    ),
+    levels = list(
+        region = c("climate_zone"),
+        site = c("elevation", "soil_type"),
+        quadrat = c("species_count", "biomass")
+    ),
+    hierarchy = "region > site > quadrat",
+    link_vars = c("region_id", "site_id")
+)
+```
+
+## Validation
+
+phybaseR automatically validates:
+
+✅ All level names in `levels` exist in `data`  
+✅ All variables exist in their specified datasets  
+✅ No variable appears in multiple levels  
+✅ Link variables exist in all datasets  
+✅ Hierarchy levels match data structure  
+
+## Combining with Random Effects
+
+Hierarchical data works seamlessly with random effects:
+
+```{r, eval=FALSE}
+fit <- phybase_run(
+    data = list(
+        site = site_data,
+        individual = individual_data
+    ),
+    levels = list(
+        site = c("habitat_quality"),
+        individual = c("body_mass", "age")
+    ),
+    hierarchy = "site > individual",
+    link_vars = "site_id",
+    random = ~ (1 | site_id), # Random site effects
+    equations = list(
+        body_mass ~ age + habitat_quality
+    )
+)
+```
+
+**Note**: The `hierarchy` parameter specifies DATA levels (which dataset to use). The `random` parameter specifies MODEL structure (random grouping).
+
+## Troubleshooting
+
+### Error: "Hierarchy levels not found in data"
+
+**Cause**: Level name mismatch
+
+```r
+# Wrong
+hierarchy = "site > individual"
+data = list(site_level = ..., indiv = ...)  # Names don't match!
+
+# Right
+hierarchy = "site_level > indiv"
+```
+
+### Error: "Variables not found"
+
+**Cause**: Variable assigned to wrong level
+
+```r
+# Check that each variable is in its specified dataset
+levels = list(
+  site = c("temperature"),  # Must be in site dataset!
+  individual = c("age")      # Must be in individual dataset!
+)
+```
+
+### Warning: "Unexpected sample size"
+
+**Cause**: Duplicated rows in higher-level data
+
+```r
+# Wrong - should have only 4 unique site-year combinations
+site_year_data <- data.frame(
+  site = c("A", "A", "A", "A", "B", "B", "B", "B"),
+  year = c(2020, 2020, 2021, 2021, 2020, 2020, 2021, 2021),  # Duplicates!
+  temp = c(15, 15, 16, 16, 17, 17, 18, 18)
+)
+
+# Right - one row per unique combination
+site_year_data <- data.frame(
+  site = c("A", "A", "B", "B"),
+  year = c(2020, 2021, 2020, 2021),
+  temp = c(15, 16, 17, 18)
+)
+```
+
+## See Also
+
+- **[Advanced Models](06_advanced_models.html)** - Random effects and interactions
+- **[Model Diagnostics](09_model_diagnostics.html)** - Checking sample sizes
+- **[Getting Started](01_getting_started.html)** - Basic usage

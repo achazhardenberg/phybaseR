@@ -1,0 +1,268 @@
+---
+title: "Getting Started with phybaseR"
+author: "Achaz von Hardenberg"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{01. Getting Started with phybaseR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Welcome to phybaseR
+
+**phybaseR** is an R package for phylogenetic Bayesian structural equation modeling (SEM). It combines the flexibility of path analysis with phylogenetic comparative methods and Bayesian inference.
+
+## Quick Start
+
+### Installation
+
+```r
+# Install from GitHub
+devtools::install_github("your-repo/phybaseR")
+library(phybaseR)
+```
+
+### Your First Model
+
+Here's a simple example testing causal relationships between three variables:
+
+```r
+# Example data
+data <- data.frame(
+  species = paste0("sp_", 1:50),
+  body_size = rnorm(50, 100, 20),
+  range_size = rnorm(50, 500, 100),
+  population = rnorm(50, 1000, 200)
+)
+
+# Hypothesized model:
+# body_size → range_size → population
+equations <- list(
+  range_size ~ body_size,
+  population ~ range_size + body_size
+)
+
+# Fit the model
+fit <- phybase_run(
+  equations = equations,
+  data = data,
+  dsep = TRUE,  # Test model fit with d-separation
+  n.chains = 2,
+  n.iter = 2000
+)
+
+# View results
+summary(fit)
+```
+
+## Key Concepts
+
+### Structural Equations
+
+Define causal relationships using R's formula syntax:
+
+```r
+response ~ predictor1 + predictor2
+```
+
+### D-Separation Tests
+
+phybaseR automatically tests your model's conditional independence assumptions:
+
+- Tests whether implied independencies hold in the data
+- Helps identify model misspecification
+- Based on graphical separation in your causal DAG
+
+### Phylogenetic Correlation
+
+Include phylogenetic structure with a phylogeny:
+
+```r
+fit <- phybase_run(
+  equations = equations,
+  data = data,
+  tree = my_phylo,  # ape phylo object
+  dsep = TRUE
+)
+```
+
+## What phybaseR Can Do
+
+✅ **Standard SEM** - Path analysis without phylogeny  
+✅ **Phylogenetic SEM** - Account for evolutionary relationships  
+✅ **Mixed Models** - Random effects for grouped data  
+✅ **Latent Variables** - Measurement error and unobserved constructs  
+✅ **Hierarchical Data** - Multi-level variables (e.g., site vs individual)  
+✅ **Polynomial Terms** - Non-linear relationships with `I(x^2)`  
+✅ **Model Comparison** - DIC, WAIC, d-separation tests  
+
+## Vignette Index
+
+This package includes comprehensive documentation organized into focused topic vignettes. Here's your guide to finding what you need:
+
+### Core Concepts (Start Here!)
+
+#### [D-Separation and Causal Inference](dseparation.html)
+**Essential reading for all users.** Learn how phybaseR tests causal models using d-separation. Covers:
+- What d-separation is and why it matters
+- The three path rules (chains, forks, colliders)
+- Reading and interpreting d-separation test results
+- Diagnosing model misspecification
+- Practical workflow for causal inference
+
+**When to read**: Before analyzing any data. D-separation is the foundation of causal SEM.
+
+---
+
+### Data Structures
+
+#### [Phylogenetic Models](phylogenetic_models.html)
+How to incorporate evolutionary relationships into your models. Covers:
+- Phylogenetic VCV matrices
+- Tree preparation and matching
+- Phylogenetic uncertainty (multiple trees)
+- Phylogenetic signal testing
+- Comparing phylogenetic vs non-phylogenetic models
+
+**When to read**: When analyzing comparative data across species.
+
+#### [Alternative Covariance Structures](covariance_structures.html)
+Beyond phylogeny: spatial, genetic, and social structures. Covers:
+- **Spatial autocorrelation** (geographic dependencies)
+- **Pedigrees & animal models** (quantitative genetics)
+- **Social networks** (behavioral dependencies)
+- **Temporal autocorrelation** (time series)
+- Custom similarity matrices
+
+**When to read**: When your data has spatial, genetic, social, or temporal structure.
+
+#### [Hierarchical Data](hierarchical_data.html)
+Multi-level data with variables at different hierarchical levels. Covers:
+- Preventing sample size inflation
+- Specifying hierarchy and data levels
+- Automatic dataset selection for d-separation tests
+- Combining with random effects
+
+**When to read**: When variables are measured at different scales (e.g., site-level climate, individual-level traits).
+
+---
+
+### Response Variables
+
+#### [Non-Gaussian Distributions](distributions.html)
+Modeling different data types beyond continuous/normal. Covers:
+- **Binary & proportions**: Binomial distribution
+- **Count data**: Poisson and negative binomial
+- **Positive continuous**: Gamma distribution
+- **Unordered categories**: Multinomial distribution (3+ levels)
+- **Ordered categories**: Ordinal distribution (condition scores, Likert scales)
+- Decision trees for choosing distributions
+
+**When to read**: When your response variables aren't continuous and normally distributed.
+
+---
+
+### Advanced Features
+
+#### [Advanced Model Specifications](advanced_models.html)
+Complex model features for specialized analyses. Covers:
+- **Random effects** (mixed models, nested designs)
+- **Polynomial transformations** (`I(x^2)` syntax for non-linear relationships)
+- **Interaction terms** (categorical × continuous, continuous × continuous)
+- **Categorical predictors** (factor variables)
+
+**When to read**: When you need mixed models, non-linear relationships, or interactions.
+
+#### [Latent Variables and MAG](latent_variables.html)
+Unobserved constructs and measurement models. Covers:
+- What latent variables are and when to use them
+- Measurement models (multiple indicators)
+- M-separation for models with latents
+- Induced correlations from latent confounders
+- Standardizing latent variables
+
+**When to read**: When you have unmeasured theoretical constructs or measurement error.
+
+---
+
+### Model Evaluation
+
+#### [Model Diagnostics](model_diagnostics.html)
+Checking convergence, comparing models, and interpreting results. Covers:
+- **Convergence diagnostics**: Rhat, effective sample size, trace plots
+- **Model comparison**: DIC and WAIC
+- **Parameter interpretation**: Credible intervals, effect sizes
+- Troubleshooting common issues
+- Reporting results
+
+**When to read**: After fitting models, to ensure they converged and interpret results correctly.
+
+---
+
+### Quick Navigation by Task
+
+**I want to...**
+
+- **Test a causal hypothesis** → [D-Separation](dseparation.html)
+- **Account for phylogeny** → [Phylogenetic Models](phylogenetic_models.html)
+- **Model spatial data** → [Alternative Covariance](covariance_structures.html)
+- **Analyze pedigree/genetic data** → [Alternative Covariance](covariance_structures.html)
+- **Handle multi-level data** → [Hierarchical Data](hierarchical_data.html)
+- **Model binary/count outcomes** → [Non-Gaussian Distributions](distributions.html)
+- **Include random effects** → [Advanced Models](advanced_models.html)
+- **Test non-linear relationships** → [Advanced Models](advanced_models.html)
+- **Model latent variables** → [Latent Variables](latent_variables.html)
+- **Check if my model converged** → [Model Diagnostics](model_diagnostics.html)
+
+### Example Workflow
+
+```r
+# 1. Specify your causal model
+equations <- list(
+  trait_b ~ trait_a,
+  trait_c ~ trait_a + trait_b
+)
+
+# 2. Fit the model
+fit <- phybase_run(
+  equations = equations,
+  data = my_data,
+  tree = my_tree,
+  dsep = TRUE,
+  n.chains = 3,
+  n.iter = 5000
+)
+
+# 3. Check convergence
+summary(fit)  # Look at Rhat values (should be < 1.1)
+
+# 4. Interpret d-separation tests
+# High P(~0) values indicate independence (good!)
+# Low values suggest missing paths
+
+# 5. Extract coefficients
+# Beta estimates show strength and direction of paths
+```
+
+## Getting Help
+
+- **Issues**: Report bugs on GitHub
+- **Questions**: Check vignettes or open a discussion
+- **Examples**: See `examples/` directory
+
+## Next Steps
+
+1. Read the **[Advanced Model Specifications](advanced_models.html)** vignette to learn about random effects and polynomials
+2. Explore **[Hierarchical Data](hierarchical_data.html)** if you have multi-level variables
+3. Check **[Latent Variables](latent_variables.html)** for measurement models
+4. See **[Model Diagnostics](model_diagnostics.html)** for interpretation guidance
+
+Happy modeling! 🎉
