@@ -126,7 +126,7 @@ plot(fit$samples)
 
 `fit$samples` is an MCMC object, so you can use all coda functions to analyze and plot the MCMC samples.
 
-You can see how `o0aqsw0-we3phybase_run()` translates your model into JAGS syntax calling `fit$model` or, before fitting it, using `phybase_model()`:
+You can see how `phybase_run()` translates your model into JAGS syntax calling `fit$model` or, before fitting it, using `phybase_model()`:
 ```{r}
 # Generate JAGS model code
 jags_model_code <- phybase_model(
