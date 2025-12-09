@@ -12,7 +12,8 @@ vignette: >
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
     collapse = TRUE,
-    comment = "#>"
+    comment = "#>",
+    eval = FALSE
 )
 ```
 
@@ -57,7 +58,7 @@ fit <- because(
         survival ~ age + body_mass
     ),
     data = data,
-    distribution = list(survival = "binomial"),
+    display = list(survival = "binomial"),
     n.chains = 3,
     n.iter = 5000
 )
