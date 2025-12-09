@@ -123,7 +123,7 @@ summary(fit)
 
 To check for convergence of the MCMC chains, you can look at the Rhat values in the summary output (should be < 1.1). You can also plot the trace plots of the MCMC samples:
 
-```{r}
+```{r, fig.height=8, fig.width=8}
 # Plot trace plots
 plot(fit$samples)
 ```
