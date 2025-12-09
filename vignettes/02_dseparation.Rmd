@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 # D-Separation and Causal Inference
 
-**D-separation (Shipley, 2000, 2003) is the foundation of causal inference in phybaseR.** It tests whether your hypothesized causal model correctly represents the conditional independencies in your data.
+**D-separation (Shipley, 2000, 2003) is the foundation of causal inference in because.** It tests whether your hypothesized causal model correctly represents the conditional independencies in your data.
 
 ### The Problem with Correlations
 In the simple linear regression presented as an example in the previous vignette, we modeled the relationship between two variables, X and Y. However, regression only tells us about correlations, not causation. We can only say that X is related to Y or also that X predicts Y, but we cannot say that X causes Y. There are indeed three reasons why X and Y could correlate (if this was real data of course, and not data we simulated with a predefined correlation!):
@@ -32,13 +32,10 @@ The problem is that correlation alone cannot distinguish between these three sce
 Let's look at a classic example A correlative study trying to establish if storks deliver babies (Matthews, 2000). we investigated this example previously in Gonzalez-Voyer & von Hardenberg (2014), and the data and a tutorial analysing this example with traditional path analysis is available as supplementary materials to that book chapter and here: https://github.com/achazhardenberg/mpcm-OPM. 
 
 Let's download the data and take a look:
-```{r}
-#load data from github
-stork_data <- read.csv("https://raw.githubusercontent.com/achazhardenberg/mpcm-OPM/main/data/stork_babies.csv")
-
-stork_data <- read.csv("https://raw.githubusercontent.com/achazhardenberg/mpcm-OPM/main/data/stork_babies.csv")
-
-
+```{r, eval=FALSE}
+# load data from github
+# NOTE: Data file currently unavailable, commenting out for now
+# stork_data <- read.csv("https://raw.githubusercontent.com/achazhardenberg/mpcm-OPM/main/data/stork_babies.csv")
 ```
 
 
@@ -60,7 +57,7 @@ Directed Acyclic Graphs (DAGs) explicitly state your causal assumptions:
 
 Your DAG implies certain conditional independencies. If your model is correct, these should hold in the data.
 
-**PhybaseR tests this**:
+**Because tests this**:
 - Derives implied independencies from your DAG
 - Tests each one in your data
 - Reports whether model fits
@@ -81,7 +78,7 @@ equations <- list(
 **Test**: Is this true in the data?
 
 ```{r, eval=FALSE}
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data,
     dsep = TRUE # Test d-separation!
@@ -162,7 +159,7 @@ D-separation Tests
 - `_||_`: Independence symbol
 - `| {}`: Conditioning set (what we're controlling for)
 
-**Parameter**: What phybaseR actually estimates
+**Parameter**: What because actually estimates
 - For `y _||_ x | z`, tests `beta_y_x` in model `y ~ x + z`
 - If independent, beta should be ~0
 
@@ -270,7 +267,7 @@ equations <- list(
 ### 2. Fit Model with D-Separation
 
 ```{r, eval=FALSE}
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data,
     dsep = TRUE, # Critical!
@@ -308,7 +305,7 @@ equations_v2 <- list(
     dispersal ~ body_size # Added!
 )
 
-fit_v2 <- phybase_run(equations_v2, data, dsep = TRUE)
+fit_v2 <- because(equations_v2, data, dsep = TRUE)
 ```
 
 Iterate until d-separation tests pass!
@@ -370,7 +367,7 @@ Last test checks if direct Body→Pop path is needed.
 
 The **minimal set** of conditional independencies implied by your DAG.
 
-**PhybaseR automatically**:
+**Because automatically**:
 1. Derives basis set from your equations
 2. Converts each independence to a testable model
 3. Runs tests
@@ -416,7 +413,7 @@ Now that you understand d-separation:
 4. **Iterate!** - Revise model, retest, repeat
 5. **Theory first** - D-separation tests theory, doesn't generate it
 
-**D-separation makes phybaseR a tool for causal inference, not just correlation analysis.**
+**D-separation makes because a tool for causal inference, not just correlation analysis.**
 
 ## References
 

@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 # Hierarchical Data Structures
 
-When variables are measured at different hierarchical levels, becauseR automatically handles sample size management to prevent inflation and ensure correct statistical inference.
+When variables are measured at different hierarchical levels, because automatically handles sample size management to prevent inflation and ensure correct statistical inference.
 
 ## The Problem: Sample Size Inflation
 
@@ -30,7 +30,7 @@ When variables are measured at different hierarchical levels, becauseR automatic
 
 ## The Solution
 
-becauseR automatically uses the appropriate dataset for each model and test.
+because automatically uses the appropriate dataset for each model and test.
 
 ### Basic Setup
 
@@ -76,7 +76,7 @@ fit <- because(
 
 ### 1. Main Model Run
 
-becauseR automatically joins the datasets:
+because automatically joins the datasets:
 
 ```r
 # Internally creates:
@@ -203,7 +203,7 @@ fit <- because(
 
 ## Validation
 
-becauseR automatically validates:
+because automatically validates:
 
 ✅ All level names in `levels` exist in `data`  
 ✅ All variables exist in their specified datasets  

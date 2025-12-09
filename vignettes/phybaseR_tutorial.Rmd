@@ -1,15 +1,15 @@
 ---
-title: "becauseR: An R package to easily create and run Because models"
+title: "because: An R package to easily create and run Because models"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{becauseR: An R package to easily create and run Because models}
+  %\VignetteIndexEntry{because: An R package to easily create and run Because models}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ## Introduction
 
-**becauseR** is an R package designed to easily perform causal inference in phylogenetic comparative analyses implementing and extending the methods proposed in von Hardenberg & Gonzalez-Voyer (2025). It allows you to fit Phylogenetic Bayesian Structural Equation Models (SEMs) that account for:
+**because** is an R package designed to easily perform causal inference in phylogenetic comparative analyses implementing and extending the methods proposed in von Hardenberg & Gonzalez-Voyer (2025). It allows you to fit Phylogenetic Bayesian Structural Equation Models (SEMs) that account for:
 
 *   **Phylogenetic Non-independence**: Using the phylogenetic covariance matrix.
 *   **Measurement Error**: Incorporating standard errors or repeated measures.
@@ -34,16 +34,16 @@ This tutorial will guide you through the main features of the package.
 First, load the package:
 
 ```{r setup}
-library(becauseR)
+library(because)
 ```
 
-**Note**: `becauseR` uses `ape` internally for phylogenetic calculations (it's automatically loaded as a dependency). We'll also load it explicitly here for the tutorial examples, since we use `ape` functions like `rtree()` and `rTraitCont()` to simulate data:
+**Note**: `because` uses `ape` internally for phylogenetic calculations (it's automatically loaded as a dependency). We'll also load it explicitly here for the tutorial examples, since we use `ape` functions like `rtree()` and `rTraitCont()` to simulate data:
 
 ```{r load_ape}
 library(ape)
 ```
 
-**Note on Tree Standardization**: `becauseR` automatically standardizes phylogenetic trees to have a maximum branching time of 1.0. This improves numerical stability and convergence. You'll see a message like "Standardizing tree edge lengths (max branching time: 1.27 -> 1.0)" when this occurs. This doesn't affect your results—it's just internal scaling.
+**Note on Tree Standardization**: `because` automatically standardizes phylogenetic trees to have a maximum branching time of 1.0. This improves numerical stability and convergence. You'll see a message like "Standardizing tree edge lengths (max branching time: 1.27 -> 1.0)" when this occurs. This doesn't affect your results—it's just internal scaling.
 
 ## Basic Usage: Phylogenetic Regression (PGLS)
 
@@ -63,7 +63,7 @@ my_data <- data.frame(
 )
 ```
 
-To run the model, we define the structural equations and pass them to `because()`. Note that we can pass a data.frame directly—becauseR will automatically extract the needed variables from your equations:
+To run the model, we define the structural equations and pass them to `because()`. Note that we can pass a data.frame directly—because will automatically extract the needed variables from your equations:
 
 ```{r basic_run, eval=FALSE}
 # Define equations
@@ -122,7 +122,7 @@ summary(fit_med)
 
 ## Understanding Parameter Names
 
-`becauseR` uses a systematic naming convention for all estimated parameters. Understanding this helps you interpret your results.
+`because` uses a systematic naming convention for all estimated parameters. Understanding this helps you interpret your results.
 
 ### Regression Coefficients
 
@@ -186,7 +186,7 @@ equations <- list(Y ~ X + M)
 
 ### Auxiliary Parameters for Predictors
 
-If your model includes **missing values in predictors** or requires modeling **phylogenetic structure in predictors**, becauseR automatically adds implicit equations (e.g., `X ~ 1`). This results in additional parameters:
+If your model includes **missing values in predictors** or requires modeling **phylogenetic structure in predictors**, because automatically adds implicit equations (e.g., `X ~ 1`). This results in additional parameters:
 
 ```r
 # Example: Y ~ X with missing values in X
@@ -691,7 +691,7 @@ summary(fit_dsep$samples)
 
 ## Categorical Predictors
 
-`becauseR` automatically handles categorical predictors (factor or character variables) by converting them to **dummy variables** and **auto-expanding** equations.
+`because` automatically handles categorical predictors (factor or character variables) by converting them to **dummy variables** and **auto-expanding** equations.
 
 ```{r categorical, eval=FALSE}
 # Data with categorical predictor
@@ -822,7 +822,7 @@ print(results$comparison)
 
 ## Model Comparison (WAIC with Standard Errors)
 
-The Widely Applicable Information Criterion (WAIC) is the recommended approach for model comparison in `becauseR`. The package implements **WAIC with standard errors** following Vehtari, Gelman & Gabry (2017), allowing you to assess whether model differences are statistically significant.
+The Widely Applicable Information Criterion (WAIC) is the recommended approach for model comparison in `because`. The package implements **WAIC with standard errors** following Vehtari, Gelman & Gabry (2017), allowing you to assess whether model differences are statistically significant.
 
 ### Calculating WAIC
 
@@ -952,7 +952,7 @@ summary(fit_dsep)
 
 In the original Because methodology (von Hardenberg & Gonzalez-Voyer, 2025), d-separation tests were proposed to be run within a single JAGS model by renaming variables (e.g., `BM`, `BM2`) to avoid cyclic dependencies in the Directed Acyclic Graph (DAG). 
 
-`becauseR` automates this process by running each d-separation test **sequentially** as a separate JAGS model. This approach offers several advantages for automation:
+`because` automates this process by running each d-separation test **sequentially** as a separate JAGS model. This approach offers several advantages for automation:
 
 1.  **Computational Robustness**: It completely avoids cyclic dependency errors (e.g., "Unable to resolve parameter") that can occur in JAGS when multiple conditional independence tests imply conflicting directions of causality (e.g., testing $X \perp Y | Z$ and $Y \perp X | W$ simultaneously).
 2.  **Statistical Validity**: D-separation tests are tests of *local* conditional independence. Running them sequentially is statistically valid because each test evaluates a specific implication of the DAG using the observed data.
@@ -1043,7 +1043,7 @@ summary(fit_explicit)
 
 **Disadvantages**: Requires careful consideration of identification and scaling.
 
-**Note**: `becauseR` automatically standardizes latent variables (fixes variance to 1) when using the explicit approach. This ensures identification and makes path coefficients interpretable as standardized effects. This is consistent with the recommendation to standardize all variables before running Because models.
+**Note**: `because` automatically standardizes latent variables (fixes variance to 1) when using the explicit approach. This ensures identification and makes path coefficients interpretable as standardized effects. This is consistent with the recommendation to standardize all variables before running Because models.
 
 ### Understanding Identification Issues
 
@@ -1055,7 +1055,7 @@ When using the **explicit approach**, latent variables have no inherent scale, l
 
 **Why MAG avoids this**: The MAG approach only estimates the **correlation** `rho_X_Y` induced by `L`, which is scale-invariant. You don't need to worry about the scale of `L` or its individual paths.
 
-**How becauseR handles this**: When using `latent_method = "explicit"`, `becauseR` automatically **standardizes latent variables** by fixing their variance to 1 (`tau_L <- 1` in the JAGS model). This:
+**How because handles this**: When using `latent_method = "explicit"`, `because` automatically **standardizes latent variables** by fixing their variance to 1 (`tau_L <- 1` in the JAGS model). This:
 - Ensures the model is identified (no scale ambiguity)
 - Makes path coefficients interpretable as standardized effects
 - Is consistent with the recommendation to standardize all variables
@@ -1134,7 +1134,7 @@ fit_with_latent$WAIC["waic", "Estimate"]  # Lower WAIC → latent structure supp
 
 ### Why WAIC Instead of LOO-CV?
 
-**WAIC (Widely Applicable Information Criterion)** is the recommended approach for model comparison in `becauseR` rather than LOO-CV (Leave-One-Out Cross-Validation).
+**WAIC (Widely Applicable Information Criterion)** is the recommended approach for model comparison in `because` rather than LOO-CV (Leave-One-Out Cross-Validation).
 
 **Why?**
 
@@ -1165,7 +1165,7 @@ fit2$WAIC
 
 ## Generalized Covariance Structures
 
-While Because was originally designed for phylogenetic models, `becauseR` now supports arbitrary covariance structures. You can specify the covariance structure using the `structure` argument (which replaces `tree` in newer versions).
+While Because was originally designed for phylogenetic models, `because` now supports arbitrary covariance structures. You can specify the covariance structure using the `structure` argument (which replaces `tree` in newer versions).
 
 ### 1. Independent SEMs (Non-Phylogenetic)
 
@@ -1179,7 +1179,7 @@ fit_indep <- because(
 )
 ```
 
-In this mode, `becauseR` assumes independent residuals for all variables (Gaussian, Binomial, Multinomial, etc.).
+In this mode, `because` assumes independent residuals for all variables (Gaussian, Binomial, Multinomial, etc.).
 
 ### 2. Spatial or Custom Covariance
 
@@ -1234,7 +1234,7 @@ fit_multi <- because(
 
 ## Random Effects Models (GLMMs)
 
-`becauseR` supports **Linear Mixed Models (LMMs)** and **Generalized Linear Mixed Models (GLMMs)** using `lmer`-style syntax. This allows you to include random intercepts for grouping factors (e.g., species, site, year) alongside phylogenetic effects.
+`because` supports **Linear Mixed Models (LMMs)** and **Generalized Linear Mixed Models (GLMMs)** using `lmer`-style syntax. This allows you to include random intercepts for grouping factors (e.g., species, site, year) alongside phylogenetic effects.
 
 ### Syntax
 
@@ -1322,7 +1322,7 @@ fit_global <- because(
 )
 ```
 
-**Note:** `becauseR` automatically detects overlapping random terms. If you specify `(1|Site)` in an equation AND in the global `random` argument, it will be handled correctly (deduplicated) to avoid double-counting.
+**Note:** `because` automatically detects overlapping random terms. If you specify `(1|Site)` in an equation AND in the global `random` argument, it will be handled correctly (deduplicated) to avoid double-counting.
 
 ### Hierarchical Data: Handling Multi-Level Variables
 
@@ -1334,7 +1334,7 @@ fit_global <- because(
 
 When testing `temperature ~ rainfall` with replicated data, the model incorrectly sees 20 observations instead of 4.
 
-**Solution**: becauseR now supports hierarchical data structures automatically!
+**Solution**: because now supports hierarchical data structures automatically!
 
 ```r
 # Individual-level data
@@ -1375,7 +1375,7 @@ fit <- because(
 ```
 
 **How it works**:
-- becauseR automatically joins datasets for the main model (20 observations)
+- because automatically joins datasets for the main model (20 observations)
 - For d-separation tests, each test uses the appropriate dataset:
   - `weight _||_ rainfall | age, temperature` → 20 observations (needs individual level)
   - `temperature _||_ rainfall | ` → 4 observations (site-year only!)

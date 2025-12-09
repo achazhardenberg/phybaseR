@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 # Phylogenetic Structural Equation Models
 
-The core strength of becauseR is combining structural equation modeling with phylogenetic comparative methods. This accounts for the non-independence of species data due to shared evolutionary history.
+The core strength of because is combining structural equation modeling with phylogenetic comparative methods. This accounts for the non-independence of species data due to shared evolutionary history.
 
 ## Why Phylogenetic Correction?
 
@@ -39,7 +39,7 @@ Species are not independent data points - they share evolutionary history. Close
 ### Simple Example
 
 ```{r, eval=FALSE}
-library(becauseR)
+library(because)
 library(ape)
 
 # Load or create phylogeny
@@ -72,7 +72,7 @@ fit <- because(
 
 ### Variance-Covariance Matrix (VCV)
 
-becauseR uses the phylogenetic VCV matrix to model evolutionary correlations:
+because uses the phylogenetic VCV matrix to model evolutionary correlations:
 
 ```r
 # Internally computed from your tree:
@@ -242,7 +242,7 @@ summary(fit_phy)
 
 ### Lambda (Pagel's λ)
 
-Not currently implemented in becauseR, but you can:
+Not currently implemented in because, but you can:
 
 1. **Test beforehand** using `phytools::phylosig()`
 2. **Transform tree** to reduce/increase signal:
@@ -282,7 +282,7 @@ phylosig(tree, data$range_size, method = "lambda")
 
 ## Beyond Phylogeny: Other Covariance Structures
 
-becauseR's `tree` argument accepts **any covariance structure**, not just phylogenies! You can model:
+because's `tree` argument accepts **any covariance structure**, not just phylogenies! You can model:
 - Spatial autocorrelation
 - Pedigrees (animal models / quantitative genetics)
 - Social networks

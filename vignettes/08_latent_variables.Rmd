@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 # Latent Variables and Maximal Ancestral Graphs
 
-Latent variables represent unobserved constructs that cannot be directly measured. becauseR uses Maximal Ancestral Graphs (MAGs) for m-separation testing when latent variables are present.
+Latent variables represent unobserved constructs that cannot be directly measured. because uses Maximal Ancestral Graphs (MAGs) for m-separation testing when latent variables are present.
 
 ## What Are Latent Variables?
 
@@ -59,7 +59,7 @@ fit <- because(
 
 1. **DAG → MAG conversion**: Latent variables marginalized out
 2. **M-separation tests**: Test conditional independencies in the MAG
-3. **Induced correlations**: becauseR models correlations induced by latent variables
+3. **Induced correlations**: because models correlations induced by latent variables
 
 ## Measurement Models
 
@@ -103,7 +103,7 @@ equations <- list(
 )
 ```
 
-becauseR handles both naturally through equation specification.
+because handles both naturally through equation specification.
 
 ## Maximal Ancestral Graphs (MAG)
 
@@ -117,7 +117,7 @@ When latent variables exist, standard d-separation doesn't work. MAGs represent:
 
 Like d-separation but for MAGs. Tests conditional independence in the presence of latent variables.
 
-**becauseR automatically**:
+**because automatically**:
 1. Converts your DAG to MAG (marginalizing latents)
 2. Derives m-separation tests
 3. Runs tests on your data
@@ -189,7 +189,7 @@ fit <- because(
 
 **Result**: `trait_a` and `trait_b` will be correlated due to shared environmental influence, even if no direct causal link.
 
-becauseR models this induced correlation in the JAGS model.
+because models this induced correlation in the JAGS model.
 
 ## Complex Latent Structures
 

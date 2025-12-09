@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 # Beyond Phylogeny: Alternative Covariance Structures
 
-phybaseR's `tree` argument accepts **any covariance structure**, not just phylogenies. This enables modeling:
+because's `tree` argument accepts **any covariance structure**, not just phylogenies. This enables modeling:
 
 - **Spatial autocorrelation** (geographic dependencies)
 - **Pedigrees** (animal models / quantitative genetics)
@@ -69,7 +69,7 @@ distances <- distm(coords) / 1000 # Convert to km
 spatial_sigma <- 100 # Spatial scale (km)
 spatial_cov <- exp(-distances / spatial_sigma)
 
-# Format for phybaseR
+# Format for because
 rownames(spatial_cov) <- data$site_id
 colnames(spatial_cov) <- data$site_id
 rownames(data) <- data$site_id
