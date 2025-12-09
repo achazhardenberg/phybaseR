@@ -43,8 +43,8 @@ summary.because <- function(object, ...) {
 
     # If this was a d-sep run, we want to format the output specifically
     if (!is.null(object$dsep) && object$dsep) {
-        cat("Because d-separation Tests\n")
-        cat("==========================\n\n")
+        cat("d-separation Tests\n")
+        cat("==================\n\n")
 
         tests <- object$dsep_tests
         map <- object$parameter_map
@@ -52,12 +52,12 @@ summary.because <- function(object, ...) {
         # Create a results table
         results <- data.frame(
             Test = character(),
-            Parameter = character(),
+            Param = character(),
             Estimate = numeric(),
             LowerCI = numeric(),
             UpperCI = numeric(),
             Indep = character(),
-            P_approx_0 = numeric(),
+            P = numeric(),
             Rhat = numeric(),
             n.eff = numeric(),
             stringsAsFactors = FALSE
@@ -206,29 +206,58 @@ summary.because <- function(object, ...) {
 
                 results[nrow(results) + 1, ] <- list(
                     Test = test_str,
-                    Parameter = param_name,
+                    Param = param_name,
                     Estimate = round(est, 3),
                     LowerCI = round(lower, 3),
                     UpperCI = round(upper, 3),
                     Indep = indep,
-                    P_approx_0 = round(p_approx_0, 3),
+                    P = round(p_approx_0, 3),
                     Rhat = round(p_rhat, 3),
                     n.eff = round(p_neff, 0)
                 )
             }
         }
 
-        print(results, row.names = FALSE)
+        # Print layout with Test above stats
+        # We need to manually format this since we want headers + rows separated by test names
+
+        # Get simplified results for printing (stats only)
+        print_results <- results[, !names(results) %in% "Test"]
+
+        # Increase width to prevent wrapping
+        op <- options(width = 1000)
+        on.exit(options(op), add = TRUE)
+
+        # Capture the whole table output to ensure correct alignment across all rows
+        # text_table will contain:
+        # [1] Header line
+        # [2...] Data rows
+        text_table <- capture.output(print(print_results, row.names = FALSE))
+
+        # 1. Print Header
+        if (length(text_table) > 0) {
+            cat(text_table[1], "\n")
+        }
+
+        # 2. Print Rows interleaved with Test names
+        # Check if we have data rows (length > 1 means header + at least one row)
+        if (length(text_table) > 1) {
+            # Data rows start at index 2
+            for (i in seq_len(nrow(results))) {
+                cat(paste0("\nTest: ", results$Test[i], "\n"))
+                # Print the corresponding data row
+                # Use i+1 because text_table[1] is header
+                cat(text_table[i + 1], "\n")
+            }
+        }
+        cat("\n")
 
         cat("\nLegend:\n")
         cat(
             "  Indep: 'Yes' = Conditionally Independent, 'No' = Dependent (based on 95% CI)\n"
         )
         cat(
-            "  P(~0): Bayesian probability that effect crosses zero (0-1 scale)\n"
-        )
-        cat(
-            "\nNote: For d-separation, we expect high P(~0) values (close to 1).\n"
+            "  P: Bayesian probability that the posterior distribution overlaps with zero\n"
         )
 
         invisible(results)

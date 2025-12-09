@@ -142,6 +142,10 @@ because <- function(
   # --- Input Validation & Setup ---
   latent_method <- match.arg(latent_method)
 
+  if (is.matrix(data)) {
+    data <- as.data.frame(data)
+  }
+
   # Handle 'structure' alias
   if (is.null(tree) && !is.null(structure)) {
     tree <- structure
