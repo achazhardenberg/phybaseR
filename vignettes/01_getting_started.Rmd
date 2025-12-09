@@ -72,7 +72,7 @@ Before using `because`, you need to have `JAGS` (Just Another Gibbs Sampler) ins
 After installing JAGS, install the `because` package from GitHub using
 `remotes` or `devtools` and call the library:
 
-```{r}
+```r
 # Install from GitHub
 remotes::install_github("achazhardenberg/because", build_vignettes = TRUE)
 library(because)
