@@ -7,10 +7,10 @@
 
 ## Features
 
-**because** simplifies the process of running complex phylogenetic path analyses by automatically generating JAGS code from standard R formulas. Key features include:
+**because** simplifies the process of running complex Bayesian Structural Equation Models by automatically generating JAGS code from standard R formulas. Key features include:
 
 -   **Automatic JAGS Code Generation**: Builds models directly from a list of structural equations.
--   **Generalized Covariance Structures**: Supports standard SEMs, Phylogenetic SEMS (PhyBaSE)  Spatial SEMs, and Animal Models via custom covariance matrices or pedigrees.
+-   **Generalized Covariance Structures**: Supports standard SEMs, Phylogenetic SEMS (PhyBaSE) as well as Spatial SEMs and Animal Models via custom covariance matrices or pedigrees.
 -   **Phylogenetic Uncertainty**: Incorporates uncertainty by sampling across a set of trees.
 -   **Missing Data Support**: Handles missing values in both response and predictor variables using phylogenetic imputation.
 -   **Measurement Error**: Accounts for within-species variability or measurement error.
