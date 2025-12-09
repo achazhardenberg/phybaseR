@@ -12,7 +12,8 @@ vignette: >
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
     collapse = TRUE,
-    comment = "#>"
+    comment = "#>",
+    eval = FALSE
 )
 ```
 
@@ -34,7 +35,9 @@ Let's look at a classic example A correlative study trying to establish if stork
 Let's download the data and take a look:
 ```{r}
 # load data
+library(because)
 data("storks.dat")
+
 # rename to stork_data for consistency with rest of vignette
 stork_data <- storks.dat
 ```

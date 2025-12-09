@@ -13,9 +13,10 @@ editor_options:
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(
+knitr::opts_chunk_set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  eval = FALSE
 )
 ```
 
@@ -88,6 +89,8 @@ Let's start simulating two variables X and Y where Y is correlated to X:
 ```{r}
 # set seed for reproducibility
 set.seed(67)
+library(because)
+
 
 # Simulate predictor
 n <- 100
