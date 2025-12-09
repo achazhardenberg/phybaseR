@@ -1,0 +1,39 @@
+[1] "Beta mean: 1.04930946233987"
+[1] "CI: 0.874971736864162 - 1.23462195702549"
+[1] "Test PASSED"
+── Warning: Full workflow: simple model parameter recovery stress test ─────────
+Unused variable "Prec_phylo" in data
+Backtrace:
+    ▆
+ 1. └─because::because(...)
+ 2.   └─rjags::jags.model(...)
+
+── Warning: Full workflow: simple model parameter recovery stress test ─────────
+Unused variable "VCV" in data
+Backtrace:
+    ▆
+ 1. └─because::because(...)
+ 2.   └─rjags::jags.model(...)
+
+── Warning: Full workflow: simple model parameter recovery stress test ─────────
+Unused variable "zeros" in data
+Backtrace:
+    ▆
+ 1. └─because::because(...)
+ 2.   └─rjags::jags.model(...)
+
+── Failure: Full workflow: simple model parameter recovery stress test ─────────
+lower < 0.8 && upper > 0.8 is not TRUE
+
+`actual`:   FALSE
+`expected`: TRUE 
+
+Error:
+! Test failed
+Backtrace:
+    ▆
+ 1. ├─testthat::test_that(...)
+ 2. │ └─withr (local) `<fn>`()
+ 3. └─reporter$stop_if_needed()
+ 4.   └─rlang::abort("Test failed", call = NULL)
+Execution halted

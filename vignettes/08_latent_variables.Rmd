@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 # Latent Variables and Maximal Ancestral Graphs
 
-Latent variables represent unobserved constructs that cannot be directly measured. phybaseR uses Maximal Ancestral Graphs (MAGs) for m-separation testing when latent variables are present.
+Latent variables represent unobserved constructs that cannot be directly measured. becauseR uses Maximal Ancestral Graphs (MAGs) for m-separation testing when latent variables are present.
 
 ## What Are Latent Variables?
 
@@ -43,7 +43,7 @@ data <- data.frame(
 )
 
 # "quality" is latent (not in data)
-fit <- phybase_run(
+fit <- because(
     equations = list(
         quality ~ x, # x affects quality
         y ~ quality, # quality affects y
@@ -59,7 +59,7 @@ fit <- phybase_run(
 
 1. **DAG → MAG conversion**: Latent variables marginalized out
 2. **M-separation tests**: Test conditional independencies in the MAG
-3. **Induced correlations**: phybaseR models correlations induced by latent variables
+3. **Induced correlations**: becauseR models correlations induced by latent variables
 
 ## Measurement Models
 
@@ -67,7 +67,7 @@ fit <- phybase_run(
 
 ```{r, eval=FALSE}
 # "body_condition" measured by three indicators
-fit <- phybase_run(
+fit <- because(
     equations = list(
         body_condition ~ mass, # Cause
         fat_reserves ~ body_condition, # Indicator 1
@@ -103,7 +103,7 @@ equations <- list(
 )
 ```
 
-phybaseR handles both naturally through equation specification.
+becauseR handles both naturally through equation specification.
 
 ## Maximal Ancestral Graphs (MAG)
 
@@ -117,7 +117,7 @@ When latent variables exist, standard d-separation doesn't work. MAGs represent:
 
 Like d-separation but for MAGs. Tests conditional independence in the presence of latent variables.
 
-**phybaseR automatically**:
+**becauseR automatically**:
 1. Converts your DAG to MAG (marginalizing latents)
 2. Derives m-separation tests
 3. Runs tests on your data
@@ -134,7 +134,7 @@ equations <- list(
     y ~ x2 + x3
 )
 
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data, # "latent" not in data
     dsep = TRUE
@@ -150,7 +150,7 @@ fit <- phybase_run(
 Latent variables have arbitrary scale. Standardize for interpretability:
 
 ```{r, eval=FALSE}
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data,
     latent = c("quality"),
@@ -180,7 +180,7 @@ equations <- list(
     fitness ~ trait_a + trait_b
 )
 
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data, # environment is latent
     dsep = TRUE
@@ -189,7 +189,7 @@ fit <- phybase_run(
 
 **Result**: `trait_a` and `trait_b` will be correlated due to shared environmental influence, even if no direct causal link.
 
-phybaseR models this induced correlation in the JAGS model.
+becauseR models this induced correlation in the JAGS model.
 
 ## Complex Latent Structures
 
@@ -211,7 +211,7 @@ equations <- list(
     reproduction ~ food_availability + mortality
 )
 
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data,
     latent = c("resources", "predation"),
@@ -230,7 +230,7 @@ equations <- list(
     reproduction ~ quality
 )
 
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data,
     latent = c("quality", "environment"),
@@ -302,7 +302,7 @@ equations <- list(
 Latent variable models can be harder to fit:
 ```{r, eval=FALSE}
 # Use more iterations
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data,
     latent = latent_vars,
@@ -317,10 +317,10 @@ fit <- phybase_run(
 Test if latent is necessary:
 ```{r, eval=FALSE}
 # Model WITH latent
-fit_latent <- phybase_run(equations_with_latent, data, latent = "quality")
+fit_latent <- because(equations_with_latent, data, latent = "quality")
 
 # Model WITHOUT latent (direct paths instead)
-fit_direct <- phybase_run(equations_direct, data)
+fit_direct <- because(equations_direct, data)
 
 # Compare DIC/WAIC
 fit_latent$DIC

@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 # Non-Gaussian Response Distributions
 
-phybaseR supports multiple response distributions to match different data types. Choose the distribution that matches your response variable's characteristics.
+becauseR supports multiple response distributions to match different data types. Choose the distribution that matches your response variable's characteristics.
 
 ## Quick Reference
 
@@ -52,7 +52,7 @@ data <- data.frame(
     body_mass = rnorm(100, 50, 10)
 )
 
-fit <- phybase_run(
+fit <- because(
     equations = list(
         survival ~ age + body_mass
     ),
@@ -75,11 +75,11 @@ data <- data.frame(
 data$eggs_hatched <- rbinom(50, data$eggs_laid, plogis(-2 + 0.3 * data$temperature))
 data$prop_hatched <- data$eggs_hatched / data$eggs_laid
 
-# phybaseR needs: N (trials) and k (successes)
+# becauseR needs: N (trials) and k (successes)
 data$N_trials <- data$eggs_laid
 data$N_success <- data$eggs_hatched
 
-fit <- phybase_run(
+fit <- because(
     equations = list(
         prop_hatched ~ temperature
     ),
@@ -118,7 +118,7 @@ data <- data.frame(
     territory_quality = rnorm(80, 0, 1)
 )
 
-fit <- phybase_run(
+fit <- because(
     equations = list(
         offspring_count ~ age + territory_quality
     ),
@@ -159,7 +159,7 @@ data <- data.frame(
     immune_function = rnorm(100, 0, 1)
 )
 
-fit <- phybase_run(
+fit <- because(
     equations = list(
         parasite_count ~ host_size + immune_function
     ),
@@ -198,7 +198,7 @@ data <- data.frame(
     environmental_stress = rnorm(120, 0, 1)
 )
 
-fit <- phybase_run(
+fit <- because(
     equations = list(
         lifespan ~ body_mass + environmental_stress
     ),
@@ -244,7 +244,7 @@ data$habitat <- factor(data$habitat,
     levels = c("Forest", "Grassland", "Wetland")
 )
 
-fit <- phybase_run(
+fit <- because(
     equations = list(
         habitat ~ temperature + precipitation + elevation
     ),
@@ -295,7 +295,7 @@ data$condition <- factor(data$condition,
     ordered = TRUE
 )
 
-fit <- phybase_run(
+fit <- because(
     equations = list(
         condition ~ food_availability + age + parasite_load
     ),
@@ -339,7 +339,7 @@ logit(P(Y ≤ category k)) = θ_k - (β₁x₁ + β₂x₂ + ...)
 You can mix different distributions in one model:
 
 ```{r, eval=FALSE}
-fit <- phybase_run(
+fit <- because(
     equations = list(
         survival ~ age, # Binomial
         offspring ~ survival, # Poisson
@@ -450,8 +450,8 @@ Use DIC or WAIC to compare distributions:
 
 ```{r, eval=FALSE}
 # Try both Poisson and negative binomial
-fit_pois <- phybase_run(..., distribution = list(count = "poisson"), DIC = TRUE)
-fit_nb <- phybase_run(..., distribution = list(count = "negbinomial"), DIC = TRUE)
+fit_pois <- because(..., distribution = list(count = "poisson"), DIC = TRUE)
+fit_nb <- because(..., distribution = list(count = "negbinomial"), DIC = TRUE)
 
 fit_pois$DIC # 543.2
 fit_nb$DIC # 512.8  ← Better (lower)
@@ -475,7 +475,7 @@ Each distribution uses a specific link function:
 | Multinomial | Logit | probabilities |
 |  | Cumulative logit | cumulative probs |
 
-phybaseR uses standard links automatically. Custom links are not currently supported.
+becauseR uses standard links automatically. Custom links are not currently supported.
 
 ---
 

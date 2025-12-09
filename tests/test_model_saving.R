@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 
 data("rhino.dat")
 data("rhino.tree")
@@ -15,7 +15,7 @@ equations_1 <- list(LS ~ BM, NL ~ BM, DD ~ NL, RS ~ DD)
 
 # Test model saving
 cat("\n=== Testing Model Saving for d-sep ===\n")
-fit_rhino_dsep <- phybase_run(
+fit_rhino_dsep <- because(
     data = data_list,
     tree = rhino.tree,
     equations = equations_1,

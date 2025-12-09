@@ -1,0 +1,14 @@
+── Error: Full workflow: simple model parameter recovery stress test ───────────
+Error in `because(data = data_list, tree = tree, equations = equations, 
+    n.iter = 5000, n.burnin = 1000, n.chains = 2, n.chains = 2, 
+    quiet = TRUE, optimise = TRUE)`: formal argument "n.chains" matched by multiple actual arguments
+
+Error:
+! Test failed
+Backtrace:
+    ▆
+ 1. ├─testthat::test_that(...)
+ 2. │ └─withr (local) `<fn>`()
+ 3. └─reporter$stop_if_needed()
+ 4.   └─rlang::abort("Test failed", call = NULL)
+Execution halted

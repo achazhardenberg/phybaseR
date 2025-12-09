@@ -1,4 +1,4 @@
-#' Run a Phylogenetic Bayesian Structural Equation model (PhyBaSE)
+#' Run a Phylogenetic Bayesian Structural Equation model (Because)
 #'
 #' @param data Data for the model. Accepts:
 #'   \itemize{
@@ -100,7 +100,7 @@
 #'   for phylogenetic models. This is significantly faster (5-10x) and more numerically stable.
 #'   If \code{FALSE}, use the traditional marginal formulation (slower, but provided for comparison).
 #'
-#' @return A list of class \code{"phybase"} with model output and diagnostics.
+#' @return A list of class \code{"because"} with model output and diagnostics.
 #' @export
 #' @importFrom ape vcv.phylo branching.times
 #' @importFrom rjags jags.model coda.samples dic.samples jags.samples
@@ -108,7 +108,7 @@
 #' @importFrom utils capture.output
 #' @importFrom coda gelman.diag effectiveSize
 #' @import coda
-phybase_run <- function(
+because <- function(
   data,
   equations,
   id_col = NULL,
@@ -546,7 +546,7 @@ phybase_run <- function(
         data$Ntree <- K_tree
 
         # Legacy VCV/multiVCV required for some logic?
-        # If 'optimise=FALSE', phybase_model might use VCV.
+        # If 'optimise=FALSE', because_model might use VCV.
         # But we are moving towards requiring optimise=TRUE for multiple structures.
         # For legacy single multi-tree, we might want to keep 'multiVCV' for safe Measure.
         if (length(structures) == 1) {
@@ -568,7 +568,7 @@ phybase_run <- function(
           stop(paste("Dimension mismatch in", s_name))
         }
 
-        if (length(structures) == 1 && optimise == FALSE) {
+        if (length(structures) == 1) {
           data$VCV <- V
         }
       } else if (is.matrix(obj)) {
@@ -956,7 +956,7 @@ phybase_run <- function(
       }
     }
 
-    dsep_result <- phybase_dsep(
+    dsep_result <- because_dsep(
       equations,
       latent = latent,
       random_terms = random_terms,
@@ -1042,7 +1042,7 @@ phybase_run <- function(
       # Run model for this single test
       # We pass dsep=FALSE to treat it as a standard model run
       # We pass parallel=FALSE to avoid nested parallelism
-      fit <- phybase_run(
+      fit <- because(
         data = test_data, # Use selected dataset
         tree = tree,
         equations = list(test_eq), # Pass as list of 1 equation
@@ -1302,7 +1302,7 @@ phybase_run <- function(
       dsep_results = results, # Store individual test results for summary
       induced_correlations = induced_cors
     )
-    class(result) <- "phybase"
+    class(result) <- "because"
     return(result)
   }
 
@@ -1325,7 +1325,7 @@ phybase_run <- function(
       # MAG approach: marginalize latents, use induced correlations
       # If not already computed by dsep, compute now
       if (is.null(induced_cors)) {
-        dsep_result <- phybase_dsep(
+        dsep_result <- because_dsep(
           equations,
           latent = latent,
           random_terms = random_terms,
@@ -1461,7 +1461,7 @@ phybase_run <- function(
   }
 
   # JAGS model code
-  model_output <- phybase_model(
+  model_output <- because_model(
     equations = equations,
     multi.tree = is_multiple,
     variability = variability_list,
@@ -1490,12 +1490,12 @@ phybase_run <- function(
   # Display MAG structure for latent variable models (non-dsep runs)
   if (!dsep && !is.null(latent) && length(latent) > 0 && !quiet) {
     message("--- Latent Variable Structure (MAG) ---")
-    # We call phybase_dsep just for its side effect (printing MAG info).
+    # We call because_dsep just for its side effect (printing MAG info).
     # We wrap it in tryCatch to ensure it doesn't block the main run if it fails.
     tryCatch(
       {
         if (length(equations) > 0) {
-          invisible(phybase_dsep(
+          invisible(because_dsep(
             equations,
             latent = latent,
             random_terms = random_terms,
@@ -1894,7 +1894,7 @@ phybase_run <- function(
   )
 
   # Assign class immediately (needed for print/summary/waic methods)
-  class(result) <- "phybase"
+  class(result) <- "because"
 
   # Add DIC and WAIC
   # For parallel runs, recompile the model if ic_recompile=TRUE
@@ -1927,7 +1927,7 @@ phybase_run <- function(
     # Note: WAIC calculation generally uses the posterior samples already collected.
     # We defer WAIC calculation to the common block at the end to ensure consistency.
     # if (WAIC) {
-    #   result$WAIC <- phybase_waic(result)
+    #   result$WAIC <- because_waic(result)
     # }
   } else if ((DIC || WAIC) && parallel && n.cores > 1 && n.chains > 1) {
     # Parallel without recompilation - warn user
@@ -1940,7 +1940,7 @@ phybase_run <- function(
     if (WAIC) {
       # WAIC can be computed from pointwise log-likelihoods even with parallel chains
       # Defer to common block
-      # result$WAIC <- phybase_waic(result)
+      # result$WAIC <- because_waic(result)
     }
   } else {
     # Sequential execution - use standard approach
@@ -1950,13 +1950,13 @@ phybase_run <- function(
     # WAIC will be computed after class assignment
   }
 
-  # Assign class before WAIC computation (phybase_waic needs this)
+  # Assign class before WAIC computation (because_waic needs this)
   # Already assigned earlier
-  # class(result) <- "phybase"
+  # class(result) <- "because"
 
   # Compute WAIC if requested (must be after class assignment)
   if (WAIC) {
-    result$WAIC <- phybase_waic(result)
+    result$WAIC <- because_waic(result)
   }
 
   return(result)

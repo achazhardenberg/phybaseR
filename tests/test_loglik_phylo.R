@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 library(ape)
 
 # Test with phylogenetic structure
@@ -13,7 +13,7 @@ df <- data.frame(
 )
 
 cat("=== Test 1: Phylogenetic SEM with optimise=TRUE ===\n")
-fit1 <- phybase_run(
+fit1 <- because(
     data = df,
     structure = tree,
     id_col = "SP",
@@ -31,7 +31,7 @@ if (grepl("log_lik_Y", fit1$model_code)) {
 }
 
 cat("\n=== Test 2: Phylogenetic SEM with optimise=FALSE (MVN) ===\n")
-fit2 <- phybase_run(
+fit2 <- because(
     data = df,
     structure = tree,
     id_col = "SP",

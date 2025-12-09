@@ -1,4 +1,4 @@
-#' Convert phybaseR equations to ggm DAG adjacency matrix
+#' Convert becauseR equations to ggm DAG adjacency matrix
 #'
 #' @param equations List of formulas
 #' @param exclude_vars Character vector of variable names to exclude (e.g., grouping variables)
@@ -83,7 +83,7 @@ extract_bidirected_edges <- function(mag) {
     return(correlations)
 }
 
-#' Convert MAG basis set to phybaseR formula format
+#' Convert MAG basis set to becauseR formula format
 #'
 #' @param basis_set Basis set from basiSet.mag()
 #' @param latent_children Optional character vector of variables that are direct children of latents

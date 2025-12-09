@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 library(ape)
 
 # Simulate data
@@ -13,7 +13,7 @@ data$Y <- 0.5 * data$X + rnorm(N)
 
 
 # Generate model code directly to inspect it
-model_out <- phybaseR:::phybase_model(
+model_out <- becauseR:::because_model(
     equations = list(Y ~ X),
     multi.tree = FALSE,
     distribution = NULL,
@@ -27,7 +27,7 @@ cat(model_out$model)
 cat("\n--------------------------\n")
 
 # Run model with 2 chains to enable Rhat calculation
-fit <- phybase_run(
+fit <- because(
     data = data,
     tree = tree,
     equations = list(Y ~ X),

@@ -11,7 +11,7 @@ test_that("Parallel chains run successfully", {
     equations <- list(Y ~ X)
 
     # Run with parallel execution
-    fit_parallel <- phybase_run(
+    fit_parallel <- because(
         data = data_list,
         tree = tree,
         equations = equations,
@@ -25,7 +25,7 @@ test_that("Parallel chains run successfully", {
     )
 
     # Check structure
-    expect_s3_class(fit_parallel, "phybase")
+    expect_s3_class(fit_parallel, "because")
     expect_s3_class(fit_parallel$samples, "mcmc.list")
     expect_equal(length(fit_parallel$samples), 4) # 4 chains
 })
@@ -43,7 +43,7 @@ test_that("Sequential and parallel produce compatible results", {
     equations <- list(Y ~ X)
 
     # Sequential
-    fit_seq <- phybase_run(
+    fit_seq <- because(
         data = data_list,
         tree = tree,
         equations = equations,
@@ -55,7 +55,7 @@ test_that("Sequential and parallel produce compatible results", {
     )
 
     # Parallel
-    fit_par <- phybase_run(
+    fit_par <- because(
         data = data_list,
         tree = tree,
         equations = equations,
@@ -69,8 +69,8 @@ test_that("Sequential and parallel produce compatible results", {
     )
 
     # Both should produce valid results
-    expect_s3_class(fit_seq, "phybase")
-    expect_s3_class(fit_par, "phybase")
+    expect_s3_class(fit_seq, "because")
+    expect_s3_class(fit_par, "because")
 
     # Check that parameter estimates are in similar range
     # Check that parameter estimates are in similar range
@@ -95,7 +95,7 @@ test_that("Parallel=FALSE with n.cores>1 still runs sequentially", {
     equations <- list(Y ~ X)
 
     # This should run sequentially even though n.cores=4
-    fit <- phybase_run(
+    fit <- because(
         data = data_list,
         tree = tree,
         equations = equations,
@@ -107,5 +107,5 @@ test_that("Parallel=FALSE with n.cores>1 still runs sequentially", {
         quiet = TRUE
     )
 
-    expect_s3_class(fit, "phybase")
+    expect_s3_class(fit, "because")
 })

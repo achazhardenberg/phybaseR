@@ -1,9 +1,9 @@
 # Test script for Categorical d-separation
 
-source("R/phybase_format_data.R")
-source("R/phybase_run.R")
-source("R/phybase_model.R")
-source("R/phybase_dsep.R")
+source("R/because_format_data.R")
+source("R/because.R")
+source("R/because_model.R")
+source("R/because_dsep.R")
 source("R/mag_helpers.R")
 source("R/dag_to_mag.R")
 
@@ -25,7 +25,7 @@ data_long <- data.frame(
 )
 
 # 2. Format data (auto-creates dummies: Diet_Herbivore, Diet_Omnivore)
-data_list <- phybase_format_data(data_long, species_col = "SP", tree = tree)
+data_list <- because_format_data(data_long, species_col = "SP", tree = tree)
 
 # 3. Define model implying Y _||_ Diet | Z
 # Model: Y ~ Z, Diet ~ Z
@@ -41,8 +41,8 @@ cat(
     "Expected monitored params: betaY_Z, betaY_Diet_Herbivore, betaY_Diet_Omnivore\n\n"
 )
 
-# 4. Run phybase_run with dsep = TRUE
-fit <- phybase_run(
+# 4. Run because with dsep = TRUE
+fit <- because(
     data = data_list,
     tree = tree,
     equations = equations,

@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 library(coda)
 
 # Simulate data similar to rhino structure
@@ -30,7 +30,7 @@ equations <- list(
 
 cat("Running MAG model with induced correlations...\n")
 
-fit <- phybase_run(
+fit <- because(
     data = df,
     id_col = "SP",
     latent = "L1",

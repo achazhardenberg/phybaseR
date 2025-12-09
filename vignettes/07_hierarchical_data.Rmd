@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 # Hierarchical Data Structures
 
-When variables are measured at different hierarchical levels, phybaseR automatically handles sample size management to prevent inflation and ensure correct statistical inference.
+When variables are measured at different hierarchical levels, becauseR automatically handles sample size management to prevent inflation and ensure correct statistical inference.
 
 ## The Problem: Sample Size Inflation
 
@@ -30,7 +30,7 @@ When variables are measured at different hierarchical levels, phybaseR automatic
 
 ## The Solution
 
-phybaseR automatically uses the appropriate dataset for each model and test.
+becauseR automatically uses the appropriate dataset for each model and test.
 
 ### Basic Setup
 
@@ -53,7 +53,7 @@ site_year_data <- data.frame(
 )
 
 # Specify hierarchical structure
-fit <- phybase_run(
+fit <- because(
     data = list(
         individual = individual_data,
         site_year = site_year_data
@@ -76,7 +76,7 @@ fit <- phybase_run(
 
 ### 1. Main Model Run
 
-phybaseR automatically joins the datasets:
+becauseR automatically joins the datasets:
 
 ```r
 # Internally creates:
@@ -146,7 +146,7 @@ link_vars = c("site", "year")  # Must be present in ALL datasets
 # Plot-level: soil, vegetation
 # Individual-level: plant traits
 
-fit <- phybase_run(
+fit <- because(
     data = list(
         plot = plot_data,
         individual = plant_data
@@ -166,7 +166,7 @@ fit <- phybase_run(
 # Year-level: climate
 # Visit-level: measurements
 
-fit <- phybase_run(
+fit <- because(
     data = list(
         year = yearly_climate,
         visit = individual_visits
@@ -185,7 +185,7 @@ fit <- phybase_run(
 ```{r, eval=FALSE}
 # Region > Site > Quadrat
 
-fit <- phybase_run(
+fit <- because(
     data = list(
         region = region_data,
         site = site_data,
@@ -203,7 +203,7 @@ fit <- phybase_run(
 
 ## Validation
 
-phybaseR automatically validates:
+becauseR automatically validates:
 
 ✅ All level names in `levels` exist in `data`  
 ✅ All variables exist in their specified datasets  
@@ -216,7 +216,7 @@ phybaseR automatically validates:
 Hierarchical data works seamlessly with random effects:
 
 ```{r, eval=FALSE}
-fit <- phybase_run(
+fit <- because(
     data = list(
         site = site_data,
         individual = individual_data

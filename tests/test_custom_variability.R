@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 library(ape)
 
 set.seed(123)
@@ -12,7 +12,7 @@ data1 <- data.frame(
     BrainSize = rnorm(N, mean = 100, sd = 20)
 )
 
-fit1 <- phybase_run(
+fit1 <- because(
     data = data1,
     tree = tree,
     equations = list(BrainSize ~ BodyMass),
@@ -31,7 +31,7 @@ data2 <- data.frame(
     BrainSize = rnorm(N, mean = 100, sd = 20)
 )
 
-fit2 <- phybase_run(
+fit2 <- because(
     data = data2,
     tree = tree,
     equations = list(BrainSize ~ BodyMass),
@@ -56,7 +56,7 @@ data3 <- list(
     BrainSize = rnorm(N, mean = 100, sd = 20)
 )
 
-fit3 <- phybase_run(
+fit3 <- because(
     data = data3,
     tree = tree,
     equations = list(BrainSize ~ BodyMass),

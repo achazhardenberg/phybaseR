@@ -13,7 +13,7 @@ test_that("Regression test: simple Gaussian model", {
     data <- list(X = X, Y = Y, N = N)
     equations <- list(Y ~ X)
 
-    fit <- phybase_run(
+    fit <- because(
         data = data,
         tree = tree,
         equations = equations,
@@ -24,7 +24,7 @@ test_that("Regression test: simple Gaussian model", {
     )
 
     # Test structure
-    expect_s3_class(fit, "phybase")
+    expect_s3_class(fit, "because")
     expect_true(!is.null(fit$summary))
 
     # Test parameter recovery (should be close to 0.7)
@@ -56,7 +56,7 @@ test_that("Regression test: binomial model", {
     equations <- list(Y ~ X)
     distribution <- c(Y = "binomial")
 
-    fit <- phybase_run(
+    fit <- because(
         data = data,
         tree = tree,
         equations = equations,
@@ -67,7 +67,7 @@ test_that("Regression test: binomial model", {
         quiet = TRUE
     )
 
-    expect_s3_class(fit, "phybase")
+    expect_s3_class(fit, "because")
 
     # Check that logit coefficient exists
     expect_true("beta_Y_X" %in% rownames(fit$summary$statistics))
@@ -93,7 +93,7 @@ test_that("Regression test: model with missing data", {
     data <- list(X = X, Y = Y, N = N)
     equations <- list(Y ~ X)
 
-    fit <- phybase_run(
+    fit <- because(
         data = data,
         tree = tree,
         equations = equations,
@@ -103,7 +103,7 @@ test_that("Regression test: model with missing data", {
         quiet = TRUE
     )
 
-    expect_s3_class(fit, "phybase")
+    expect_s3_class(fit, "because")
 
     # Should have estimated parameters despite missing data
     expect_true("beta_Y_X" %in% rownames(fit$summary$statistics))

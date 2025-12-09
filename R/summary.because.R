@@ -1,16 +1,16 @@
-#' Summary for PhyBaSE Model
+#' Summary for Because Model
 #'
-#' Summarizes the output of a PhyBaSE model run.
+#' Summarizes the output of a Because model run.
 #'
-#' @param object A fitted model object of class \code{"phybase"}.
+#' @param object A fitted model object of class \code{"because"}.
 #' @param ... Additional arguments passed to \code{\link[coda]{summary.mcmc}}.
 #'
 #' @return A summary object containing statistics for the monitored parameters.
-#'   If \code{dsep = TRUE} was used in \code{phybase_run}, the summary focuses on
+#'   If \code{dsep = TRUE} was used in \code{because}, the summary focuses on
 #'   the conditional independence tests.
 #'
 #' @export
-summary.phybase <- function(object, ...) {
+summary.because <- function(object, ...) {
     # Use stored summary if available, otherwise calculate it
     if (!is.null(object$summary)) {
         summ <- object$summary
@@ -28,7 +28,7 @@ summary.phybase <- function(object, ...) {
     )
 
     # Gelman-Rubin diagnostic (Rhat)
-    # Use stored Rhat if available (calculated in phybase_run)
+    # Use stored Rhat if available (calculated in because)
     rhat <- NULL
     if ("Rhat" %in% colnames(summ$statistics)) {
         rhat <- summ$statistics[, "Rhat"]
@@ -43,7 +43,7 @@ summary.phybase <- function(object, ...) {
 
     # If this was a d-sep run, we want to format the output specifically
     if (!is.null(object$dsep) && object$dsep) {
-        cat("PhyBaSE d-separation Tests\n")
+        cat("Because d-separation Tests\n")
         cat("==========================\n\n")
 
         tests <- object$dsep_tests

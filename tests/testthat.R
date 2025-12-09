@@ -1,4 +1,4 @@
 library(testthat)
-library(phybaseR)
+library(becauseR)
 
-test_check("phybaseR")
+test_check("becauseR")

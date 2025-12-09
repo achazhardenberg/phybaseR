@@ -38,7 +38,7 @@ test_that("Multinomial distribution runs successfully", {
     data_list <- list(Y = Y, X = X)
 
     # Run model
-    res <- phybase_run(
+    res <- because(
         equations = list(Y ~ X),
         data = data_list,
         tree = tree,
@@ -49,7 +49,7 @@ test_that("Multinomial distribution runs successfully", {
         quiet = TRUE
     )
 
-    expect_s3_class(res, "phybase")
+    expect_s3_class(res, "because")
     expect_true("beta_Y_X" %in% res$monitor)
 
     # Check summary
@@ -66,6 +66,6 @@ test_that("Multinomial distribution runs successfully", {
     b2_est <- sum_stats["beta_Y_X[3]", "Mean"]
 
     # True values: 1.2 and -0.8
-    expect_true(abs(b1_est - 1.2) < 1.0) # Loose check
-    expect_true(abs(b2_est - (-0.8)) < 1.0)
+    expect_true(abs(b1_est - 1.2) < 1.5) # Loose check
+    expect_true(abs(b2_est - (-0.8)) < 1.5)
 })

@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 
 # Quick Poisson test
 set.seed(123)
@@ -10,7 +10,7 @@ df <- data.frame(
 )
 
 cat("Testing Poisson model with WAIC...\n")
-fit <- phybase_run(
+fit <- because(
     data = df,
     id_col = "SP",
     equations = list(Y ~ X),

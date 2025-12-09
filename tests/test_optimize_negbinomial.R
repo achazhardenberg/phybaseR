@@ -1,4 +1,4 @@
-# Test script for Negative Binomial Optimization in phybaseR
+# Test script for Negative Binomial Optimization in becauseR
 # Verifies correctness of the random effects formulation for NB models
 
 # Source local files
@@ -48,7 +48,7 @@ cat("True overdispersion (r):", r_true, "\n")
 cat("(Smaller r = more overdispersion)\n\n")
 
 start_time <- Sys.time()
-fit_opt <- phybase_run(
+fit_opt <- because(
     data = data,
     tree = tree,
     equations = equations,

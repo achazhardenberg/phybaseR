@@ -1,14 +1,14 @@
-test_that("phybase_run validates inputs", {
+test_that("because validates inputs", {
     tree <- ape::rtree(10)
 
     # Missing data
     expect_error(
-        phybase_run(data = NULL, tree = tree, equations = list(Y ~ X)),
+        because(data = NULL, tree = tree, equations = list(Y ~ X)),
         "data"
     )
 })
 
-test_that("phybase_run completes a simple run", {
+test_that("because completes a simple run", {
     skip_on_cran() # Skip on CRAN to save time
 
     # Simulate simple data
@@ -22,7 +22,7 @@ test_that("phybase_run completes a simple run", {
     equations <- list(Y ~ X)
 
     # Run with very few iterations just to check it runs
-    fit <- phybase_run(
+    fit <- because(
         data = data_list,
         tree = tree,
         equations = equations,
@@ -32,7 +32,7 @@ test_that("phybase_run completes a simple run", {
         quiet = TRUE
     )
 
-    expect_s3_class(fit, "phybase")
+    expect_s3_class(fit, "because")
     expect_true(!is.null(fit$model))
     expect_true(!is.null(fit$samples))
 })

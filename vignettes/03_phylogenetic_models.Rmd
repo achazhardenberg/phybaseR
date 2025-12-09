@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 # Phylogenetic Structural Equation Models
 
-The core strength of phybaseR is combining structural equation modeling with phylogenetic comparative methods. This accounts for the non-independence of species data due to shared evolutionary history.
+The core strength of becauseR is combining structural equation modeling with phylogenetic comparative methods. This accounts for the non-independence of species data due to shared evolutionary history.
 
 ## Why Phylogenetic Correction?
 
@@ -39,7 +39,7 @@ Species are not independent data points - they share evolutionary history. Close
 ### Simple Example
 
 ```{r, eval=FALSE}
-library(phybaseR)
+library(becauseR)
 library(ape)
 
 # Load or create phylogeny
@@ -55,7 +55,7 @@ data <- data.frame(
 )
 
 # Phylogenetic SEM
-fit <- phybase_run(
+fit <- because(
     equations = list(
         range_size ~ body_size,
         population ~ range_size + body_size
@@ -72,7 +72,7 @@ fit <- phybase_run(
 
 ### Variance-Covariance Matrix (VCV)
 
-phybaseR uses the phylogenetic VCV matrix to model evolutionary correlations:
+becauseR uses the phylogenetic VCV matrix to model evolutionary correlations:
 
 ```r
 # Internally computed from your tree:
@@ -110,7 +110,7 @@ rownames(data) <- data$species
 data$species <- NULL # Remove column
 
 # Option 2: Specify id_col
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data,
     tree = tree,
@@ -159,7 +159,7 @@ trees <- read.nexus("posterior_trees.nex")
 sampled_trees <- sample(trees, size = 100)
 
 # Fit model
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data,
     tree = sampled_trees, # List of trees!
@@ -179,7 +179,7 @@ fit <- phybase_run(
 ### Full Bayesian (default)
 
 ```{r, eval=FALSE}
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data,
     tree = tree,
@@ -194,7 +194,7 @@ fit <- phybase_run(
 ### Optimization Mode
 
 ```{r, eval=FALSE}
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data,
     tree = tree,
@@ -211,7 +211,7 @@ fit <- phybase_run(
 
 ```{r, eval=FALSE}
 # Model without phylogeny
-fit_nophy <- phybase_run(
+fit_nophy <- because(
     equations = equations,
     data = data,
     # No tree!
@@ -220,7 +220,7 @@ fit_nophy <- phybase_run(
 )
 
 # Model with phylogeny
-fit_phy <- phybase_run(
+fit_phy <- because(
     equations = equations,
     data = data,
     tree = tree, # With tree
@@ -242,7 +242,7 @@ summary(fit_phy)
 
 ### Lambda (Pagel's λ)
 
-Not currently implemented in phybaseR, but you can:
+Not currently implemented in becauseR, but you can:
 
 1. **Test beforehand** using `phytools::phylosig()`
 2. **Transform tree** to reduce/increase signal:
@@ -254,7 +254,7 @@ library(geiger)
 tree_lambda <- rescale(tree, "lambda", 0.5) # λ = 0.5
 
 # Use transformed tree
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data,
     tree = tree_lambda
@@ -282,7 +282,7 @@ phylosig(tree, data$range_size, method = "lambda")
 
 ## Beyond Phylogeny: Other Covariance Structures
 
-phybaseR's `tree` argument accepts **any covariance structure**, not just phylogenies! You can model:
+becauseR's `tree` argument accepts **any covariance structure**, not just phylogenies! You can model:
 - Spatial autocorrelation
 - Pedigrees (animal models / quantitative genetics)
 - Social networks
@@ -321,7 +321,7 @@ colnames(spatial_cov) <- data$site_id
 rownames(data) <- data$site_id
 
 # Use as "tree" argument!
-fit <- phybase_run(
+fit <- because(
     equations = list(
         species_richness ~ temperature
     ),
@@ -376,7 +376,7 @@ colnames(A_matrix) <- pedigree$id
 rownames(data) <- data$individual
 
 # Quantitative genetics SEM!
-fit <- phybase_run(
+fit <- because(
     equations = list(
         body_size ~ food_availability,
         litter_size ~ body_size
@@ -425,7 +425,7 @@ colnames(social_cov) <- data$individual
 rownames(data) <- data$individual
 
 # Account for social structure
-fit <- phybase_run(
+fit <- because(
     equations = list(
         mating_success ~ dominance_rank,
         foraging_efficiency ~ dominance_rank
@@ -458,7 +458,7 @@ custom_cov <- your_similarity_function(data)
 rownames(custom_cov) <- data$id
 colnames(custom_cov) <- data$id
 
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data,
     tree = custom_cov,
@@ -473,7 +473,7 @@ Combine phylogeny with other structures using random effects:
 
 ```{r, eval=FALSE}
 # Phylogeny for species + random effects for space
-fit <- phybase_run(
+fit <- because(
     equations = list(
         trait ~ environment + (1 | site)
     ),
@@ -522,7 +522,7 @@ all(rownames(my_matrix) %in% rownames(data))
 
 ```{r, eval=FALSE}
 # Account for phylogeny AND repeated measures
-fit <- phybase_run(
+fit <- because(
     equations = list(
         trait ~ environment + (1 | population)
     ),
@@ -538,7 +538,7 @@ fit <- phybase_run(
 
 ```{r, eval=FALSE}
 # Species-level phylogeny with individual-level data
-fit <- phybase_run(
+fit <- because(
     data = list(
         species = species_data,
         individual = individual_data
@@ -590,7 +590,7 @@ tree_binary <- multi2di(tree) # Randomly resolve
 
 **Solution**: Use optimization
 ```{r, eval=FALSE}
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data,
     tree = tree,

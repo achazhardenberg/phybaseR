@@ -1,6 +1,6 @@
-Package: phybaseR
+Package: because
 Type: Package
-Title: phybaseR: An R package to easily create and run PhyBaSE models
+Title: because: Bayesian Estimation of Causal Effects
 Version: 1.0
 Authors@R: c(
     person(
@@ -9,10 +9,10 @@ Authors@R: c(
       role = c("aut", "cre")
     )
   )
-Description: Provides tools for specifying and fitting Phylogenetic Bayesian 
-    Structural Equation Models (PhyBaSE) using JAGS. PhyBaSE models allow causal
-    inference in phylogenetic comparative analyses, accounting for phylogenetic
-    uncertainty and handling missing data. Implements and expands on the methods described in
+Description: Provides tools for specifying and fitting Bayesian Structural Equation Models
+    using JAGS. The 'because' package allows causal inference in complex ecological and 
+    evolutionary analyses, accounting for phylogenetic uncertainty, spatial autocorrelation, 
+    and other covariance structures. Implements and expands on the methods described in
     von Hardenberg and Gonzalez-Voyer (2025) <doi:10.1111/2041-210X.70044>.
 License: AGPL-3
 Encoding: UTF-8

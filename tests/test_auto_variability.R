@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 library(ape)
 
 # Test auto-detection of variability
@@ -19,7 +19,7 @@ cat("Data columns:", paste(names(data), collapse = ", "), "\n\n")
 
 # Run WITHOUT specifying variability argument
 # Should auto-detect X_se
-fit <- phybase_run(
+fit <- because(
     data = data,
     tree = tree,
     equations = list(Y ~ X),

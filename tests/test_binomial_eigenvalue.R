@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 library(ape)
 
 set.seed(123)
@@ -18,7 +18,7 @@ data_bin <- data.frame(
 cat("=== Testing binomial model (eigenvalue issue) ===\n")
 cat("Running with 3 chains...\n")
 
-fit_bin <- phybase_run(
+fit_bin <- because(
     data = data_bin,
     tree = tree,
     equations = list(Gregarious ~ X),

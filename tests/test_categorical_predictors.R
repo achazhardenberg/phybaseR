@@ -1,8 +1,8 @@
 # Test script for Categorical Predictor Support
 
-source("R/phybase_format_data.R")
-source("R/phybase_run.R")
-source("R/phybase_model.R")
+source("R/because_format_data.R")
+source("R/because.R")
+source("R/because_model.R")
 
 library(ape)
 
@@ -27,7 +27,7 @@ cat("\n")
 
 # 2. Format data (should auto-create dummies)
 cat("Formatting data with categorical variables...\n")
-data_list <- phybase_format_data(data_long, species_col = "SP", tree = tree)
+data_list <- because_format_data(data_long, species_col = "SP", tree = tree)
 
 cat("\nFormatted data variables:\n")
 print(names(data_list))
@@ -40,11 +40,11 @@ if (!is.null(attr(data_list, "categorical_vars"))) {
     cat("\n")
 }
 
-# 3. Test with phybase_run using auto-expanding equations
+# 3. Test with because using auto-expanding equations
 cat("Running model with AUTO-EXPANDING categorical predictors...\n")
 cat("Equation: BodyMass ~ Diet + Habitat (will auto-expand to dummies)\n\n")
 
-fit <- phybase_run(
+fit <- because(
     data = data_list,
     tree = tree,
     equations = list(BodyMass ~ Diet + Habitat), # Auto-expands!

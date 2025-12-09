@@ -46,11 +46,11 @@
 #' @examples
 #' # Standard DAG
 #' equations <- list(LS ~ BM, NL ~ BM + RS, DD ~ NL)
-#' ind_tests <- phybase_dsep(equations)
+#' ind_tests <- because_dsep(equations)
 #'
 #' # With latent variable
 #' equations_latent <- list(X ~ Quality, Y ~ Quality)
-#' result <- phybase_dsep(equations_latent, latent = "Quality")
+#' result <- because_dsep(equations_latent, latent = "Quality")
 #' # result$tests: m-separation tests
 #' # result$correlations: induced correlation between X and Y
 #' @param quiet Logical; if FALSE (default), print the basis set and MAG structure.
@@ -58,7 +58,7 @@
 #' @param random_terms Optional list of random effects (group, type) parsed from equations.
 #' @export
 #' @importFrom stats formula terms as.formula
-phybase_dsep <- function(
+because_dsep <- function(
   equations,
   latent = NULL,
   random_terms = list(),

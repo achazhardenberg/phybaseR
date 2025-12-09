@@ -2,17 +2,19 @@
 % Please edit documentation in R/mag_helpers.R
 \name{mag_basis_to_formulas}
 \alias{mag_basis_to_formulas}
-\title{Convert MAG basis set to phybaseR formula format}
+\title{Convert MAG basis set to becauseR formula format}
 \usage{
-mag_basis_to_formulas(basis_set)
+mag_basis_to_formulas(basis_set, latent_children = NULL)
 }
 \arguments{
 \item{basis_set}{Basis set from basiSet.mag()}
+
+\item{latent_children}{Optional character vector of variables that are direct children of latents}
 }
 \value{
 List of formulas with test_var attribute
 }
 \description{
-Convert MAG basis set to phybaseR formula format
+Convert MAG basis set to becauseR formula format
 }
 \keyword{internal}

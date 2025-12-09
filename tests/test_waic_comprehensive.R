@@ -3,7 +3,7 @@
 # Tests WAIC with standard errors across various model types
 ##############################################################################
 
-library(phybaseR)
+library(becauseR)
 library(ape)
 
 set.seed(12345)
@@ -55,7 +55,7 @@ run_test("Basic Gaussian model without phylogeny", {
         X = rnorm(N, mean = 0, sd = 1)
     )
 
-    fit <- phybase_run(
+    fit <- because(
         data = df,
         id_col = "SP",
         equations = list(Y ~ X),
@@ -104,7 +104,7 @@ run_test("Phylogenetic SEM with tree structure", {
         X = rnorm(N, mean = 5, sd = 2)
     )
 
-    fit <- phybase_run(
+    fit <- because(
         data = df,
         structure = tree,
         id_col = "SP",
@@ -146,7 +146,7 @@ run_test("Poisson model with count data", {
         X = rnorm(N)
     )
 
-    fit <- phybase_run(
+    fit <- because(
         data = df,
         id_col = "SP",
         equations = list(Y ~ X),
@@ -181,7 +181,7 @@ run_test("Binomial model with binary data", {
         X = rnorm(N)
     )
 
-    fit <- phybase_run(
+    fit <- because(
         data = df,
         id_col = "SP",
         equations = list(Y ~ X),
@@ -217,7 +217,7 @@ run_test("Multi-response model (two Gaussian responses)", {
         X = rnorm(N)
     )
 
-    fit <- phybase_run(
+    fit <- because(
         data = df,
         id_col = "SP",
         equations = list(
@@ -262,7 +262,7 @@ run_test("Model comparison (complex vs simple)", {
     )
 
     # Complex model
-    fit_complex <- phybase_run(
+    fit_complex <- because(
         data = df,
         structure = tree,
         id_col = "SP",
@@ -274,7 +274,7 @@ run_test("Model comparison (complex vs simple)", {
     )
 
     # Simple model
-    fit_simple <- phybase_run(
+    fit_simple <- because(
         data = df,
         structure = tree,
         id_col = "SP",
@@ -286,7 +286,7 @@ run_test("Model comparison (complex vs simple)", {
     )
 
     # Null model
-    fit_null <- phybase_run(
+    fit_null <- because(
         data = df,
         structure = tree,
         id_col = "SP",
@@ -347,7 +347,7 @@ run_test("MAG model with latent variable (induced correlations)", {
         Y2 = rnorm(N, mean = 8, sd = 1.5)
     )
 
-    fit <- phybase_run(
+    fit <- because(
         data = df,
         structure = tree,
         id_col = "SP",
@@ -393,7 +393,7 @@ run_test("Mixed distribution model (Gaussian + Poisson)", {
         X = rnorm(N)
     )
 
-    fit <- phybase_run(
+    fit <- because(
         data = df,
         id_col = "SP",
         equations = list(

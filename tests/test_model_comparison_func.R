@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 library(ape)
 
 # Create synthetic data
@@ -13,7 +13,7 @@ df <- data.frame(
 )
 
 cat("Running Model 1 (Simple)...\n")
-fit1 <- phybase_run(
+fit1 <- because(
     data = df,
     structure = tree,
     id_col = "SP",
@@ -23,7 +23,7 @@ fit1 <- phybase_run(
 )
 
 cat("Running Model 2 (Complex)...\n")
-fit2 <- phybase_run(
+fit2 <- because(
     data = df,
     structure = tree,
     id_col = "SP",
@@ -33,7 +33,7 @@ fit2 <- phybase_run(
 )
 
 cat("Running Model 3 (Null)...\n")
-fit3 <- phybase_run(
+fit3 <- because(
     data = df,
     structure = tree,
     id_col = "SP",
@@ -42,16 +42,16 @@ fit3 <- phybase_run(
     quiet = TRUE
 )
 
-cat("\n=== Testing phybase_compare (individual args) ===\n")
-comp <- phybase_compare(fit1, fit2, fit3)
+cat("\n=== Testing because_compare (individual args) ===\n")
+comp <- because_compare(fit1, fit2, fit3)
 print(comp)
 
-cat("\n=== Testing phybase_compare (named args) ===\n")
-comp_named <- phybase_compare(Simple = fit1, Complex = fit2, Null = fit3)
+cat("\n=== Testing because_compare (named args) ===\n")
+comp_named <- because_compare(Simple = fit1, Complex = fit2, Null = fit3)
 print(comp_named)
 
-cat("\n=== Testing phybase_compare (list arg) ===\n")
-comp_list <- phybase_compare(models = list(M1 = fit1, M2 = fit2, M3 = fit3))
+cat("\n=== Testing because_compare (list arg) ===\n")
+comp_list <- because_compare(models = list(M1 = fit1, M2 = fit2, M3 = fit3))
 print(comp_list)
 
 cat("\n✓ SUCCESS!\n")

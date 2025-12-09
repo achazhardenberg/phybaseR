@@ -1,10 +1,10 @@
-#' Compare PhyBaSE Models
+#' Compare Because Models
 #'
 #' A unified function to either (1) compare previously fitted models, or (2) run multiple model specifications in parallel and then compare them.
 #'
-#' @param ... For comparing fitted models: individual fitted model objects of class \code{"phybase"}.
-#'   For running models: additional arguments passed to \code{\link{phybase_run}} (e.g., \code{n.iter}).
-#' @param model_specs A named list of model specifications to run (Mode 2). Each element should be a list containing arguments for \code{phybase_run}.
+#' @param ... For comparing fitted models: individual fitted model objects of class \code{"because"}.
+#'   For running models: additional arguments passed to \code{\link{because}} (e.g., \code{n.iter}).
+#' @param model_specs A named list of model specifications to run (Mode 2). Each element should be a list containing arguments for \code{because}.
 #'   Alternatively, this argument can accept the first fitted model object (Mode 1).
 #' @param data The dataset (required for Mode 2). Alternatively, the second fitted model object (Mode 1).
 #' @param tree The phylogenetic tree (optional for Mode 2). Alternatively, the third fitted model object (Mode 1).
@@ -13,7 +13,7 @@
 #' @param sort Logical. If \code{TRUE} (default), sort comparison table by WAIC.
 #'
 #' @return
-#' If comparing fitted models: A class \code{"phybase_comparison"} object (data frame) with WAIC rankings.
+#' If comparing fitted models: A class \code{"because_comparison"} object (data frame) with WAIC rankings.
 #'
 #' If running models: A list containing:
 #' \item{results}{List of fitted model objects.}
@@ -21,26 +21,26 @@
 #'
 #' @details
 #' \strong{Mode 1: Compare Fitted Models}
-#' Call \code{phybase_compare(fit1, fit2)} or \code{phybase_compare(models = list(fit1, fit2))}.
+#' Call \code{because_compare(fit1, fit2)} or \code{because_compare(models = list(fit1, fit2))}.
 #' Extracts WAIC (with SE) from each model and ranks them.
 #'
 #' \strong{Mode 2: Run and Compare}
-#' Call \code{phybase_compare(model_specs = list(m1=..., m2=...), data=data, tree=tree)}.
+#' Call \code{because_compare(model_specs = list(m1=..., m2=...), data=data, tree=tree)}.
 #' This runs the models in parallel and returns the comparison.
 #'
 #' @examples
 #' \dontrun{
 #'   # Mode 1: Compare existing fits
-#'   phybase_compare(fit1, fit2)
+#'   because_compare(fit1, fit2)
 #'
 #'   # Mode 2: Run and compare
 #'   specs <- list(m1 = list(equations = list(Y ~ X)), m2 = list(equations = list(Y ~ X + Z)))
-#'   res <- phybase_compare(specs, data = df, tree = tr, n.cores = 2)
+#'   res <- because_compare(specs, data = df, tree = tr, n.cores = 2)
 #'   print(res$comparison)
 #' }
 #'
 #' @export
-phybase_compare <- function(
+because_compare <- function(
     ...,
     model_specs = NULL,
     data = NULL,
@@ -97,13 +97,17 @@ phybase_compare <- function(
             stop("Argument 'data' is required for running models.")
         }
 
-        # Extract extra args for phybase_run from dots (excluding rescued pos args)
+        # Extract extra args for because from dots (excluding rescued pos args)
         # This is tricky with ... mixing positional and named.
         # Safest: Use named arguments in ... mainly.
         common_args <- dots[nzchar(names(dots))]
 
         # Run Function
         run_model_internal <- function(name, spec, d, t, extra) {
+            # Remove WAIC and quiet from extra to avoid duplicates (hardcoded below)
+            extra$WAIC <- NULL
+            extra$quiet <- NULL
+
             args <- c(
                 list(data = d, structure = t, WAIC = TRUE, quiet = TRUE),
                 spec,
@@ -111,9 +115,10 @@ phybase_compare <- function(
             )
             tryCatch(
                 {
-                    do.call(phybaseR::phybase_run, args)
+                    do.call(because::because, args)
                 },
                 error = function(e) {
+                    message(paste("Model", name, "failed:", e$message))
                     warning(paste("Model", name, "failed:", e$message))
                     return(NULL)
                 }
@@ -139,7 +144,7 @@ phybase_compare <- function(
                 on.exit(parallel::stopCluster(cl), add = TRUE)
                 created_cluster <- TRUE
             }
-            parallel::clusterEvalQ(cl, library(phybaseR))
+            parallel::clusterEvalQ(cl, library(because))
 
             fit_results <- parallel::parLapply(cl, spec_names, function(nm) {
                 run_model_internal(
@@ -177,7 +182,7 @@ phybase_compare <- function(
         }
 
         # Compare
-        comp <- phybase_compare(models = fit_results, sort = sort)
+        comp <- because_compare(models = fit_results, sort = sort)
 
         return(list(results = fit_results, comparison = comp))
     } else {
@@ -192,8 +197,8 @@ phybase_compare <- function(
             candidates <- c(candidates, dots$models)
         }
 
-        # Filter for phybase objects
-        is_fit <- function(x) inherits(x, "phybase")
+        # Filter for because objects
+        is_fit <- function(x) inherits(x, "because")
         models <- Filter(is_fit, candidates)
 
         # Name models if needed
@@ -211,7 +216,7 @@ phybase_compare <- function(
             names(models) <- curr_names
         } else {
             stop(
-                "No fitted 'phybase' models provided (Mode 1), nor valid 'model_specs' (Mode 2)."
+                "No fitted 'because' models provided (Mode 1), nor valid 'model_specs' (Mode 2)."
             )
         }
 
@@ -282,12 +287,12 @@ calc_waic_table <- function(models, sort = TRUE) {
     df$weight <- rel_lik / sum(rel_lik)
 
     df <- df[, c("WAIC", "SE", "dWAIC", "dSE", "p_waic", "weight")]
-    class(df) <- c("phybase_comparison", "data.frame")
+    class(df) <- c("because_comparison", "data.frame")
     return(df)
 }
 
 #' @export
-print.phybase_comparison <- function(x, digits = 2, ...) {
+print.because_comparison <- function(x, digits = 2, ...) {
     cat("Model Comparison (ordered by WAIC):\n")
     print.data.frame(x, digits = digits, ...)
     cat("\n")

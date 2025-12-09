@@ -1,4 +1,4 @@
-# Test script for Ordinal Optimization in phybaseR
+# Test script for Ordinal Optimization in becauseR
 # Verifies correctness of the random effects formulation for ordinal models (Cumulative Logit)
 
 # Source local files
@@ -58,7 +58,7 @@ equations <- list(Y ~ X)
 
 cat("Running Optimized Ordinal Model (Random Effects)...\n")
 start_time <- Sys.time()
-fit_opt <- phybase_run(
+fit_opt <- because(
     data = data,
     tree = tree,
     equations = equations,

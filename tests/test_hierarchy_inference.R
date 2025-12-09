@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 
 cat("=======================================================\n")
 cat("   TESTING IMPROVED HIERARCHY INFERENCE\n")
@@ -34,7 +34,7 @@ cat("Test 1: Explicit nesting syntax (1|site_year/individual)\n")
 cat("---------------------------------------------------------\n")
 
 result1 <- suppressMessages({
-    phybase_run(
+    because(
         data = list(
             individual = individual_data,
             site_year = site_year_data
@@ -55,7 +55,7 @@ cat("Test 2: Matching grouping variables to level names\n")
 cat("-----------------------------------------------------\n")
 
 result2 <- suppressMessages({
-    phybase_run(
+    because(
         data = list(
             individual = individual_data,
             site_year = site_year_data
@@ -77,7 +77,7 @@ cat("Test 3: Still works with explicit hierarchy\n")
 cat("--------------------------------------------\n")
 
 result3 <- suppressMessages({
-    phybase_run(
+    because(
         data = list(
             individual = individual_data,
             site_year = site_year_data

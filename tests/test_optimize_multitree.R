@@ -5,7 +5,7 @@
 # with phylogenetic uncertainty (multiple trees).
 # ==============================================================================
 
-# library(phybaseR)
+# library(becauseR)
 library(ape)
 library(coda)
 library(rjags)
@@ -60,7 +60,7 @@ equations <- list(Y ~ X)
 # 2. Run Optimized Multi-Tree Model
 cat("\nRunning optimized multi-tree model (optimize = TRUE)...\n")
 time_opt <- system.time({
-  fit_opt <- phybase_run(
+  fit_opt <- because(
     data = data,
     tree = tree_list,
     equations = equations,
@@ -104,7 +104,7 @@ cat(sprintf("  lambda: True=%.2f, Est=%.2f\n", lambda, lambda_est))
 # 4. Run Unoptimized Multi-Tree Model (for comparison)
 cat("\nRunning unoptimized multi-tree model (optimize = FALSE)...\n")
 time_unopt <- system.time({
-  fit_unopt <- phybase_run(
+  fit_unopt <- because(
     data = data,
     tree = tree_list,
     equations = equations,

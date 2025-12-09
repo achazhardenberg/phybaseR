@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 
 cat("===================================================\n")
 cat("   POLYNOMIAL TRANSFORMATIONS - FULL TEST\n")
@@ -26,7 +26,7 @@ cat("Expected d-separation tests:\n")
 cat("  Should NOT test: x _||_ x_pow2 (deterministic!)\n")
 cat("  Should test: y _||_ x | x_pow2, z\n\n")
 
-fit <- phybase_run(
+fit <- because(
     equations = list(
         y ~ x + I(x^2) + z,
         z ~ x

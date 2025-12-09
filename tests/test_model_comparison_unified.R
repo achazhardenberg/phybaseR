@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 library(ape)
 
 # Create synthetic data
@@ -19,7 +19,7 @@ specs <- list(
 )
 
 # Test positional arguments for specs, data, tree
-res_batch <- phybase_compare(specs, df, tree, n.cores = 1, n.iter = 1000)
+res_batch <- because_compare(specs, df, tree, n.cores = 1, n.iter = 1000)
 print(res_batch$comparison)
 
 cat("\n=== TEST 2: Compare Fitted Models (Mode 1) ===\n")
@@ -27,7 +27,7 @@ fit1 <- res_batch$results$m1
 fit2 <- res_batch$results$m2
 
 # Test positional arguments for fits
-comp_fits <- phybase_compare(fit1, fit2)
+comp_fits <- because_compare(fit1, fit2)
 print(comp_fits)
 
 cat("\n✓ SUCCESS\n")

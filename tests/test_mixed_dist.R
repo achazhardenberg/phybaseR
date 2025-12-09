@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 
 # Reproduce mixed distribution bug
 set.seed(123)
@@ -11,7 +11,7 @@ df <- data.frame(
 )
 
 cat("Testing mixed distribution model...\n")
-fit <- phybase_run(
+fit <- because(
     data = df,
     id_col = "SP",
     equations = list(

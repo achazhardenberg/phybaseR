@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 library(ape)
 
 # Simulate data
@@ -12,7 +12,7 @@ data <- data.frame(
 data$Y <- 0.5 * data$X + rnorm(N)
 
 cat("=== TEST 1: 3 Chains (Should show Rhat and n.eff) ===\n")
-fit3 <- phybase_run(
+fit3 <- because(
     data = data,
     tree = tree,
     equations = list(Y ~ X),
@@ -24,7 +24,7 @@ fit3 <- phybase_run(
 print(summary(fit3))
 
 cat("\n=== TEST 2: 1 Chain (Should show n.eff, NO Rhat) ===\n")
-fit1 <- phybase_run(
+fit1 <- because(
     data = data,
     tree = tree,
     equations = list(Y ~ X),

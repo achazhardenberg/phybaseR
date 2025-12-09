@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 library(ape)
 
 data("rhino.dat")
@@ -16,7 +16,7 @@ equations <- list(LS ~ BM, NL ~ BM + RS, DD ~ NL)
 # Run with dsep=TRUE
 tryCatch(
     {
-        fit_rhino_dsep <- phybase_run(
+        fit_rhino_dsep <- because(
             data = data_list,
             tree = rhino.tree,
             equations = equations,

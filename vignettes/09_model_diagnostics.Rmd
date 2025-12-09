@@ -42,7 +42,7 @@ equations <- list(
 # Implied independence: x ⊥ y | z
 # "x and y are independent given z"
 
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data,
     dsep = TRUE # Test d-separation!
@@ -86,7 +86,7 @@ equations <- list(
     population ~ range_size
 )
 
-fit <- phybase_run(equations, data, dsep = TRUE)
+fit <- because(equations, data, dsep = TRUE)
 
 # D-sep result:
 # population _||_ body_size | range_size
@@ -102,7 +102,7 @@ equations_fixed <- list(
 
 ### M-Separation (with Latent Variables)
 
-When latent variables are present, phybaseR uses **m-separation** on the MAG (Maximal Ancestral Graph).
+When latent variables are present, becauseR uses **m-separation** on the MAG (Maximal Ancestral Graph).
 
 Same interpretation, but accounts for induced correlations from latent confounders.
 
@@ -112,14 +112,14 @@ See **[Latent Variables](08_latent_variables.html)** vignette for details.
 
 ## Response Distributions
 
-phybaseR supports different response distributions for different data types.
+becauseR supports different response distributions for different data types.
 
 ### Gaussian (Default)
 
 For continuous, normally distributed data:
 
 ```{r, eval=FALSE}
-fit <- phybase_run(
+fit <- because(
     equations = list(
         body_mass ~ age + sex
     ),
@@ -134,7 +134,7 @@ For binary outcomes (0/1) or proportions (success/trials):
 
 ```{r, eval=FALSE}
 # Binary: survival (0 = dead, 1 = alive)
-fit <- phybase_run(
+fit <- because(
     equations = list(
         survival ~ age + condition
     ),
@@ -146,7 +146,7 @@ fit <- phybase_run(
 data$N_trials <- 10 # Clutch size
 data$N_success <- ... # Number hatched
 
-fit <- phybase_run(
+fit <- because(
     equations = list(
         hatching_success ~ temperature
     ),
@@ -167,7 +167,7 @@ For count data (non-negative integers):
 
 ```{r, eval=FALSE}
 # Number of offspring
-fit <- phybase_run(
+fit <- because(
     equations = list(
         offspring_count ~ age + body_size
     ),
@@ -192,7 +192,7 @@ log(λ) = α + βx
 For count data with variance > mean:
 
 ```{r, eval=FALSE}
-fit <- phybase_run(
+fit <- because(
     equations = list(
         parasite_load ~ host_size
     ),
@@ -211,7 +211,7 @@ fit <- phybase_run(
 For positive, continuous, right-skewed data:
 
 ```{r, eval=FALSE}
-fit <- phybase_run(
+fit <- because(
     equations = list(
         lifespan ~ body_mass
     ),
@@ -235,7 +235,7 @@ data$habitat <- factor(data$habitat,
     levels = c("Forest", "Grassland", "Wetland")
 )
 
-fit <- phybase_run(
+fit <- because(
     equations = list(
         habitat ~ temperature + rainfall
     ),
@@ -270,7 +270,7 @@ data$condition <- factor(data$condition,
     ordered = TRUE
 )
 
-fit <- phybase_run(
+fit <- because(
     equations = list(
         condition ~ age + food_availability
     ),
@@ -304,7 +304,7 @@ logit(P(Y ≤ k)) = θ_k - β × X
 Different response variables can have different distributions:
 
 ```{r, eval=FALSE}
-fit <- phybase_run(
+fit <- because(
     equations = list(
         survival ~ age, # Binomial
         offspring ~ survival, # Poisson
@@ -356,7 +356,7 @@ Number of independent samples from the posterior.
 # beta_x      45   ✗ Too low
 
 # Solution: Thin more or run longer
-fit <- phybase_run(
+fit <- because(
     equations, data,
     n.iter = 20000,
     n.thin = 5 # Save every 5th iteration
@@ -389,8 +389,8 @@ Balances fit and complexity.
 **Lower is better**
 
 ```{r, eval=FALSE}
-fit1 <- phybase_run(equations1, data, DIC = TRUE)
-fit2 <- phybase_run(equations2, data, DIC = TRUE)
+fit1 <- because(equations1, data, DIC = TRUE)
+fit2 <- because(equations2, data, DIC = TRUE)
 
 fit1$DIC # 245.3
 fit2$DIC # 238.1  ← Better
@@ -405,7 +405,7 @@ More robust than DIC, especially for hierarchical models.
 **Lower is better**
 
 ```{r, eval=FALSE}
-fit <- phybase_run(
+fit <- because(
     equations, data,
     WAIC = TRUE,
     n.chains = 2 # Requires 2+ chains
@@ -457,7 +457,7 @@ For comparing effects across variables:
 data$age_std <- scale(data$age)
 data$mass_std <- scale(data$mass)
 
-fit <- phybase_run(
+fit <- because(
     equations = list(
         survival ~ age_std + mass_std
     ),
@@ -522,11 +522,11 @@ fit <- phybase_run(
 4. **Convergence**: All Rhat < 1.1
 5. **Parameter estimates**: Mean, 95% CI
 6. **Model fit**: DIC/WAIC, d-separation results
-7. **Software**: phybaseR version, R version
+7. **Software**: becauseR version, R version
 
 ### Example
 
-> "We fitted a phylogenetic SEM using phybaseR (v1.0) with 3 chains of 10,000 iterations (5,000 burn-in, thin = 2). Convergence was confirmed (all Rhat < 1.05). D-separation tests indicated good model fit (all P > 0.4). Body size had a positive effect on range size (β = 0.45, 95% CI: 0.32-0.58)."
+> "We fitted a phylogenetic SEM using becauseR (v1.0) with 3 chains of 10,000 iterations (5,000 burn-in, thin = 2). Convergence was confirmed (all Rhat < 1.05). D-separation tests indicated good model fit (all P > 0.4). Body size had a positive effect on range size (β = 0.45, 95% CI: 0.32-0.58)."
 
 ---
 

@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 
 # Test log_lik monitoring with WAIC=TRUE
 set.seed(123)
@@ -10,7 +10,7 @@ df <- data.frame(
 )
 
 cat("=== Test 1: WAIC=FALSE (no log_lik monitoring) ===\n")
-fit1 <- phybase_run(
+fit1 <- because(
     data = df,
     id_col = "SP",
     equations = list(Y ~ X),
@@ -29,7 +29,7 @@ if (!has_loglik1) {
 }
 
 cat("\n=== Test 2: WAIC=TRUE (should monitor log_lik) ===\n")
-fit2 <- phybase_run(
+fit2 <- because(
     data = df,
     id_col = "SP",
     equations = list(Y ~ X),

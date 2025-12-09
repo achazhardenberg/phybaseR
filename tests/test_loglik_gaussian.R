@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 
 # Create simple test data
 set.seed(123)
@@ -11,7 +11,7 @@ df <- data.frame(
 
 # Run model and check if log_lik is in the JAGS model
 cat("Running simple Gaussian model...\n")
-fit <- phybase_run(
+fit <- because(
     data = df,
     id_col = "SP",
     equations = list(Y ~ X),
@@ -39,4 +39,4 @@ if (grepl("log_lik", model_str)) {
 # Check if log_lik would be in monitored parameters if we had enabled it
 cat("\n=== Summary ===\n")
 cat("Model compiled successfully!\n")
-cat("Next step: Add log_lik to monitored parameters in phybase_run()\n")
+cat("Next step: Add log_lik to monitored parameters in because()\n")

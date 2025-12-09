@@ -12,7 +12,7 @@ test_that("Performance is acceptable for small models", {
 
     # Benchmark execution time
     time <- system.time({
-        fit <- phybase_run(
+        fit <- because(
             data = data_list,
             tree = tree,
             equations = equations,
@@ -42,7 +42,7 @@ test_that("Performance scales reasonably with N", {
         equations <- list(Y ~ X)
 
         system.time({
-            phybase_run(
+            because(
                 data = data,
                 tree = tree,
                 equations = equations,
