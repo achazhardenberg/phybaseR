@@ -1,0 +1,20 @@
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 50
+   Unobserved stochastic nodes: 5
+   Total graph size: 5465
+
+Initializing model
+
+[1] "Beta mean: 0.945160210051186"
+[1] "CI: 0.635880171362982 - 1.26865399771368"
+[1] "Test PASSED"
+── Warning: Full workflow: simple model parameter recovery stress test ─────────
+Unused variable "VCV" in data
+Backtrace:
+    ▆
+ 1. └─because::because(...)
+ 2.   └─rjags::jags.model(...)
+

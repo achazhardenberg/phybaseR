@@ -1,4 +1,4 @@
-#' Generate a JAGS model string for Phylogenetic Bayesian SEM (PhyBaSE)
+#' Generate a JAGS model string for Phylogenetic Bayesian SEM (Because)
 #'
 #' This function builds the model code to be passed to JAGS based on a set of structural equations.
 #' It supports both single and multiple phylogenetic trees (to account for phylogenetic uncertainty).
@@ -45,7 +45,7 @@
 #'
 #' @examples
 #' eqs <- list(BR ~ BM, S ~ BR, G ~ BR, L ~ BR)
-#' cat(phybase_model(eqs, multi.tree = TRUE)$model)
+#' cat(because_model(eqs, multi.tree = TRUE)$model)
 #'
 #' @param optimise Logical. If TRUE (default), use random effects formulation for 4.6× speedup.
 #'   If FALSE, use original marginal covariance formulation.
@@ -56,7 +56,7 @@
 #' @importFrom stats formula terms setNames sd
 #' @importFrom utils combn
 #'
-phybase_model <- function(
+because_model <- function(
   equations,
   multi.tree = FALSE,
   latent_method = "correlations",
@@ -569,7 +569,38 @@ phybase_model <- function(
             additive_terms <- ""
 
             for (s_name in structure_names) {
-              # ... existing phylo loop ...
+              s_suffix <- paste0("_", s_name)
+              u_std <- paste0("u_std_", response, suffix, s_suffix)
+              u <- paste0("u_", response, suffix, s_suffix)
+              tau_u <- paste0("tau_u_", response, suffix, s_suffix)
+
+              prec_name <- paste0("Prec_", s_name)
+              prec_index <- if (multi.tree && s_name == "phylo") {
+                paste0(prec_name, "[1:N, 1:N, K]")
+              } else {
+                paste0(prec_name, "[1:N, 1:N]")
+              }
+
+              model_lines <- c(
+                model_lines,
+                paste0(
+                  "  ",
+                  u_std,
+                  "[1:N] ~ dmnorm(zeros[1:N], ",
+                  prec_index,
+                  ")"
+                ),
+                paste0(
+                  "  for (i in 1:N) { ",
+                  u,
+                  "[i] <- ",
+                  u_std,
+                  "[i] / sqrt(",
+                  tau_u,
+                  ") }"
+                )
+              )
+              additive_terms <- paste0(additive_terms, " + ", u, "[i]")
             }
 
             # Random Effects (Grouped)
@@ -880,7 +911,7 @@ phybase_model <- function(
               # But here it seems to perform one tree per category? Or same tree?
               # If multi.tree is true, we have K trees. So it should likely be k?
               # Original code had Prec_Index dependent on... wait.
-              # Original code: "Prec_phylo_fixed[1:N, 1:N, K]"
+              # Original code: "Prec_phylo[1:N, 1:N, K]"
               # If K is a constant (number of categories), then it uses the K-th matrix?
               # Or did it mean `k` (the loop variable)?
               # If the loop variable is `k`, then `K` usually refers to max categories.
@@ -1025,9 +1056,9 @@ phybase_model <- function(
 
           # Handle multi-tree
           prec_index <- if (multi.tree) {
-            "Prec_phylo_fixed[1:N, 1:N, K]"
+            "Prec_phylo[1:N, 1:N, K]"
           } else {
-            "Prec_phylo_fixed[1:N, 1:N]"
+            "Prec_phylo[1:N, 1:N]"
           }
 
           model_lines <- c(
@@ -1146,9 +1177,9 @@ phybase_model <- function(
 
           # Handle multi-tree
           prec_index <- if (multi.tree) {
-            "Prec_phylo_fixed[1:N, 1:N, K]"
+            "Prec_phylo[1:N, 1:N, K]"
           } else {
-            "Prec_phylo_fixed[1:N, 1:N]"
+            "Prec_phylo[1:N, 1:N]"
           }
 
           model_lines <- c(
@@ -1408,15 +1439,26 @@ phybase_model <- function(
             )
           )
         } else {
-          # Non-optimised: use TAU_phylo (defined later with inverse(VCV))
+          # Non-optimised: use Prec_phylo equivalent (or TAU_phylo via VCV)
+          # BETTER: Use Prec_phylo directly if available (standardized approach)
+          # Check if dealing with multi.tree or single
+          prec_index <- if (multi.tree) {
+            "Prec_phylo[1:N, 1:N, K]"
+          } else {
+            "Prec_phylo[1:N, 1:N]"
+          }
+
           model_lines <- c(
             model_lines,
             paste0("  tau_phylo_", var, " ~ dgamma(1, 1)"),
             paste0(
               "  ",
               err_phylo,
-              "[1:N] ~ dmnorm(zero_vec[], TAU_phylo_",
+              "[1:N] ~ dmnorm(zero_vec[], ",
+              "tau_phylo_",
               var,
+              " * ",
+              prec_index,
               ")"
             )
           )
@@ -1620,107 +1662,86 @@ phybase_model <- function(
             )
           )
         } else if (optimise) {
-          # Check if we should use component-wise (multiple or random) vs legacy single
-          use_legacy <- (length(structure_names) == 1 &&
-            length(random_structure_names) == 0)
+          # Component-wise: Estimate independent variance components
+          # Note: We now use this even for single structure to match the restored model logic
+          model_lines <- c(
+            model_lines,
+            paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)")
+          )
 
-          if (!use_legacy) {
-            # Component-wise: Estimate independent variance components
-            model_lines <- c(
-              model_lines,
-              paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)")
-            )
+          for (s_name in structure_names) {
+            s_suffix <- paste0("_", s_name) # Always append suffix to match model logic
 
-            for (s_name in structure_names) {
-              s_suffix <- if (length(structure_names) > 1) {
-                paste0("_", s_name)
-              } else {
-                ""
-              }
-              tau_u <- paste0("tau_u_", response, suffix, s_suffix)
-
-              model_lines <- c(
-                model_lines,
-                paste0("  ", tau_u, " ~ dgamma(1, 1)"),
-                paste0(
-                  "  sigma_",
-                  response,
-                  suffix,
-                  s_suffix,
-                  " <- 1/sqrt(",
-                  tau_u,
-                  ")"
-                )
-              )
-            }
-
-            # Random Effects Priors
-            for (r_name in random_structure_names) {
-              s_suffix <- paste0("_", r_name)
-              tau_u <- paste0("tau_u_", response, suffix, s_suffix)
-
-              model_lines <- c(
-                model_lines,
-                paste0("  ", tau_u, " ~ dgamma(1, 1)"),
-                paste0(
-                  "  sigma_",
-                  response,
-                  suffix,
-                  s_suffix,
-                  " <- 1/sqrt(",
-                  tau_u,
-                  ")"
-                )
-              )
-            }
+            tau_u <- paste0("tau_u_", response, suffix, s_suffix)
 
             model_lines <- c(
               model_lines,
+              paste0("  ", tau_u, " ~ dgamma(1, 1)"),
               paste0(
                 "  sigma_",
                 response,
-                "_res <- 1/sqrt(tau_e_",
-                response,
                 suffix,
-                ")"
-              )
-            )
-          } else {
-            # Random Effects Priors (tau_u, tau_e) - Single Legacy
-            model_lines <- c(
-              model_lines,
-              paste0("  tau_u_", response, suffix, " ~ dgamma(1, 1)"),
-              paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)"),
-              # Derived parameters for backward compatibility
-              paste0(
-                "  lambda",
-                response,
-                suffix,
-                " <- (1/tau_u_",
-                response,
-                suffix,
-                ") / ((1/tau_u_",
-                response,
-                suffix,
-                ") + (1/tau_e_",
-                response,
-                suffix,
-                "))"
-              ),
-              paste0(
-                "  sigma",
-                response,
-                suffix,
-                " <- sqrt(1/tau_u_",
-                response,
-                suffix,
-                " + 1/tau_e_",
-                response,
-                suffix,
+                s_suffix,
+                " <- 1/sqrt(",
+                tau_u,
                 ")"
               )
             )
           }
+
+          # Generate lambda for compatibility if single structure
+          if (
+            length(structure_names) == 1 && length(random_structure_names) == 0
+          ) {
+            s_name <- structure_names[1]
+            s_suffix <- paste0("_", s_name)
+            tau_u_name <- paste0("tau_u_", response, suffix, s_suffix)
+            paste0(
+              "  lambda",
+              response,
+              suffix,
+              " <- (1/",
+              tau_u_name,
+              ") / ((1/",
+              tau_u_name,
+              ") + (1/tau_e_",
+              response,
+              suffix,
+              "))"
+            )
+          }
+
+          # Random Effects Priors
+          for (r_name in random_structure_names) {
+            s_suffix <- paste0("_", r_name)
+            tau_u <- paste0("tau_u_", response, suffix, s_suffix)
+
+            model_lines <- c(
+              model_lines,
+              paste0("  ", tau_u, " ~ dgamma(1, 1)"),
+              paste0(
+                "  sigma_",
+                response,
+                suffix,
+                s_suffix,
+                " <- 1/sqrt(",
+                tau_u,
+                ")"
+              )
+            )
+          }
+
+          model_lines <- c(
+            model_lines,
+            paste0(
+              "  sigma_",
+              response,
+              "_res <- 1/sqrt(tau_e_",
+              response,
+              suffix,
+              ")"
+            )
+          )
         } else {
           # Marginal Priors (lambda, tau)
           model_lines <- c(
@@ -1759,30 +1780,82 @@ phybase_model <- function(
       } else if (optimise) {
         model_lines <- c(
           model_lines,
-          paste0("  # Priors for ", response, " (Multinomial)"),
+          # Priors for ", response, " (Multinomial)"),
           paste0("  for (k in 2:", K_var, ") {"),
           paste0("    alpha_", response, "[k] ~ dnorm(0, 1.0E-6)"),
-          paste0("    tau_u_", response, "[k] ~ dgamma(1, 1)"),
+
+          # Residual error
           paste0("    tau_e_", response, "[k] ~ dgamma(1, 1)"),
-          # Derived lambda
-          paste0(
-            "    lambda_",
-            response,
-            "[k] <- (1/tau_u_",
-            response,
-            "[k]) / ((1/tau_u_",
-            response,
-            "[k]) + (1/tau_e_",
-            response,
-            "[k]))"
-          ),
-          paste0(
-            "    sigma_",
-            response,
-            "[k] <- 1/sqrt(tau_u_",
-            response,
-            "[k])"
-          ),
+
+          # Random effects priors (loop over structures)
+          {
+            prior_lines <- c()
+
+            # Phylogenetic / N-dim Structures
+            for (s_name in structure_names) {
+              s_suffix <- paste0("_", s_name)
+              tau_u <- paste0("tau_u_", response, s_suffix) # Note: suffix is empty loop var inside K loop? No, suffix is handled outside
+              # Wait, suffix is from k=1..response_counter. But here we are in k=2..K_var (categories).
+              # The external loop is 'response', but 'response' is unique per equation group.
+              # Multinomial doesn't support repeats in this logic currently (response_counter[[response]] is likely 1).
+              # We use [k] for category index.
+
+              prior_lines <- c(
+                prior_lines,
+                paste0("    ", tau_u, "[k] ~ dgamma(1, 1)"),
+                paste0(
+                  "    sigma_",
+                  response,
+                  s_suffix,
+                  "[k] <- 1/sqrt(",
+                  tau_u,
+                  "[k])"
+                )
+              )
+            }
+
+            # Random Group Structures
+            for (r_name in random_structure_names) {
+              s_suffix <- paste0("_", r_name)
+              tau_u <- paste0("tau_u_", response, s_suffix)
+
+              prior_lines <- c(
+                prior_lines,
+                paste0("    ", tau_u, "[k] ~ dgamma(1, 1)"),
+                paste0(
+                  "    sigma_",
+                  response,
+                  s_suffix,
+                  "[k] <- 1/sqrt(",
+                  tau_u,
+                  "[k])"
+                )
+              )
+            }
+            prior_lines
+          },
+
+          # Derived lambda (only if single structure, for backward compatibility or convenience)
+          if (
+            length(structure_names) == 1 && length(random_structure_names) == 0
+          ) {
+            s_name <- structure_names[1]
+            s_suffix <- paste0("_", s_name)
+            tau_u_name <- paste0("tau_u_", response, s_suffix)
+            paste0(
+              "    lambda_",
+              response,
+              "[k] <- (1/",
+              tau_u_name,
+              "[k]) / ((1/",
+              tau_u_name,
+              "[k]) + (1/tau_e_",
+              response,
+              "[k]))"
+            )
+          } else {
+            NULL
+          },
           "  }"
         )
       } else {

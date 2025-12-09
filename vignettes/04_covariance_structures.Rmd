@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 # Beyond Phylogeny: Alternative Covariance Structures
 
-phybaseR's `tree` argument accepts **any covariance structure**, not just phylogenies. This enables modeling:
+becauseR's `tree` argument accepts **any covariance structure**, not just phylogenies. This enables modeling:
 
 - **Spatial autocorrelation** (geographic dependencies)
 - **Pedigrees** (animal models / quantitative genetics)
@@ -69,13 +69,13 @@ distances <- distm(coords) / 1000 # Convert to km
 spatial_sigma <- 100 # Spatial scale (km)
 spatial_cov <- exp(-distances / spatial_sigma)
 
-# Format for phybaseR
+# Format for becauseR
 rownames(spatial_cov) <- data$site_id
 colnames(spatial_cov) <- data$site_id
 rownames(data) <- data$site_id
 
 # Fit model with spatial structure
-fit <- phybase_run(
+fit <- because(
     equations = list(
         species_richness ~ temperature + habitat_quality
     ),
@@ -174,7 +174,7 @@ colnames(A_matrix) <- pedigree$id
 rownames(data) <- data$individual
 
 # Quantitative genetics SEM!
-fit <- phybase_run(
+fit <- because(
     equations = list(
         body_size ~ food_availability + maternal_care,
         litter_size ~ body_size + maternal_care
@@ -212,7 +212,7 @@ fit <- phybase_run(
 **Genetic correlations**:
 ```{r, eval=FALSE}
 # Are traits genetically correlated?
-fit <- phybase_run(
+fit <- because(
     equations = list(
         trait1 ~ environment,
         trait2 ~ environment
@@ -276,7 +276,7 @@ colnames(social_cov) <- data$individual
 rownames(data) <- data$individual
 
 # SEM with social structure
-fit <- phybase_run(
+fit <- because(
     equations = list(
         mating_success ~ dominance_rank + aggression,
         foraging_efficiency ~ dominance_rank
@@ -299,7 +299,7 @@ data$betweenness <- betweenness(g) # Bridging position
 data$eigenvector <- eigen_centrality(g)$vector # Influence
 
 # Use as predictors
-fit <- phybase_run(
+fit <- because(
     equations = list(
         mating_success ~ degree + betweenness
     ),
@@ -334,7 +334,7 @@ rownames(temporal_cov) <- data$time
 colnames(temporal_cov) <- data$time
 rownames(data) <- data$time
 
-fit <- phybase_run(
+fit <- because(
     equations = list(
         measurement ~ temperature + rainfall
     ),
@@ -390,7 +390,7 @@ rownames(functional_sim) <- traits$species
 colnames(functional_sim) <- traits$species
 
 # Use in SEM
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data,
     tree = functional_sim,
@@ -412,7 +412,7 @@ rownames(snps) <- paste0("ind", 1:100)
 # Calculate genomic relationship matrix
 G_matrix <- A.mat(snps - 1) # Center & scale
 
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data,
     tree = G_matrix,
@@ -431,7 +431,7 @@ fit <- phybase_run(
 # Can't pass two matrices to tree argument
 # Use one as tree, other as random effect
 
-fit <- phybase_run(
+fit <- because(
     equations = list(
         trait ~ environment + (1 | site)
     ),
@@ -447,7 +447,7 @@ fit <- phybase_run(
 
 ```{r, eval=FALSE}
 # Phylogeny + Genetic + Spatial
-fit <- phybase_run(
+fit <- because(
     equations = list(
         trait ~ environment + (1 | population) + (1 | site)
     ),
@@ -545,7 +545,7 @@ library(Matrix)
 sparse_cov <- as(cov_matrix, "dgCMatrix")
 
 # Optimize mode
-fit <- phybase_run(..., optimise = TRUE)
+fit <- because(..., optimise = TRUE)
 
 # Reduce matrix size (subsample)
 ```

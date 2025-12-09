@@ -1,9 +1,9 @@
-#' Calculate LOO-CV for a PhyBaSE Model
+#' Calculate LOO-CV for a Because Model
 #'
 #' Calculates Leave-One-Out Cross-Validation using Pareto Smoothed Importance Sampling (PSIS-LOO)
-#' for a fitted PhyBaSE model.
+#' for a fitted Because model.
 #'
-#' @param model A fitted model object of class \code{"phybase"} returned by \code{\link{phybase_run}}.
+#' @param model A fitted model object of class \code{"because"} returned by \code{\link{because}}.
 #' @param ...  Additional arguments passed to \code{loo::loo()}.
 #'
 #' @return A \code{loo} object containing:
@@ -36,8 +36,8 @@
 #'
 #' @examples
 #' \dontrun{
-#'   fit <- phybase_run(data, tree, equations)
-#'   loo_result <- phybase_loo(fit)
+#'   fit <- because(data, tree, equations)
+#'   loo_result <- because_loo(fit)
 #'   print(loo_result)
 #'
 #'   # Check for problematic observations
@@ -49,9 +49,9 @@
 #'
 #' @export
 #' @importFrom stats sd dnorm
-phybase_loo <- function(model, ...) {
-    if (!inherits(model, "phybase")) {
-        stop("Input must be a 'phybase' model object.")
+because_loo <- function(model, ...) {
+    if (!inherits(model, "because")) {
+        stop("Input must be a 'because' model object.")
     }
 
     # Check if loo package is installed
@@ -68,11 +68,11 @@ phybase_loo <- function(model, ...) {
     stop(
         "LOO-CV implementation is in development.\n\n",
         "For model comparison, please use WAIC instead:\n",
-        "  fit <- phybase_run(..., WAIC = TRUE)\n",
+        "  fit <- because(..., WAIC = TRUE)\n",
         "  fit$WAIC\n\n",
         "Note: When comparing models with different latent variable structures,\n",
         "use latent_method = 'correlations' (MAG) to ensure comparable WAIC values.\n",
-        "See ?phybase_run and the tutorial vignette for details."
+        "See ?because and the tutorial vignette for details."
     )
 
     # TODO: Implement pointwise log-likelihood calculation
@@ -91,21 +91,21 @@ phybase_loo <- function(model, ...) {
 
 #' Compare Models Using LOO-CV
 #'
-#' Wrapper for \code{loo::loo_compare()} to compare multiple PhyBaSE models.
+#' Wrapper for \code{loo::loo_compare()} to compare multiple Because models.
 #'
-#' @param ... Two or more \code{loo} objects from \code{phybase_loo()}.
+#' @param ... Two or more \code{loo} objects from \code{because_loo()}.
 #'
 #' @return A comparison table ranking models by expected out-of-sample predictive accuracy.
 #'
 #' @examples
 #' \dontrun{
-#'   loo1 <- phybase_loo(fit1)
-#'   loo2 <- phybase_loo(fit2)
-#'   phybase_loo_compare(loo1, loo2)
+#'   loo1 <- because_loo(fit1)
+#'   loo2 <- because_loo(fit2)
+#'   because_loo_compare(loo1, loo2)
 #' }
 #'
 #' @export
-phybase_loo_compare <- function(...) {
+because_loo_compare <- function(...) {
     if (!requireNamespace("loo", quietly = TRUE)) {
         stop(
             "Package 'loo' is required for LOO comparison. ",

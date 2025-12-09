@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 # Advanced Model Specifications
 
-This vignette covers advanced features in phybaseR for specifying complex statistical models.
+This vignette covers advanced features in becauseR for specifying complex statistical models.
 
 ## Random Effects (Mixed Models)
 
@@ -28,7 +28,7 @@ Random effects account for hierarchical structure in your data, such as repeated
 
 ```{r, eval=FALSE}
 # Individuals nested within sites
-fit <- phybase_run(
+fit <- because(
     equations = list(
         weight ~ age + temperature
     ),
@@ -43,7 +43,7 @@ fit <- phybase_run(
 
 ```{r, eval=FALSE}
 # Crossed random effects
-fit <- phybase_run(
+fit <- because(
     equations = list(
         response ~ treatment
     ),
@@ -58,7 +58,7 @@ fit <- phybase_run(
 
 ```{r, eval=FALSE}
 # Plots nested within sites
-fit <- phybase_run(
+fit <- because(
     equations = list(
         biomass ~ rainfall
     ),
@@ -78,7 +78,7 @@ equations <- list(
     age ~ cohort # Age is fixed
 )
 
-fit <- phybase_run(
+fit <- because(
     equations = equations,
     data = data,
     n.chains = 2,
@@ -98,7 +98,7 @@ Model non-linear relationships using polynomial terms with the `I()` wrapper.
 
 ```{r, eval=FALSE}
 # Age has a quadratic effect on weight
-fit <- phybase_run(
+fit <- because(
     equations = list(
         weight ~ age + I(age^2)
     ),
@@ -109,7 +109,7 @@ fit <- phybase_run(
 ```
 
 **What happens**:
-- phybaseR detects `I(age^2)` 
+- becauseR detects `I(age^2)` 
 - Creates internal variable `age_pow2`
 - Generates deterministic JAGS node: `age_pow2[i] <- age[i]^2`
 - No residual error (perfectly deterministic!)
@@ -119,7 +119,7 @@ fit <- phybase_run(
 
 ```{r, eval=FALSE}
 # Cubic polynomial
-fit <- phybase_run(
+fit <- because(
     equations = list(
         y ~ x + I(x^2) + I(x^3)
     ),
@@ -132,7 +132,7 @@ fit <- phybase_run(
 ### Polynomials for Multiple Variables
 
 ```{r, eval=FALSE}
-fit <- phybase_run(
+fit <- because(
     equations = list(
         response ~ x + I(x^2) + z + I(z^2)
     ),
@@ -162,7 +162,7 @@ Test whether effects depend on other variables.
 
 ```{r, eval=FALSE}
 # Effect of age depends on sex
-fit <- phybase_run(
+fit <- because(
     equations = list(
         weight ~ age * sex # Expands to: age + sex + age:sex
     ),
@@ -176,7 +176,7 @@ fit <- phybase_run(
 
 ```{r, eval=FALSE}
 # Interactive effects
-fit <- phybase_run(
+fit <- because(
     equations = list(
         growth ~ temperature * rainfall
     ),
@@ -195,13 +195,13 @@ fit <- phybase_run(
 
 ## Categorical Predictors
 
-phybaseR automatically handles factor variables.
+becauseR automatically handles factor variables.
 
 ### Basic Usage
 
 ```{r, eval=FALSE}
 # Sex as a predictor (automatically dummy-coded)
-fit <- phybase_run(
+fit <- because(
     equations = list(
         weight ~ age + sex
     ),
@@ -215,7 +215,7 @@ fit <- phybase_run(
 
 ```{r, eval=FALSE}
 # Habitat type with 3 levels: forest, grassland, wetland
-fit <- phybase_run(
+fit <- because(
     equations = list(
         abundance ~ temperature + habitat
     ),
@@ -241,7 +241,7 @@ fit <- phybase_run(
 You can mix multiple advanced features:
 
 ```{r, eval=FALSE}
-fit <- phybase_run(
+fit <- because(
     equations = list(
         # Polynomial + interaction + random effects
         weight ~ age + I(age^2) + age * sex + (1 | site),

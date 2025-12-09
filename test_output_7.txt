@@ -1,0 +1,35 @@
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Deleting model
+
+── Warning: Full workflow: simple model parameter recovery stress test ─────────
+Unused variable "VCV" in data
+Backtrace:
+    ▆
+ 1. └─because::because(...)
+ 2.   └─rjags::jags.model(...)
+
+── Error: Full workflow: simple model parameter recovery stress test ───────────
+Error in `rjags::jags.model(model_file, data = data, n.chains = n.chains, 
+    n.adapt = n.adapt, quiet = quiet)`: RUNTIME ERROR:
+Compilation error on line 11.
+Unknown variable tau_u_Y_phylo
+Either supply values for this variable with the data
+or define it  on the left hand side of a relation.
+
+
+Backtrace:
+    ▆
+ 1. └─because::because(...)
+ 2.   └─rjags::jags.model(...)
+
+Error:
+! Test failed
+Backtrace:
+    ▆
+ 1. ├─testthat::test_that(...)
+ 2. │ └─withr (local) `<fn>`()
+ 3. └─reporter$stop_if_needed()
+ 4.   └─rlang::abort("Test failed", call = NULL)
+Execution halted

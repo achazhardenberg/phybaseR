@@ -5,7 +5,7 @@
 # both Gaussian and binomial response variables.
 # ==============================================================================
 
-# library(phybaseR)
+# library(becauseR)
 library(ape)
 library(coda)
 library(rjags)
@@ -63,7 +63,7 @@ equations <- list(
 # 2. Run Optimized Model
 cat("\nRunning optimized model (optimize = TRUE)...\n")
 time_opt <- system.time({
-    fit_opt <- phybase_run(
+    fit_opt <- because(
         data = data,
         tree = tree,
         equations = equations,
@@ -126,7 +126,7 @@ if ("lambdaB" %in% rownames(sum_opt$statistics)) {
 # 4. Run Unoptimized Model (for comparison)
 cat("\nRunning unoptimized model (optimize = FALSE)...\n")
 time_unopt <- system.time({
-    fit_unopt <- phybase_run(
+    fit_unopt <- because(
         data = data,
         tree = tree,
         equations = equations,

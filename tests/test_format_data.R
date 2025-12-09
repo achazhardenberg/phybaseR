@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 
 # Create example data matching user's format with different numbers of replicates
 set.seed(123)
@@ -20,8 +20,8 @@ print(head(data_long, 12))
 # Create a simple tree
 tree <- ape::read.tree(text = "(s1:1,s2:1,s3:1);")
 
-cat("\n\n=== Testing phybase_format_data ===\n")
-data_list <- phybase_format_data(data_long, species_col = "SP", tree = tree)
+cat("\n\n=== Testing because_format_data ===\n")
+data_list <- because_format_data(data_long, species_col = "SP", tree = tree)
 
 cat("\nFormatted data structure:\n")
 str(data_list)
@@ -32,8 +32,8 @@ print(data_list$BM)
 cat("\n\n=== NL Matrix ===\n")
 print(data_list$NL)
 
-cat("\n\n=== Testing with phybase_run ===\n")
-fit <- phybase_run(
+cat("\n\n=== Testing with because ===\n")
+fit <- because(
     data = data_list,
     tree = tree,
     equations = list(NL ~ BM),

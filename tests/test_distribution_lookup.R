@@ -1,8 +1,8 @@
 # Test script to reproduce distribution lookup error
 
-source("R/phybase_format_data.R")
-source("R/phybase_run.R")
-source("R/phybase_model.R")
+source("R/because_format_data.R")
+source("R/because.R")
+source("R/because_model.R")
 
 library(ape)
 library(MASS)
@@ -41,7 +41,7 @@ data_ordinal <- list(
 )
 
 cat("Running model with ordinal + gaussian...\n")
-fit_ordinal <- phybase_run(
+fit_ordinal <- because(
     data = data_ordinal,
     tree = tree,
     n.burnin = 100,

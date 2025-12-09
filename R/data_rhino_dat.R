@@ -2,7 +2,7 @@
 #'
 #' A dataset containing simulated life-history trait data for 100 Rhinograd species.
 #' This data is used to demonstrate phylogenetic Bayesian structural equation
-#' modeling with the phybaseR package.
+#' modeling with the becauseR package.
 #'
 #' @format A data frame with 100 rows (one per species) and 6 columns:
 #' \describe{

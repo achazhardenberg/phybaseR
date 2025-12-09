@@ -1,6 +1,6 @@
-# Test script for Latent Variable implementation in phybaseR
+# Test script for Latent Variable implementation in becauseR
 
-library(phybaseR)
+library(becauseR)
 library(ape)
 
 # 1. Simulate data with a latent common cause
@@ -33,13 +33,13 @@ equations <- list(
     Y ~ L
 )
 
-# 3. Run phybase_run with latent argument
+# 3. Run because with latent argument
 # We expect:
 # - d-sep to identify induced correlation between X and Y
 # - JAGS model to include correlated residuals for X and Y
 
-cat("Running phybase_run with latent variable...\n")
-fit <- phybase_run(
+cat("Running because with latent variable...\n")
+fit <- because(
     data = data,
     tree = tree,
     equations = equations,

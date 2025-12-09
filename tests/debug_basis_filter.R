@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 
 # Simple test
 equations <- list(
@@ -9,7 +9,7 @@ equations <- list(
 latent <- "L1"
 
 # Call with random effects
-result <- phybase_dsep(
+result <- because_dsep(
     equations,
     latent = latent,
     random_terms = list(

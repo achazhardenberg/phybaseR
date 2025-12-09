@@ -1,11 +1,11 @@
-test_that("phybase_dsep identifies correct basis set for simple DAG", {
+test_that("because_dsep identifies correct basis set for simple DAG", {
     # A -> B -> C
     equations <- list(
         B ~ A,
         C ~ B
     )
 
-    result <- phybase_dsep(equations)
+    result <- because_dsep(equations)
 
     # Should imply A _||_ C | B
     expect_type(result, "list")
@@ -15,19 +15,19 @@ test_that("phybase_dsep identifies correct basis set for simple DAG", {
     expect_s3_class(result[[1]], "formula")
 })
 
-test_that("phybase_dsep returns empty list for saturated model", {
+test_that("because_dsep returns empty list for saturated model", {
     # A -> B -> C, A -> C
     equations <- list(
         B ~ A,
         C ~ A + B
     )
 
-    result <- phybase_dsep(equations)
+    result <- because_dsep(equations)
 
     expect_length(result, 0)
 })
 
-test_that("phybase_dsep handles latent variables", {
+test_that("because_dsep handles latent variables", {
     # L -> X, L -> Y (L is latent)
     # Should imply X _||_ Y is FALSE (they are correlated)
     # But d-sep on MAG should show they are connected by bidirected edge
@@ -38,7 +38,7 @@ test_that("phybase_dsep handles latent variables", {
     )
 
     # This should return the induced correlations
-    result <- phybase_dsep(equations, latent = "L")
+    result <- because_dsep(equations, latent = "L")
 
     expect_type(result, "list")
     # Check that result contains at least tests and correlations

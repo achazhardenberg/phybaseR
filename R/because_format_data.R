@@ -1,7 +1,7 @@
-#' Format Data for PhyBaSE Analysis
+#' Format Data for Because Analysis
 #'
 #' Converts data from long format (one row per observation) to the list format
-#' required by \code{\link{phybase_run}}.
+#' required by \code{\link{because}}.
 #'
 #' @param data A data.frame in long format with one row per observation.
 #' @param species_col Name of the column containing species identifiers (default: "SP").
@@ -39,14 +39,14 @@
 #' )
 #'
 #' tree <- ape::read.tree(text = "(sp1:1,sp2:1,sp3:1);")
-#' data_list <- phybase_format_data(data_long, species_col = "SP", tree = tree)
+#' data_list <- because_format_data(data_long, species_col = "SP", tree = tree)
 #'
-#' # Use with phybase_run
-#' fit <- phybase_run(data = data_list, tree = tree, equations = list(NL ~ BM))
+#' # Use with because
+#' fit <- because(data = data_list, tree = tree, equations = list(NL ~ BM))
 #' }
 #'
 #' @export
-phybase_format_data <- function(data, species_col = "SP", tree) {
+because_format_data <- function(data, species_col = "SP", tree) {
     # Validate inputs
     if (!is.data.frame(data)) {
         stop("'data' must be a data.frame")

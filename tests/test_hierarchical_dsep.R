@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 
 # Test hierarchical data with d-separation
 # This should show different sample sizes for different tests
@@ -35,7 +35,7 @@ levels_spec <- list(
 
 cat("\n=== Testing D-separation with Hierarchical Data ===\n\n")
 
-result <- phybase_run(
+result <- because(
     data = list(
         individual = individual_data,
         site_year = site_year_data

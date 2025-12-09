@@ -16,7 +16,7 @@ test_that("Full workflow: simple model parameter recovery", {
     equations <- list(Y ~ X)
 
     # Run model
-    fit <- phybase_run(
+    fit <- because(
         data = data_list,
         tree = tree,
         equations = equations,
@@ -27,7 +27,7 @@ test_that("Full workflow: simple model parameter recovery", {
     )
 
     # Check results
-    expect_s3_class(fit, "phybase")
+    expect_s3_class(fit, "because")
 
     # Check convergence
     expect_true(!is.null(fit$summary))
@@ -59,7 +59,7 @@ test_that("Full workflow: missing data handling", {
     data_list <- list(X = X, Y = Y_miss, N = N)
     equations <- list(Y ~ X)
 
-    fit <- phybase_run(
+    fit <- because(
         data = data_list,
         tree = tree,
         equations = equations,
@@ -69,12 +69,12 @@ test_that("Full workflow: missing data handling", {
         quiet = TRUE
     )
 
-    expect_s3_class(fit, "phybase")
+    expect_s3_class(fit, "because")
     expect_true(!is.null(fit$summary))
 
     # Check that it estimated the missing values (nodes in JAGS)
     # The missing values are usually monitored if we monitor "Y"
-    # But phybase_run monitors specific parameters.
+    # But because monitors specific parameters.
     # Let's check if the model ran without error, which implies imputation worked.
 
     # Also check that beta is reasonable despite missing data

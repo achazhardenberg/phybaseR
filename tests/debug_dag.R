@@ -1,9 +1,9 @@
-library(phybaseR)
+library(becauseR)
 
 # Check package version
 cat("Package namespace functions:\n")
 cat("equations_to_dag signature:\n")
-print(args(phybaseR:::equations_to_dag))
+print(args(becauseR:::equations_to_dag))
 
 # Simple test
 equations <- list(
@@ -20,7 +20,7 @@ cat("\n\n=== Testing equations_to_dag directly ===\n")
 grouping_vars <- unique(sapply(random_terms, function(x) x$group))
 cat("Grouping vars to exclude:", paste(grouping_vars, collapse = ", "), "\n")
 
-dag <- phybaseR:::equations_to_dag(equations, exclude_vars = grouping_vars)
+dag <- becauseR:::equations_to_dag(equations, exclude_vars = grouping_vars)
 cat("\nDAG variables:\n")
 print(rownames(dag))
 cat("\nDAG matrix:\n")

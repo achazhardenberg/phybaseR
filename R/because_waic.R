@@ -1,9 +1,9 @@
-#' Calculate WAIC with Standard Errors for a PhyBaSE Model
+#' Calculate WAIC with Standard Errors for a Because Model
 #'
 #' Calculates the Widely Applicable Information Criterion (WAIC) with standard errors
-#' for a fitted PhyBaSE model using pointwise log-likelihoods.
+#' for a fitted Because model using pointwise log-likelihoods.
 #'
-#' @param model A fitted model object of class \code{"phybase"} returned by \code{\link{phybase_run}}
+#' @param model A fitted model object of class \code{"because"} returned by \code{\link{because}}
 #'   with \code{WAIC = TRUE}.
 #'
 #' @return A data frame with columns \code{Estimate} and \code{SE} containing:
@@ -45,7 +45,7 @@
 #' @examples
 #' \dontrun{
 #'   # Fit model with WAIC monitoring
-#'   fit <- phybase_run(data, tree, equations, WAIC = TRUE)
+#'   fit <- because(data, tree, equations, WAIC = TRUE)
 #'
 #'   # View WAIC with standard errors
 #'   fit$WAIC
@@ -67,9 +67,9 @@
 #' \emph{Statistics and Computing}, 27(5), 1413-1432.
 #'
 #' @export
-phybase_waic <- function(model) {
-    if (!inherits(model, "phybase")) {
-        stop("Input must be a 'phybase' model object.")
+because_waic <- function(model) {
+    if (!inherits(model, "because")) {
+        stop("Input must be a 'because' model object.")
     }
 
     # Extract log_lik from MCMC samples

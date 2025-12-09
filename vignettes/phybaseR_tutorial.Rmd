@@ -1,15 +1,15 @@
 ---
-title: "phybaseR: An R package to easily create and run PhyBaSE models"
+title: "becauseR: An R package to easily create and run Because models"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{phybaseR: An R package to easily create and run PhyBaSE models}
+  %\VignetteIndexEntry{becauseR: An R package to easily create and run Because models}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ## Introduction
 
-**phybaseR** is an R package designed to easily perform causal inference in phylogenetic comparative analyses implementing and extending the methods proposed in von Hardenberg & Gonzalez-Voyer (2025). It allows you to fit Phylogenetic Bayesian Structural Equation Models (SEMs) that account for:
+**becauseR** is an R package designed to easily perform causal inference in phylogenetic comparative analyses implementing and extending the methods proposed in von Hardenberg & Gonzalez-Voyer (2025). It allows you to fit Phylogenetic Bayesian Structural Equation Models (SEMs) that account for:
 
 *   **Phylogenetic Non-independence**: Using the phylogenetic covariance matrix.
 *   **Measurement Error**: Incorporating standard errors or repeated measures.
@@ -34,16 +34,16 @@ This tutorial will guide you through the main features of the package.
 First, load the package:
 
 ```{r setup}
-library(phybaseR)
+library(becauseR)
 ```
 
-**Note**: `phybaseR` uses `ape` internally for phylogenetic calculations (it's automatically loaded as a dependency). We'll also load it explicitly here for the tutorial examples, since we use `ape` functions like `rtree()` and `rTraitCont()` to simulate data:
+**Note**: `becauseR` uses `ape` internally for phylogenetic calculations (it's automatically loaded as a dependency). We'll also load it explicitly here for the tutorial examples, since we use `ape` functions like `rtree()` and `rTraitCont()` to simulate data:
 
 ```{r load_ape}
 library(ape)
 ```
 
-**Note on Tree Standardization**: `phybaseR` automatically standardizes phylogenetic trees to have a maximum branching time of 1.0. This improves numerical stability and convergence. You'll see a message like "Standardizing tree edge lengths (max branching time: 1.27 -> 1.0)" when this occurs. This doesn't affect your results—it's just internal scaling.
+**Note on Tree Standardization**: `becauseR` automatically standardizes phylogenetic trees to have a maximum branching time of 1.0. This improves numerical stability and convergence. You'll see a message like "Standardizing tree edge lengths (max branching time: 1.27 -> 1.0)" when this occurs. This doesn't affect your results—it's just internal scaling.
 
 ## Basic Usage: Phylogenetic Regression (PGLS)
 
@@ -63,14 +63,14 @@ my_data <- data.frame(
 )
 ```
 
-To run the model, we define the structural equations and pass them to `phybase_run()`. Note that we can pass a data.frame directly—phybaseR will automatically extract the needed variables from your equations:
+To run the model, we define the structural equations and pass them to `because()`. Note that we can pass a data.frame directly—becauseR will automatically extract the needed variables from your equations:
 
 ```{r basic_run, eval=FALSE}
 # Define equations
 equations <- list(Y ~ X)
 
 # Run model - pass the data.frame directly!
-fit <- phybase_run(
+fit <- because(
     data = my_data,
     id_col = "species", # Column with species names
     tree = tree,
@@ -86,7 +86,7 @@ summary(fit)
 
 ## Mediation Analysis
 
-PhyBaSE shines at testing causal paths, such as mediation: `X -> M -> Y`.
+Because shines at testing causal paths, such as mediation: `X -> M -> Y`.
 
 ```{r mediation_sim}
 # Simulate mediator M
@@ -110,7 +110,7 @@ equations_med <- list(
     Y ~ X + M
 )
 
-fit_med <- phybase_run(
+fit_med <- because(
     data = med_data,
     id_col = "species",
     tree = tree,
@@ -122,7 +122,7 @@ summary(fit_med)
 
 ## Understanding Parameter Names
 
-`phybaseR` uses a systematic naming convention for all estimated parameters. Understanding this helps you interpret your results.
+`becauseR` uses a systematic naming convention for all estimated parameters. Understanding this helps you interpret your results.
 
 ### Regression Coefficients
 
@@ -186,7 +186,7 @@ equations <- list(Y ~ X + M)
 
 ### Auxiliary Parameters for Predictors
 
-If your model includes **missing values in predictors** or requires modeling **phylogenetic structure in predictors**, phybaseR automatically adds implicit equations (e.g., `X ~ 1`). This results in additional parameters:
+If your model includes **missing values in predictors** or requires modeling **phylogenetic structure in predictors**, becauseR automatically adds implicit equations (e.g., `X ~ 1`). This results in additional parameters:
 
 ```r
 # Example: Y ~ X with missing values in X
@@ -210,7 +210,7 @@ For cleaner output, use the `monitor` parameter to control which parameters are 
 
 ```r
 # Default: "interpretable" mode - shows only meaningful parameters
-fit <- phybase_run(
+fit <- because(
   data = data_list,
   tree = tree,
   equations = equations,
@@ -226,7 +226,7 @@ fit <- phybase_run(
 # - lambdas for auxiliary predictors
 
 # To see ALL parameters including variance components:
-fit_complete <- phybase_run(
+fit_complete <- because(
   data = data_list,
   tree = tree,
   equations = equations,
@@ -234,7 +234,7 @@ fit_complete <- phybase_run(
 )
 
 # Custom monitoring (advanced):
-fit_custom <- phybase_run(
+fit_custom <- because(
   data = data_list,
   tree = tree,
   equations = equations,
@@ -244,7 +244,7 @@ fit_custom <- phybase_run(
 
 ## Measurement Error
 
-PhyBaSE can account for measurement error in your variables.
+Because can account for measurement error in your variables.
 
 ### Option 1: Using Standard Errors (SE)
 
@@ -255,25 +255,25 @@ If you have known standard errors for your species means:
 X_se <- rep(0.1, N)
 data_se <- list(X = X, Y = Y, X_se = X_se)
 
-fit_se <- phybase_run(
+fit_se <- because(
     data = data_se,
     tree = tree,
     equations = list(Y ~ X),
-    variability = c(X = "se") # Tell PhyBaSE that X has SEs
+    variability = c(X = "se") # Tell Because that X has SEs
 )
 
 summary(fit_se)
 ```
 
-**Note on DIC with measurement error**: When using measurement error (either SE or repeated measures), the DIC penalty will be inflated because PhyBaSE creates latent "true" values for each species. The penalty will be approximately: structural parameters + N (number of species). This is expected behavior.
+**Note on DIC with measurement error**: When using measurement error (either SE or repeated measures), the DIC penalty will be inflated because Because creates latent "true" values for each species. The penalty will be approximately: structural parameters + N (number of species). This is expected behavior.
 
-- For **model comparison**, use WAIC instead: `phybase_run(..., WAIC = TRUE)`
+- For **model comparison**, use WAIC instead: `because(..., WAIC = TRUE)`
 - For **fit quality**, focus on the mean deviance (lower is better)
 - The inflated penalty does not affect the validity of the model, only the DIC interpretation
 
 ### Option 2: Using Repeated Measures
 
-If you have raw data (multiple observations per species), PhyBaSE can estimate the observation error directly.
+If you have raw data (multiple observations per species), Because can estimate the observation error directly.
 
 ```{r me_reps, eval=FALSE}
 # Simulate unequal repeated measures (ragged array)
@@ -292,7 +292,7 @@ for (i in 1:N) {
     X_obs[i, 1:n_i] <- vals
 }
 
-fit_reps <- phybase_run(
+fit_reps <- because(
     data = list(X = X_obs, Y = Y),
     tree = tree,
     equations = list(Y ~ X),
@@ -301,7 +301,7 @@ fit_reps <- phybase_run(
 
 summary(fit_reps)
 
-# PhyBaSE automatically handles the NAs and counts valid replicates per species.
+# Because automatically handles the NAs and counts valid replicates per species.
 ```
 
 ## Binomial Variables
@@ -315,7 +315,7 @@ BinaryTrait <- rbinom(N, 1, prob)
 
 data_bin <- list(X = X, Bin = BinaryTrait)
 
-fit_bin <- phybase_run(
+fit_bin <- because(
     data = data_bin,
     tree = tree,
     equations = list(Bin ~ X),
@@ -377,7 +377,7 @@ MultiTrait <- apply(cbind(P1, P2, P3), 1, function(p) sample(1:3, 1, prob = p))
 
 data_multi <- list(X = X, Multi = MultiTrait) # K is auto-detected
 
-fit_multi <- phybase_run(
+fit_multi <- because(
     data = data_multi,
     tree = tree,
     equations = list(Multi ~ X),
@@ -461,7 +461,7 @@ data_ordinal <- list(
 )
 
 # Fit the DAG
-fit_ordinal <- phybase_run(
+fit_ordinal <- because(
     data = data_ordinal,
     tree = tree,
     equations = list(
@@ -478,7 +478,7 @@ summary(fit_ordinal)
 fit_ordinal$summary$statistics["lambdaIUCN", ]
 
 # Test d-separation: IUCN ⊥ BodyMass | HabitatLoss
-fit_dsep <- phybase_run(
+fit_dsep <- because(
     data = data_ordinal,
     tree = tree,
     equations = list(
@@ -552,7 +552,7 @@ data_poisson <- list(
 )
 
 # Fit the DAG
-fit_poisson <- phybase_run(
+fit_poisson <- because(
     data = data_poisson,
     tree = tree,
     equations = list(
@@ -570,7 +570,7 @@ summary(fit_poisson)
 fit_poisson$summary$statistics["lambdaClutchSize", ]
 
 # Test d-separation: ClutchSize ⊥ BodyMass | Latitude
-fit_dsep <- phybase_run(
+fit_dsep <- because(
     data = data_poisson,
     tree = tree,
     equations = list(
@@ -643,7 +643,7 @@ data_nb <- list(
 )
 
 # Fit the DAG
-fit_nb <- phybase_run(
+fit_nb <- because(
     data = data_nb,
     tree = tree,
     equations = list(
@@ -661,7 +661,7 @@ summary(fit_nb)
 fit_nb$summary$statistics["lambdaParasites", ]
 
 # Test d-separation: Parasites ⊥ HostSize | Stress
-fit_dsep <- phybase_run(
+fit_dsep <- because(
     data = data_nb,
     tree = tree,
     equations = list(
@@ -691,7 +691,7 @@ summary(fit_dsep$samples)
 
 ## Categorical Predictors
 
-`phybaseR` automatically handles categorical predictors (factor or character variables) by converting them to **dummy variables** and **auto-expanding** equations.
+`becauseR` automatically handles categorical predictors (factor or character variables) by converting them to **dummy variables** and **auto-expanding** equations.
 
 ```{r categorical, eval=FALSE}
 # Data with categorical predictor
@@ -702,14 +702,14 @@ data <- data.frame(
     Habitat = factor(sample(c("Forest", "Grassland"), N, replace = TRUE))
 )
 
-# phybase_format_data automatically creates dummy variables
-data_list <- phybase_format_data(data, tree = tree)
+# because_format_data automatically creates dummy variables
+data_list <- because_format_data(data, tree = tree)
 # Messages:
 # Categorical variable 'Diet' expanded to 2 dummy variable(s) | Reference: 'Carnivore'
 # Categorical variable 'Habitat' expanded to 1 dummy variable(s) | Reference: 'Forest'
 
 # Use categorical variables DIRECTLY in equations - auto-expands!
-fit <- phybase_run(
+fit <- because(
     data = data_list,
     tree = tree,
     equations = list(BodyMass ~ Diet + Habitat) # Auto-expands to dummies!
@@ -733,7 +733,7 @@ summary(fit)
 
 ## Missing Data
 
-PhyBaSE fully supports missing data (`NA`) in both response and predictor variables. It uses a **Latent Variable (GLMM)** approach to impute missing values while preserving phylogenetic signal.
+Because fully supports missing data (`NA`) in both response and predictor variables. It uses a **Latent Variable (GLMM)** approach to impute missing values while preserving phylogenetic signal.
 
 ```{r missing, eval=FALSE}
 # Introduce missing values
@@ -745,7 +745,7 @@ Y_miss[c(2, 6, 12)] <- NA # Missing in response
 data_miss <- list(X = X_miss, Y = Y_miss)
 
 # Just run it! No extra setup needed.
-fit_miss <- phybase_run(
+fit_miss <- because(
     data = data_miss,
     tree = tree,
     equations = list(Y ~ X)
@@ -753,7 +753,7 @@ fit_miss <- phybase_run(
 
 summary(fit_miss)
 
-# PhyBaSE automatically detects NAs and handles them.
+# Because automatically detects NAs and handles them.
 ```
 
 ## Phylogenetic Uncertainty
@@ -765,7 +765,7 @@ To account for uncertainty in the phylogeny itself, simply pass a list of trees 
 num_trees <- 20
 trees <- lapply(1:num_trees, function(x) rtree(N))
 
-fit_multi <- phybase_run(
+fit_multi <- because(
     data = data_list,
     tree = trees, # Pass list of trees
     equations = equations
@@ -783,7 +783,7 @@ Running MCMC chains in parallel can significantly speed up your analysis, especi
 To run chains in parallel, simply set `parallel = TRUE` and specify the number of cores with `n.cores`.
 
 ```{r parallel, eval=FALSE}
-fit_parallel <- phybase_run(
+fit_parallel <- because(
     data = data_list,
     tree = tree,
     equations = equations,
@@ -798,7 +798,7 @@ fit_parallel <- phybase_run(
 
 ### Parallel Model Comparison
 
-If you have a list of models to compare, you can run them all in parallel using `phybase_compare()`.
+If you have a list of models to compare, you can run them all in parallel using `because_compare()`.
 
 ```{r parallel_compare, eval=FALSE}
 # Define multiple models
@@ -808,7 +808,7 @@ models <- list(
 )
 
 # Run all models in parallel
-results <- phybase_compare(
+results <- because_compare(
     models = models,
     data = data_list,
     tree = tree,
@@ -822,14 +822,14 @@ print(results$comparison)
 
 ## Model Comparison (WAIC with Standard Errors)
 
-The Widely Applicable Information Criterion (WAIC) is the recommended approach for model comparison in `phybaseR`. The package implements **WAIC with standard errors** following Vehtari, Gelman & Gabry (2017), allowing you to assess whether model differences are statistically significant.
+The Widely Applicable Information Criterion (WAIC) is the recommended approach for model comparison in `becauseR`. The package implements **WAIC with standard errors** following Vehtari, Gelman & Gabry (2017), allowing you to assess whether model differences are statistically significant.
 
 ### Calculating WAIC
 
-Set `WAIC = TRUE` in `phybase_run()` to calculate WAIC with standard errors automatically:
+Set `WAIC = TRUE` in `because()` to calculate WAIC with standard errors automatically:
 
 ```{r waic_example, eval=FALSE}
-fit <- phybase_run(
+fit <- because(
     data = data,
     structure = tree,
     id_col = "SP",
@@ -855,17 +855,17 @@ fit$WAIC
 
 ### Comparing Models
 
-Compare fitted models using `phybase_compare()`, which returns a ranked table with WAIC, standard errors, differences, and Akaike weights.
+Compare fitted models using `because_compare()`, which returns a ranked table with WAIC, standard errors, differences, and Akaike weights.
 
 #### Option 1: Compare Fitted Models
 
 ```{r waic_comparison, eval=FALSE}
 # Fit competing models
-fit_complex <- phybase_run(..., WAIC = TRUE)
-fit_simple <- phybase_run(..., WAIC = TRUE)
+fit_complex <- because(..., WAIC = TRUE)
+fit_simple <- because(..., WAIC = TRUE)
 
 # Compare results
-comp <- phybase_compare(fit_complex, fit_simple)
+comp <- because_compare(fit_complex, fit_simple)
 print(comp)
 
 # Output:
@@ -892,7 +892,7 @@ specs <- list(
 )
 
 # Run batch in parallel
-results <- phybase_compare(
+results <- because_compare(
     model_specs = specs,
     data = data,
     tree = tree,
@@ -936,7 +936,7 @@ equations_dsep <- list(
 )
 
 # Run d-separation tests by setting dsep = TRUE
-fit_dsep <- phybase_run(
+fit_dsep <- because(
     data = dsep_data,
     id_col = "species",
     tree = tree,
@@ -950,9 +950,9 @@ summary(fit_dsep)
 
 ### Note on Sequential Testing
 
-In the original PhyBaSE methodology (von Hardenberg & Gonzalez-Voyer, 2025), d-separation tests were proposed to be run within a single JAGS model by renaming variables (e.g., `BM`, `BM2`) to avoid cyclic dependencies in the Directed Acyclic Graph (DAG). 
+In the original Because methodology (von Hardenberg & Gonzalez-Voyer, 2025), d-separation tests were proposed to be run within a single JAGS model by renaming variables (e.g., `BM`, `BM2`) to avoid cyclic dependencies in the Directed Acyclic Graph (DAG). 
 
-`phybaseR` automates this process by running each d-separation test **sequentially** as a separate JAGS model. This approach offers several advantages for automation:
+`becauseR` automates this process by running each d-separation test **sequentially** as a separate JAGS model. This approach offers several advantages for automation:
 
 1.  **Computational Robustness**: It completely avoids cyclic dependency errors (e.g., "Unable to resolve parameter") that can occur in JAGS when multiple conditional independence tests imply conflicting directions of causality (e.g., testing $X \perp Y | Z$ and $Y \perp X | W$ simultaneously).
 2.  **Statistical Validity**: D-separation tests are tests of *local* conditional independence. Running them sequentially is statistically valid because each test evaluates a specific implication of the DAG using the observed data.
@@ -961,7 +961,7 @@ In the original PhyBaSE methodology (von Hardenberg & Gonzalez-Voyer, 2025), d-s
 
 **Output:**
 ```
-PhyBaSE d-separation Tests
+Because d-separation Tests
 ==========================
 
            Test Parameter Estimate LowerCI UpperCI Indep P_approx_0
@@ -981,7 +981,7 @@ The `P(≈0)` gives you a Bayesian measure of how plausible independence is for 
 
 ## Latent Variables
 
-PhyBaSE can handle **unobserved (latent) variables** using two different approaches:
+Because can handle **unobserved (latent) variables** using two different approaches:
 
 ### Approach 1: MAG (Correlations) - **Default**
 
@@ -996,7 +996,7 @@ equations <- list(
     Y ~ L
 )
 
-fit_mag <- phybase_run(
+fit_mag <- because(
     data = data_list,
     tree = tree,
     equations = equations,
@@ -1026,7 +1026,7 @@ summary(fit_mag)
 Alternatively, you can model latents as **actual JAGS nodes** and estimate the structural paths from latents to observed variables.
 
 ```{r latent_explicit, eval=FALSE}
-fit_explicit <- phybase_run(
+fit_explicit <- because(
     data = data_list,
     tree = tree,
     equations = list(X ~ L, Y ~ L),
@@ -1043,7 +1043,7 @@ summary(fit_explicit)
 
 **Disadvantages**: Requires careful consideration of identification and scaling.
 
-**Note**: `phybaseR` automatically standardizes latent variables (fixes variance to 1) when using the explicit approach. This ensures identification and makes path coefficients interpretable as standardized effects. This is consistent with the recommendation to standardize all variables before running PhyBaSE models.
+**Note**: `becauseR` automatically standardizes latent variables (fixes variance to 1) when using the explicit approach. This ensures identification and makes path coefficients interpretable as standardized effects. This is consistent with the recommendation to standardize all variables before running Because models.
 
 ### Understanding Identification Issues
 
@@ -1055,7 +1055,7 @@ When using the **explicit approach**, latent variables have no inherent scale, l
 
 **Why MAG avoids this**: The MAG approach only estimates the **correlation** `rho_X_Y` induced by `L`, which is scale-invariant. You don't need to worry about the scale of `L` or its individual paths.
 
-**How phybaseR handles this**: When using `latent_method = "explicit"`, `phybaseR` automatically **standardizes latent variables** by fixing their variance to 1 (`tau_L <- 1` in the JAGS model). This:
+**How becauseR handles this**: When using `latent_method = "explicit"`, `becauseR` automatically **standardizes latent variables** by fixing their variance to 1 (`tau_L <- 1` in the JAGS model). This:
 - Ensures the model is identified (no scale ambiguity)
 - Makes path coefficients interpretable as standardized effects
 - Is consistent with the recommendation to standardize all variables
@@ -1081,14 +1081,14 @@ When using `latent_method = "explicit"`, the latent variable values `L[1:N]` (on
 
 ```r
 # Model 1: No latent (e.g., BR and BM are independent predictors)
-fit_no_latent <- phybase_run(
+fit_no_latent <- because(
   equations = list(S ~ BM, G ~ BR, L ~ BR),
   WAIC = TRUE
 )
 # WAIC calculated on observed data: S, G, L
 
 # Model 2: Explicit latent
-fit_explicit <- phybase_run(
+fit_explicit <- because(
   equations = list(BR ~ Lat, BM ~ Lat, S ~ BM, G ~ BR, L ~ BR),
   latent = c("Lat"),
   latent_method = "explicit",
@@ -1103,13 +1103,13 @@ fit_explicit <- phybase_run(
 
 ```r
 # Safe comparison: Both use MAG
-fit_independent <- phybase_run(
+fit_independent <- because(
   equations = list(S ~ BM, G ~ BR, L ~ BR),
   # BR and BM independent
   WAIC = TRUE
 )
 
-fit_with_latent <- phybase_run(
+fit_with_latent <- because(
   equations = list(BR ~ Lat, BM ~ Lat, S ~ BM, G ~ BR, L ~ BR),
   latent = c("Lat"),
   latent_method = "correlations",  # MAG (default)
@@ -1134,7 +1134,7 @@ fit_with_latent$WAIC["waic", "Estimate"]  # Lower WAIC → latent structure supp
 
 ### Why WAIC Instead of LOO-CV?
 
-**WAIC (Widely Applicable Information Criterion)** is the recommended approach for model comparison in `phybaseR` rather than LOO-CV (Leave-One-Out Cross-Validation).
+**WAIC (Widely Applicable Information Criterion)** is the recommended approach for model comparison in `becauseR` rather than LOO-CV (Leave-One-Out Cross-Validation).
 
 **Why?**
 
@@ -1147,8 +1147,8 @@ In phylogenetic models, observations are **not independent** - they're connected
 **Best practice**:
 ```r
 # Use WAIC for model comparison
-fit1 <- phybase_run(..., WAIC = TRUE)
-fit2 <- phybase_run(..., WAIC = TRUE)
+fit1 <- because(..., WAIC = TRUE)
+fit2 <- because(..., WAIC = TRUE)
 
 # Compare
 fit1$WAIC  # Lower is better
@@ -1165,21 +1165,21 @@ fit2$WAIC
 
 ## Generalized Covariance Structures
 
-While PhyBaSE was originally designed for phylogenetic models, `phybaseR` now supports arbitrary covariance structures. You can specify the covariance structure using the `structure` argument (which replaces `tree` in newer versions).
+While Because was originally designed for phylogenetic models, `becauseR` now supports arbitrary covariance structures. You can specify the covariance structure using the `structure` argument (which replaces `tree` in newer versions).
 
 ### 1. Independent SEMs (Non-Phylogenetic)
 
 To run a standard Bayesian SEM without any phylogenetic or spatial structure, simply set `structure = NULL`. This is the default if `structure` or `tree` are not provided.
 
 ```{r independent, eval=FALSE}
-fit_indep <- phybase_run(
+fit_indep <- because(
     data = data_list,
     structure = NULL, # Independent model
     equations = equations
 )
 ```
 
-In this mode, `phybaseR` assumes independent residuals for all variables (Gaussian, Binomial, Multinomial, etc.).
+In this mode, `becauseR` assumes independent residuals for all variables (Gaussian, Binomial, Multinomial, etc.).
 
 ### 2. Spatial or Custom Covariance
 
@@ -1189,7 +1189,7 @@ You can provide a custom covariance or precision matrix (e.g., spatial connectiv
 # Create a spatial precision matrix
 spatial_prec <- solve(exp(-dist_matrix / range))
 
-fit_spatial <- phybase_run(
+fit_spatial <- because(
     data = data_list,
     structure = spatial_prec, # Pass matrix directly
     equations = equations
@@ -1205,7 +1205,7 @@ For quantitative genetics (Animal Models), you can pass the inverse additive gen
 library(MCMCglmm)
 inv_A <- inverseA(pedigree)$Ainv
 
-fit_animal <- phybase_run(
+fit_animal <- because(
     data = data_list,
     structure = as.matrix(inv_A),
     equations = equations
@@ -1217,7 +1217,7 @@ fit_animal <- phybase_run(
 You can model multiple additive random effects (e.g., Phylogenetic + Spatial) by passing a named list to `structure`. The model will estimate separate variance components (`sigma_phylo`, `sigma_spatial`) for each structure.
 
 ```{r multi_struct, eval=FALSE}
-fit_multi <- phybase_run(
+fit_multi <- because(
     data = data_list,
     structure = list(
         phylo = tree,
@@ -1234,7 +1234,7 @@ fit_multi <- phybase_run(
 
 ## Random Effects Models (GLMMs)
 
-`phybaseR` supports **Linear Mixed Models (LMMs)** and **Generalized Linear Mixed Models (GLMMs)** using `lmer`-style syntax. This allows you to include random intercepts for grouping factors (e.g., species, site, year) alongside phylogenetic effects.
+`becauseR` supports **Linear Mixed Models (LMMs)** and **Generalized Linear Mixed Models (GLMMs)** using `lmer`-style syntax. This allows you to include random intercepts for grouping factors (e.g., species, site, year) alongside phylogenetic effects.
 
 ### Syntax
 
@@ -1254,7 +1254,7 @@ data_glmm <- data.frame(
     Site = sample(LETTERS[1:5], 100, replace = TRUE)
 )
 
-fit_glmm <- phybase_run(
+fit_glmm <- because(
     equations = list(Y ~ X + (1|Site)),
     data = data_glmm,
     n.chains = 2,
@@ -1286,7 +1286,7 @@ Random effects work seamlessly with all supported distributions (Poisson, Binomi
 
 ```r
 # Poisson count data with site-level random effects
-fit_pois_glmm <- phybase_run(
+fit_pois_glmm <- because(
     equations = list(Count ~ Temp + (1|Site)),
     data = data_counts,
     distribution = list(Count = "poisson")
@@ -1307,10 +1307,10 @@ In this model:
 
 ### Global Random Effects
 
-If you want to apply the same random effect structure to **all** equations in your model (e.g., a block effect or random intercept for Site across all species), you can use the `random` argument in `phybase_run`. This is more convenient than adding `(1|Group)` to every equation and ensures consistent handling in d-separation tests.
+If you want to apply the same random effect structure to **all** equations in your model (e.g., a block effect or random intercept for Site across all species), you can use the `random` argument in `because`. This is more convenient than adding `(1|Group)` to every equation and ensures consistent handling in d-separation tests.
 
 ```r
-fit_global <- phybase_run(
+fit_global <- because(
     equations = list(
         Y1 ~ X1,
         Y2 ~ Y1 + X2
@@ -1322,7 +1322,7 @@ fit_global <- phybase_run(
 )
 ```
 
-**Note:** `phybaseR` automatically detects overlapping random terms. If you specify `(1|Site)` in an equation AND in the global `random` argument, it will be handled correctly (deduplicated) to avoid double-counting.
+**Note:** `becauseR` automatically detects overlapping random terms. If you specify `(1|Site)` in an equation AND in the global `random` argument, it will be handled correctly (deduplicated) to avoid double-counting.
 
 ### Hierarchical Data: Handling Multi-Level Variables
 
@@ -1334,7 +1334,7 @@ fit_global <- phybase_run(
 
 When testing `temperature ~ rainfall` with replicated data, the model incorrectly sees 20 observations instead of 4.
 
-**Solution**: phybaseR now supports hierarchical data structures automatically!
+**Solution**: becauseR now supports hierarchical data structures automatically!
 
 ```r
 # Individual-level data
@@ -1355,7 +1355,7 @@ site_year_data <- data.frame(
 )
 
 # Specify hierarchical structure
-fit <- phybase_run(
+fit <- because(
   data = list(
     individual = individual_data,
     site_year = site_year_data
@@ -1375,7 +1375,7 @@ fit <- phybase_run(
 ```
 
 **How it works**:
-- phybaseR automatically joins datasets for the main model (20 observations)
+- becauseR automatically joins datasets for the main model (20 observations)
 - For d-separation tests, each test uses the appropriate dataset:
   - `weight _||_ rainfall | age, temperature` → 20 observations (needs individual level)
   - `temperature _||_ rainfall | ` → 4 observations (site-year only!)

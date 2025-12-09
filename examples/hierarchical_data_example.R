@@ -1,7 +1,7 @@
 # Hierarchical Data Example - Current Functionality
 # This demonstrates the hierarchical data structure feature (in progress)
 
-library(phybaseR)
+library(becauseR)
 
 # ============================================================================
 # CREATE EXAMPLE DATA
@@ -51,9 +51,9 @@ equations <- list(
 # RUN MODEL WITH HIERARCHICAL DATA
 # ============================================================================
 
-cat("\n=== Running phybaseR with Hierarchical Data ===\n\n")
+cat("\n=== Running becauseR with Hierarchical Data ===\n\n")
 
-result <- phybase_run(
+result <- because(
     data = list(
         individual = individual_data,
         site_year = site_year_data
@@ -117,7 +117,7 @@ cat("For d-separation tests between site-year variables only:\n")
 cat("Manually use aggregated data:\n\n")
 
 cat("# Test relationship between environmental variables\n")
-cat("fit_climate <- phybase_run(\n")
+cat("fit_climate <- because(\n")
 cat("  equations = list(total_precip ~ mean_temp),\n")
 cat("  data = site_year_data,  # Use aggregated data directly\n")
 cat("  dsep = TRUE\n")

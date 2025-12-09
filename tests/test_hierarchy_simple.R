@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 
 cat("=======================================================\n")
 cat("   TESTING HIERARCHY INFERENCE (SIMPLIFIED)\n")
@@ -33,7 +33,7 @@ cat("Test 1: Explicit hierarchy (recommended - clearest)\n")
 cat("---------------------------------------------------\n")
 
 result1 <- suppressMessages({
-    phybase_run(
+    because(
         data = list(
             individual = individual_data,
             site_year = site_year_data

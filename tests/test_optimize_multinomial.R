@@ -1,4 +1,4 @@
-# Test script for Multinomial Optimization in phybaseR
+# Test script for Multinomial Optimization in becauseR
 # Verifies correctness and speedup of the random effects formulation for multinomial models
 
 # Source local files
@@ -14,7 +14,7 @@ set.seed(123)
 N <- 100
 tree <- rcoal(N)
 VCV <- vcv(tree)
-# Standardize VCV to max height 1 (matches phybase_run logic)
+# Standardize VCV to max height 1 (matches because logic)
 VCV <- VCV / max(node.depth.edgelength(tree))
 
 # Predictor
@@ -53,7 +53,7 @@ equations <- list(Y ~ X)
 
 cat("Running Unoptimized Multinomial Model (Marginal)...\n")
 start_time <- Sys.time()
-fit_marg <- phybase_run(
+fit_marg <- because(
     data = data,
     tree = tree,
     equations = equations,
@@ -69,7 +69,7 @@ cat("Unoptimized Time:", time_marg, "s\n")
 
 cat("\nRunning Optimized Multinomial Model (Random Effects)...\n")
 start_time <- Sys.time()
-fit_opt <- phybase_run(
+fit_opt <- because(
     data = data,
     tree = tree,
     equations = equations,

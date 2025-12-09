@@ -1,10 +1,10 @@
 ---
-title: "Getting Started with phybaseR"
+title: "Getting Started with because"
 author: "Achaz von Hardenberg"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{01. Getting Started with phybaseR}
+  %\VignetteIndexEntry{01. Getting Started with becauseR}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options: 
@@ -19,21 +19,21 @@ knitr::opts_chunk$set(
 )
 ```
 
-# Getting started with phybaseR
+# Getting started
 
-**phybaseR** is an R package designed to easily perform causal inference
+**because** is an R package designed to easily perform causal inference
 with Bayesian Structural Equation Models in JAGS. The package integrates
 the methods proposed by von Hardenberg & Gonzalez-Voyer (2025) to fit
-Phylogenetic Bayesian Structural Equation Models (PhyBaSE) and extends
+Phylogenetic Bayesian Structural Equation Models (Because) and extends
 them to other types of covariance structures (eg. spatial
 autocorrelation, genetic relatedness etc.).
 
-**phybaseR** main features:
+**because** main features:
 
 -   [Causal Inference with D-Separation](02_dseparation.html): Testing
     conditional independencies implied by your causal model.
 -   [Phylogenetic Path Analysis](03_phylogenetic_models.html): Using the
-    Phylogenetic Bayesian Structural Equation Model appraoch (PhyBaSE,
+    Phylogenetic Bayesian Structural Equation Model appraoch (Because,
     von Hardenberg & Gonzalez-Voyer, 2025).
 -   [Alternative Covariance structures](04_covariance_structures.html):
     Spatial, genetic, social, or other correlation structures.
@@ -61,7 +61,7 @@ autocorrelation, genetic relatedness etc.).
 
 ### Installation
 
-Before using phybaseR, you need to have **JAGS** (Just Another Gibbs
+Before using **because**, you need to have **JAGS** (Just Another Gibbs
 Sampler) installed on your machine.
 
 -   **macOS**: `brew install jags` or download from
@@ -70,23 +70,30 @@ Sampler) installed on your machine.
     [SourceForge](http://mcmc-jags.sourceforge.net).
 -   **Linux**: `sudo apt-get install jags`.
 
-After installing JAGS, install the phybaseR package from GitHub using
+After installing JAGS, install the becauseR package from GitHub using
 `remotes` or `devtools` and call the library:
 
-``` {r}
+```{r}
 # Install from GitHub
-remotes::install_github("achazhardenberg/phybaseR"
-library(phybaseR)
+remotes::install_github("achazhardenberg/becauseR"
+library(becauseR)
 ```
 
 ### Your First Model
 
-The main function in phybaseR is `phybase_run()`, which compiles and fits your specified Structural Equation Model in JAGS. The function is very rich with functionalities allowing to model complex models with different error structures and hierarchically structured data. However,
-here, to show the basic workflow, we will use phybase_run() to fit a simple linear model involving only two variables. Having only two variables this is not a typical SEM being equivalent to a simple linear regression which can not be used to infer causality, but it serves to illustrate the basic usage of the package.
+The main function in becauseR is `because()`, which compiles and fits
+your specified Structural Equation Model in JAGS. The function is very
+rich with functionalities allowing to model complex models with
+different error structures and hierarchically structured data. However,
+here, to show the basic workflow, we will use because() to fit a simple
+linear model involving only two variables. Having only two variables
+this is not a typical SEM being equivalent to a simple linear regression
+which can not be used to infer causality, but it serves to illustrate
+the basic usage of the package.
 
 Let's start simulating two variables X and Y where Y is correlated to X:
 
-``` {r}
+```{r}
 #set seed for reproducibility
 set.seed(67)
 
@@ -103,13 +110,17 @@ sim.dat <- data.frame(X, Y)
 # Fit linear model with lm() function for comparison
 summary(lm(Y ~ X, data = sim.dat))
 ```
-Now we can fit the same model using phybaseR. We need to specify the structural equations (in this case only one) using R's formula syntax and then call `phybase_run()` passing the equation and the data frame:
+
+Now we can fit the same model using becauseR. We need to specify the
+structural equations (in this case only one) using R's formula syntax
+and then call `because()` passing the equation and the data frame:
+
 ```{r}
 # Define the equations
 equations <- list(Y ~ X)
 
 # Fit the model
-fit <- phybase_run(
+fit <- because(
   equations = equations,
   data = sim.dat
 )
@@ -118,27 +129,41 @@ fit <- phybase_run(
 summary(fit) 
 ```
 
-To check for convergence of the MCMC chains, you can look at the Rhat values in the summary output (should be < 1.1). You can also plot the trace plots of the MCMC samples:
+To check for convergence of the MCMC chains, you can look at the Rhat
+values in the summary output (should be \< 1.1). You can also plot the
+trace plots of the MCMC samples:
+
 ```{r}
 # Plot trace plots
 plot(fit$samples)
 ```
 
-`fit$samples` is an MCMC object, so you can use all coda functions to analyze and plot the MCMC samples.
+`fit$samples` is an MCMC object, so you can use all coda functions to
+analyze and plot the MCMC samples.
 
-You can see how `phybase_run()` translates your model into JAGS syntax calling `fit$model` or, before fitting it, using `phybase_model()`:
+You can see how `because()` translates your model into JAGS syntax
+calling `fit$model` or, before fitting it, using `because_model()`:
+
 ```{r}
 # Generate JAGS model code
-jags_model_code <- phybase_model(
+jags_model_code <- because_model(
   equations = equations)
 
 cat(jags_model_code$model)
 ```
 
-When specifing the equations you can include multiple predictors as well as factors,interaction terms and polynomial terms following the conventional R formula syntax. See the [Advanced Model Specifications](06_advanced_models.html) vignette for more details.
+When specifing the equations you can include multiple predictors as well
+as factors,interaction terms and polynomial terms following the
+conventional R formula syntax. See the [Advanced Model
+Specifications](06_advanced_models.html) vignette for more details.
 
 ## Next: Causal Inference with D-Separation
-One of the main features of phybaseR is the ability to test your causal model's fit to the data using d-separation tests. D-separation tests evaluate whether the conditional independencies implied by your causal model hold in the data (Shipley, 2016). If they do not, this suggests that your model may be misspecified and that you may need to add or remove paths. More details on d-separation tests, how to interpret them and a full tutorial can be found in the [D-Separation Tests](02_dseparation.html) vignette. 
 
-
-
+One of the main features of becauseR is the ability to test your causal
+model's fit to the data using d-separation tests. D-separation tests
+evaluate whether the conditional independencies implied by your causal
+model hold in the data (Shipley, 2016). If they do not, this suggests
+that your model may be misspecified and that you may need to add or
+remove paths. More details on d-separation tests, how to interpret them
+and a full tutorial can be found in the [D-Separation
+Tests](02_dseparation.html) vignette.

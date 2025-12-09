@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 library(ape)
 
 set.seed(123)
@@ -26,7 +26,7 @@ cat("=== Testing Latent Variable Methods ===\n\n")
 cat("Test 1: MAG Approach (default, correlations)\n")
 cat(paste(rep("-", 40), collapse = ""), "\n")
 
-fit_mag <- phybase_run(
+fit_mag <- because(
     data = data_list,
     tree = tree,
     equations = equations,
@@ -52,7 +52,7 @@ cat("\n\n")
 cat("Test 2: Explicit Latent Variable Modeling\n")
 cat(paste(rep("-", 40), collapse = ""), "\n")
 
-fit_explicit <- phybase_run(
+fit_explicit <- because(
     data = data_list,
     tree = tree,
     equations = equations,

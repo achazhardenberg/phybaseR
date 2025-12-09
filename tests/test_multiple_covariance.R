@@ -1,7 +1,7 @@
 # Test for Multiple Covariance Support (Phylo + Spatial)
 # Checks if parameters are recovered correctly from a model with two additive random effects.
 
-library(phybaseR)
+library(becauseR)
 library(ape)
 library(MASS) # For mvrnorm
 library(coda) # For summary.mcmc.list
@@ -43,14 +43,14 @@ equations <- list(Y ~ X)
 
 # 2. Fit Model
 # Pass list of structures
-# Note: phybaseR expects Covariance-like objects (Tree or Matrix) and inverts them.
+# Note: becauseR expects Covariance-like objects (Tree or Matrix) and inverts them.
 structure_list <- list(
     phylo = tree,
     spatial = V_spatial
 )
 
 message("Fitting Multi-Structure Model...")
-fit <- phybase_run(
+fit <- because(
     data = data,
     equations = equations,
     structure = structure_list,
@@ -65,9 +65,9 @@ message("\n--- Summary ---")
 print(summary(fit))
 
 # Extract posteriors from JAGS object (fit$model)
-# Note: phybase_run returns 'fit' which has 'model' (rjags object) or samples?
-# phybase_run returns 'mcmc.list' usually?
-# Let's check phybase_run return. It returns 'result' which is mcmc.list (if parallel) or jags object?
+# Note: because returns 'fit' which has 'model' (rjags object) or samples?
+# because returns 'mcmc.list' usually?
+# Let's check because return. It returns 'result' which is mcmc.list (if parallel) or jags object?
 # It returns a list with 'posteriors' (mcmc.list).
 
 # Check variable names

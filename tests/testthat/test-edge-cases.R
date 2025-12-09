@@ -13,14 +13,14 @@ test_that("Handles single species tree gracefully", {
 
     # It seems to run without error, which is surprising but acceptable if JAGS handles N=1
     # We just check it returns a valid object
-    fit <- phybase_run(
+    fit <- because(
         data = data,
         tree = tree_single,
         equations = equations,
         n.chains = 2,
         quiet = TRUE
     )
-    expect_s3_class(fit, "phybase")
+    expect_s3_class(fit, "because")
 })
 
 test_that("Handles perfect collinearity", {
@@ -37,7 +37,7 @@ test_that("Handles perfect collinearity", {
 
     # Should run but might have convergence issues or high variance
     # We just want to ensure it doesn't crash
-    fit <- phybase_run(
+    fit <- because(
         data = data,
         tree = tree,
         equations = equations,
@@ -47,7 +47,7 @@ test_that("Handles perfect collinearity", {
         quiet = TRUE
     )
 
-    expect_s3_class(fit, "phybase")
+    expect_s3_class(fit, "because")
 })
 
 test_that("Handles disconnected DAG", {
@@ -65,7 +65,7 @@ test_that("Handles disconnected DAG", {
         Z ~ 1 # Intercept only
     )
 
-    fit <- phybase_run(
+    fit <- because(
         data = data,
         tree = tree,
         equations = equations,
@@ -75,5 +75,5 @@ test_that("Handles disconnected DAG", {
         quiet = TRUE
     )
 
-    expect_s3_class(fit, "phybase")
+    expect_s3_class(fit, "because")
 })

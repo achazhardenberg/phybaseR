@@ -1,7 +1,7 @@
 test_that("Gaussian distribution generates correct JAGS code", {
     equations <- list(Y ~ X)
 
-    model_output <- phybase_model(equations)
+    model_output <- because_model(equations)
 
     # Should use dnorm (normal distribution)
     expect_match(model_output$model, "dnorm")
@@ -18,7 +18,7 @@ test_that("Binomial distribution generates correct JAGS code", {
     equations <- list(BinaryOutcome ~ X)
     distribution <- c(BinaryOutcome = "binomial")
 
-    model_output <- phybase_model(
+    model_output <- because_model(
         equations,
         distribution = distribution
     )
@@ -40,7 +40,7 @@ test_that("Mixed distributions work correctly", {
     )
     distribution <- c(Binary = "binomial")
 
-    model_output <- phybase_model(
+    model_output <- because_model(
         equations,
         distribution = distribution
     )
@@ -66,7 +66,7 @@ test_that("Binomial distribution runs successfully", {
     equations <- list(Y ~ X)
     distribution <- c(Y = "binomial")
 
-    fit <- phybase_run(
+    fit <- because(
         data = data,
         tree = tree,
         equations = equations,
@@ -77,7 +77,7 @@ test_that("Binomial distribution runs successfully", {
         quiet = TRUE
     )
 
-    expect_s3_class(fit, "phybase")
+    expect_s3_class(fit, "because")
     expect_true("beta_Y_X" %in% rownames(fit$summary$statistics))
 })
 
@@ -85,7 +85,7 @@ test_that("Default distribution is Gaussian", {
     equations <- list(Y ~ X)
 
     # Not specifying distribution should default to Gaussian
-    model_output <- phybase_model(equations)
+    model_output <- because_model(equations)
 
     expect_match(model_output$model, "dnorm")
     expect_false(grepl("dbern", model_output$model))

@@ -1,4 +1,4 @@
-test_that("phybase_compare runs multiple models and returns comparison", {
+test_that("because_compare runs multiple models and returns comparison", {
     skip_on_cran()
 
     set.seed(123)
@@ -17,7 +17,7 @@ test_that("phybase_compare runs multiple models and returns comparison", {
     )
 
     # 1. Sequential execution
-    res_seq <- phybase_compare(
+    res_seq <- because_compare(
         models,
         data_list,
         tree,
@@ -40,12 +40,12 @@ test_that("phybase_compare runs multiple models and returns comparison", {
         print(res_seq$results[[1]]$WAIC)
     } else {
         expect_true("WAIC" %in% names(res_seq$comparison))
-        expect_true("Weight_WAIC" %in% names(res_seq$comparison))
+        expect_true("weight" %in% names(res_seq$comparison))
         expect_true(!any(is.na(res_seq$comparison$WAIC)))
     }
 
     # 2. Parallel execution
-    res_par <- phybase_compare(
+    res_par <- because_compare(
         models,
         data_list,
         tree,
@@ -70,9 +70,9 @@ test_that("phybase_compare runs multiple models and returns comparison", {
     }
 })
 
-test_that("phybase_compare handles errors gracefully", {
+test_that("because_compare handles errors gracefully", {
     expect_error(
-        phybase_compare(list(), list(), ape::rtree(10)),
-        "must be a named list"
+        because_compare(list(), list(), ape::rtree(10)),
+        "No fitted 'because' models provided"
     )
 })

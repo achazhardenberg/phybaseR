@@ -1,6 +1,6 @@
 # Test script for Generalized Covariance Support (Non-Phylogenetic & Custom Matrix)
 
-# library(phybaseR)
+# library(becauseR)
 devtools::load_all(".")
 library(ape)
 library(testthat)
@@ -19,8 +19,8 @@ eq <- list(y ~ x1)
 
 cat("--- Test 1: Independent Model (tree = NULL) ---\n")
 
-# Run phybaseR with tree = NULL
-fit_null <- phybase_run(
+# Run becauseR with tree = NULL
+fit_null <- because(
     data = data_df,
     tree = NULL,
     equations = eq,
@@ -37,13 +37,13 @@ fit_lm <- lm(y ~ x1, data = data_df)
 summ_lm <- summary(fit_lm)
 
 # Extract estimates
-beta_phybase <- mean(fit_null$samples[[1]][, "beta_y_x1"])
+beta_because <- mean(fit_null$samples[[1]][, "beta_y_x1"])
 beta_lm <- coef(fit_lm)["x1"]
 
-cat(sprintf("Beta (phybaseR): %.3f\n", beta_phybase))
+cat(sprintf("Beta (becauseR): %.3f\n", beta_because))
 cat(sprintf("Beta (lm):       %.3f\n", beta_lm))
 
-diff <- abs(beta_phybase - beta_lm)
+diff <- abs(beta_because - beta_lm)
 if (diff < 0.1) {
     cat("[PASS] Estimates match within tolerance.\n")
 } else {
@@ -61,7 +61,7 @@ cat("\n--- Test 2: Custom Matrix Support (Identity Matrix) ---\n")
 
 identity_mat <- diag(N)
 # Treat as Covariance Matrix
-fit_matrix <- phybase_run(
+fit_matrix <- because(
     data = data_df,
     tree = identity_mat, # Pass matrix directly
     equations = eq,
@@ -83,7 +83,7 @@ cats <- sample(1:3, N_cat, replace = TRUE)
 x_cat <- rnorm(N_cat)
 data_cat <- data.frame(cat = as.factor(cats), x = x_cat)
 
-fit_multinom <- phybase_run(
+fit_multinom <- because(
     data = data_cat,
     tree = NULL,
     equations = list(cat ~ x),

@@ -8,8 +8,8 @@ if (requireNamespace("devtools", quietly = TRUE)) {
 }
 
 # Access internal functions (now exported to namespace by load_all)
-extract_random_effects <- phybaseR:::extract_random_effects
-create_group_structures <- phybaseR:::create_group_structures
+extract_random_effects <- becauseR:::extract_random_effects
+create_group_structures <- becauseR:::create_group_structures
 
 test_that("extract_random_effects parses correctly", {
     eqs <- list(
@@ -82,7 +82,7 @@ test_that("Simulated Gaussian Random Effect Model runs and recovers parameters",
 
     # Run model
     # Y ~ X + (1|Group)
-    fit <- phybase_run(
+    fit <- because(
         equations = list(Y ~ X + (1 | Group)),
         data = df,
         n.chains = 1,
@@ -126,7 +126,7 @@ test_that("Random Effects with Poisson Distribution", {
 
     df <- data.frame(Y = y, Group = as.factor(groups))
 
-    fit <- phybase_run(
+    fit <- because(
         equations = list(Y ~ 1 + (1 | Group)),
         data = df,
         distribution = list(Y = "poisson"),
@@ -146,13 +146,13 @@ test_that("Random Slopes Warn and Default to Intercept", {
 
     # Check that it throws warning
     expect_warning(
-        phybaseR:::extract_random_effects(eq),
+        becauseR:::extract_random_effects(eq),
         "Random slopes .* are not yet implemented"
     )
 
     # Check that it still returns valid random structure
     suppressWarnings({
-        res <- phybaseR:::extract_random_effects(eq)
+        res <- becauseR:::extract_random_effects(eq)
     })
 
     expect_equal(length(res$random_terms), 1)
@@ -178,7 +178,7 @@ test_that("Multiple Random Effects Run Successfully", {
     y <- 1 + u_A[groups_A] + u_B[groups_B] + rnorm(N, 0, 0.5)
     df <- data.frame(Y = y, A = as.factor(groups_A), B = as.factor(groups_B))
 
-    fit <- phybase_run(
+    fit <- because(
         equations = list(Y ~ 1 + (1 | A) + (1 | B)),
         data = df,
         n.chains = 1,
@@ -212,8 +212,8 @@ test_that("Parallel Execution with Global Random Effects and WAIC", {
     data_df <- data.frame(Y = Y, X = X, Group = as.factor(groups), ID = 1:N)
 
     # Run with parallel = TRUE and WAIC = TRUE and global Random
-    # Expectation: Should run without error and return valid phybase object with WAIC
-    fit_par <- phybase_run(
+    # Expectation: Should run without error and return valid because object with WAIC
+    fit_par <- because(
         equations = list(Y ~ X),
         data = data_df,
         random = ~ (1 | Group),
@@ -226,7 +226,7 @@ test_that("Parallel Execution with Global Random Effects and WAIC", {
         quiet = TRUE
     )
 
-    expect_s3_class(fit_par, "phybase")
+    expect_s3_class(fit_par, "because")
     expect_false(is.null(fit_par$WAIC))
 
     # Check Model Code for Random Effects
@@ -258,7 +258,7 @@ test_that("Global Random Argument & d-separation work correctly", {
 
     equations <- list(B ~ A, C ~ B)
 
-    fit <- phybase_run(
+    fit <- because(
         equations = equations,
         data = data,
         random = ~ (1 | Group), # Global argument

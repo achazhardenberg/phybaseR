@@ -2,7 +2,7 @@
 #'
 #' A phylogenetic tree (phylo object) for 100 simulated Rhinograd species.
 #' This tree is used to demonstrate phylogenetic Bayesian structural equation
-#' modeling with the phybaseR package.
+#' modeling with the becauseR package.
 #'
 #' @format A phylo object (from the ape package) with 100 tips and 99 internal nodes.
 #' The tree has been scaled so that the root age is 1.0.

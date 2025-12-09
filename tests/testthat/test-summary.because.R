@@ -1,5 +1,5 @@
-test_that("summary.phybase handles standard output", {
-    # Mock a phybase object
+test_that("summary.because handles standard output", {
+    # Mock a because object
     samples <- coda::mcmc.list(
         coda::mcmc(matrix(
             rnorm(100),
@@ -19,21 +19,21 @@ test_that("summary.phybase handles standard output", {
         DIC = c(deviance = 100, pD = 2, DIC = 102),
         WAIC = c(waic = 100, p_waic = 2)
     )
-    class(fit) <- "phybase"
+    class(fit) <- "because"
 
     # Capture output to verify printing
     output <- capture_output({
         summ <- summary(fit)
     })
 
-    # summary.phybase returns a matrix for standard output
+    # summary.because returns a matrix for standard output
     expect_true(is.matrix(summ) || is.data.frame(summ))
     expect_match(output, "DIC")
     expect_match(output, "WAIC")
 })
 
-test_that("summary.phybase handles d-sep output", {
-    # Mock a d-sep phybase object
+test_that("summary.because handles d-sep output", {
+    # Mock a d-sep because object
     # Use 2 parameters to ensure summary returns a matrix
     samples <- coda::mcmc.list(
         coda::mcmc(matrix(
@@ -59,15 +59,21 @@ test_that("summary.phybase handles d-sep output", {
         samples = samples,
         dsep = TRUE,
         dsep_tests = dsep_tests,
-        parameter_map = parameter_map
+        parameter_map = parameter_map,
+        dsep_results = list(
+            list(
+                samples = samples,
+                param_map = parameter_map
+            )
+        )
     )
-    class(fit) <- "phybase"
+    class(fit) <- "because"
 
     output <- capture_output({
         results <- summary(fit)
     })
 
-    expect_match(output, "PhyBaSE d-separation Tests")
+    expect_match(output, "Because d-separation Tests")
     expect_match(output, "Y _\\|\\|_ X")
     expect_s3_class(results, "data.frame")
     expect_true(nrow(results) == 1)

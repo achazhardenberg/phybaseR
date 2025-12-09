@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 library(ape)
 
 # Test WAIC with standard errors
@@ -15,7 +15,7 @@ df <- data.frame(
 cat("=== Testing WAIC with Standard Errors ===\n\n")
 
 cat("Fitting model with WAIC=TRUE...\n")
-fit <- phybase_run(
+fit <- because(
     data = df,
     structure = tree,
     id_col = "SP",
@@ -73,7 +73,7 @@ if (abs(waic_manual - waic_actual) < 0.1) {
 
 cat("\n=== Testing Model Comparison ===\n")
 # Fit a simpler model
-fit_null <- phybase_run(
+fit_null <- because(
     data = df,
     structure = tree,
     id_col = "SP",

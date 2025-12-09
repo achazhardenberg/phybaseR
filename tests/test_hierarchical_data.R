@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 
 # Create hierarchical test data
 # Individual level
@@ -34,7 +34,7 @@ cat("\n=== Testing Hierarchical Data Validation ===\n")
 # Test 1: Basic validation should work
 tryCatch(
     {
-        result <- phybase_run(
+        result <- because(
             data = list(
                 individual = individual_data,
                 site_year = site_year_data
@@ -66,7 +66,7 @@ cat("\n=== Testing Error Cases ===\n")
 # Test 2: Missing levels argument should error
 tryCatch(
     {
-        result <- phybase_run(
+        result <- because(
             data = list(
                 individual = individual_data,
                 site_year = site_year_data
@@ -94,7 +94,7 @@ bad_levels <- list(
 
 tryCatch(
     {
-        result <- phybase_run(
+        result <- because(
             data = list(
                 individual = individual_data,
                 site_year = site_year_data

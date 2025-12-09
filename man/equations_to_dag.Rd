@@ -2,17 +2,19 @@
 % Please edit documentation in R/mag_helpers.R
 \name{equations_to_dag}
 \alias{equations_to_dag}
-\title{Convert phybaseR equations to ggm DAG adjacency matrix}
+\title{Convert becauseR equations to ggm DAG adjacency matrix}
 \usage{
-equations_to_dag(equations)
+equations_to_dag(equations, exclude_vars = NULL)
 }
 \arguments{
 \item{equations}{List of formulas}
+
+\item{exclude_vars}{Character vector of variable names to exclude (e.g., grouping variables)}
 }
 \value{
 Named adjacency matrix in ggm format
 }
 \description{
-Convert phybaseR equations to ggm DAG adjacency matrix
+Convert becauseR equations to ggm DAG adjacency matrix
 }
 \keyword{internal}

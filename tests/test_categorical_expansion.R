@@ -1,8 +1,8 @@
 # Simple test to verify categorical expansion in equations
 
-source("R/phybase_format_data.R")
-source("R/phybase_run.R")
-source("R/phybase_model.R")
+source("R/because_format_data.R")
+source("R/because.R")
+source("R/because_model.R")
 
 library(ape)
 
@@ -22,7 +22,7 @@ data_long <- data.frame(
 )
 
 # 2. Format data (auto-creates dummies: Diet_Herbivore, Diet_Omnivore)
-data_list <- phybase_format_data(data_long, species_col = "SP", tree = tree)
+data_list <- because_format_data(data_long, species_col = "SP", tree = tree)
 
 cat("Categorical vars attribute:\n")
 print(attr(data_list, "categorical_vars"))
@@ -33,9 +33,9 @@ equations <- list(Y ~ Diet + Z)
 cat("\n\nOriginal equation:\n")
 print(equations[[1]])
 
-# 4. Run phybase_run WITHOUT d-sep to see if expansion works
-cat("\nRunning phybase_run with categorical variable in equation...\n")
-fit <- phybase_run(
+# 4. Run because WITHOUT d-sep to see if expansion works
+cat("\nRunning because with categorical variable in equation...\n")
+fit <- because(
     data = data_list,
     tree = tree,
     equations = equations,

@@ -11,7 +11,7 @@ test_that("ic_recompile computes DIC with parallel chains", {
     equations <- list(Y ~ X)
 
     # Run with parallel execution AND ic_recompile=TRUE
-    fit <- phybase_run(
+    fit <- because(
         data = data_list,
         tree = tree,
         equations = equations,
@@ -26,7 +26,7 @@ test_that("ic_recompile computes DIC with parallel chains", {
     )
 
     # Check that DIC was computed
-    expect_s3_class(fit, "phybase")
+    expect_s3_class(fit, "because")
     expect_true(!is.null(fit$DIC))
     expect_s3_class(fit$DIC, "dic")
 })
@@ -45,7 +45,7 @@ test_that("ic_recompile=FALSE skips DIC with parallel chains", {
 
     # Run with parallel execution but ic_recompile=FALSE
     suppressWarnings({
-        fit <- phybase_run(
+        fit <- because(
             data = data_list,
             tree = tree,
             equations = equations,

@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 
 cat("=== Testing Polynomial Transformation Feature ===\n\n")
 
@@ -15,7 +15,7 @@ data$y <- 2 + 3 * data$x + 0.5 * data$x^2 + rnorm(50, 0, 1)
 cat("Test 1: Simple polynomial with I(x^2)\n")
 cat("---------------------------------------\n")
 
-fit1 <- phybase_run(
+fit1 <- because(
     equations = list(
         y ~ x + I(x^2) # Inline polynomial!
     ),

@@ -24,7 +24,7 @@ rhino.dat
 \description{
 A dataset containing simulated life-history trait data for 100 Rhinograd species.
 This data is used to demonstrate phylogenetic Bayesian structural equation
-modeling with the phybaseR package.
+modeling with the becauseR package.
 }
 \details{
 This simulated dataset represents life-history traits for hypothetical

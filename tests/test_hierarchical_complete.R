@@ -1,4 +1,4 @@
-library(phybaseR)
+library(becauseR)
 
 cat("=======================================================\n")
 cat("   HIERARCHICAL DATA D-SEPARATION VALIDATION TEST\n")
@@ -40,7 +40,7 @@ cat("  2. age _||_ temp | precip          [ALL vars -> 20 obs]\n")
 cat("  3. temp _||_ precip |              [SITE-YEAR only -> 4 obs!]\n\n")
 
 result <- suppressMessages({
-    phybase_run(
+    because(
         data = list(
             individual = individual_data,
             site_year = site_year_data
