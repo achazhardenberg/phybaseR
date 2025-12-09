@@ -32,10 +32,11 @@ The problem is that correlation alone cannot distinguish between these three sce
 Let's look at a classic example A correlative study trying to establish if storks deliver babies (Matthews, 2000). we investigated this example previously in Gonzalez-Voyer & von Hardenberg (2014), and the data and a tutorial analysing this example with traditional path analysis is available as supplementary materials to that book chapter and here: https://github.com/achazhardenberg/mpcm-OPM. 
 
 Let's download the data and take a look:
-```{r, eval=FALSE}
-# load data from github
-# NOTE: Data file currently unavailable, commenting out for now
-# stork_data <- read.csv("https://raw.githubusercontent.com/achazhardenberg/mpcm-OPM/main/data/stork_babies.csv")
+```{r}
+# load data
+data("storks.dat")
+# rename to stork_data for consistency with rest of vignette
+stork_data <- storks.dat
 ```
 
 
