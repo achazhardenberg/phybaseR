@@ -102,7 +102,7 @@ equations_fixed <- list(
 
 ### M-Separation (with Latent Variables)
 
-When latent variables are present, becauseR uses **m-separation** on the MAG (Maximal Ancestral Graph).
+When latent variables are present, because uses **m-separation** on the MAG (Maximal Ancestral Graph).
 
 Same interpretation, but accounts for induced correlations from latent confounders.
 
@@ -112,7 +112,7 @@ See **[Latent Variables](08_latent_variables.html)** vignette for details.
 
 ## Response Distributions
 
-becauseR supports different response distributions for different data types.
+because supports different response distributions for different data types.
 
 ### Gaussian (Default)
 
@@ -522,11 +522,11 @@ fit <- because(
 4. **Convergence**: All Rhat < 1.1
 5. **Parameter estimates**: Mean, 95% CI
 6. **Model fit**: DIC/WAIC, d-separation results
-7. **Software**: becauseR version, R version
+7. **Software**: because version, R version
 
 ### Example
 
-> "We fitted a phylogenetic SEM using becauseR (v1.0) with 3 chains of 10,000 iterations (5,000 burn-in, thin = 2). Convergence was confirmed (all Rhat < 1.05). D-separation tests indicated good model fit (all P > 0.4). Body size had a positive effect on range size (β = 0.45, 95% CI: 0.32-0.58)."
+> "We fitted a phylogenetic SEM using because (v1.0) with 3 chains of 10,000 iterations (5,000 burn-in, thin = 2). Convergence was confirmed (all Rhat < 1.05). D-separation tests indicated good model fit (all P > 0.4). Body size had a positive effect on range size (β = 0.45, 95% CI: 0.32-0.58)."
 
 ---
 

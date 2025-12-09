@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 # Advanced Model Specifications
 
-This vignette covers advanced features in becauseR for specifying complex statistical models.
+This vignette covers advanced features in because for specifying complex statistical models.
 
 ## Random Effects (Mixed Models)
 
@@ -109,7 +109,7 @@ fit <- because(
 ```
 
 **What happens**:
-- becauseR detects `I(age^2)` 
+- because detects `I(age^2)` 
 - Creates internal variable `age_pow2`
 - Generates deterministic JAGS node: `age_pow2[i] <- age[i]^2`
 - No residual error (perfectly deterministic!)
@@ -195,7 +195,7 @@ fit <- because(
 
 ## Categorical Predictors
 
-becauseR automatically handles factor variables.
+because automatically handles factor variables.
 
 ### Basic Usage
 
