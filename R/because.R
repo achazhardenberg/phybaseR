@@ -572,7 +572,7 @@ because <- function(
           stop(paste("Dimension mismatch in", s_name))
         }
 
-        if (length(structures) == 1) {
+        if (length(structures) == 1 && !optimise) {
           data$VCV <- V
         }
       } else if (is.matrix(obj)) {
