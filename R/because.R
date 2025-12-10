@@ -142,6 +142,10 @@ because <- function(
   # --- Input Validation & Setup ---
   latent_method <- match.arg(latent_method)
 
+  if (is.matrix(data)) {
+    data <- as.data.frame(data)
+  }
+
   # Handle 'structure' alias
   if (is.null(tree) && !is.null(structure)) {
     tree <- structure
@@ -568,7 +572,7 @@ because <- function(
           stop(paste("Dimension mismatch in", s_name))
         }
 
-        if (length(structures) == 1) {
+        if (length(structures) == 1 && !optimise) {
           data$VCV <- V
         }
       } else if (is.matrix(obj)) {

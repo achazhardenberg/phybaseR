@@ -1696,18 +1696,21 @@ because_model <- function(
             s_name <- structure_names[1]
             s_suffix <- paste0("_", s_name)
             tau_u_name <- paste0("tau_u_", response, suffix, s_suffix)
-            paste0(
-              "  lambda",
-              response,
-              suffix,
-              " <- (1/",
-              tau_u_name,
-              ") / ((1/",
-              tau_u_name,
-              ") + (1/tau_e_",
-              response,
-              suffix,
-              "))"
+            model_lines <- c(
+              model_lines,
+              paste0(
+                "  lambda",
+                response,
+                suffix,
+                " <- (1/",
+                tau_u_name,
+                ") / ((1/",
+                tau_u_name,
+                ") + (1/tau_e_",
+                response,
+                suffix,
+                "))"
+              )
             )
           }
 

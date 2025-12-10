@@ -20,8 +20,6 @@ knitr::opts_chunk$set(
 )
 ```
 
-# Getting started
-
 `because` is an R package designed to easily perform causal inference
 with Bayesian Structural Equation Models in JAGS. The package integrates
 the methods proposed by von Hardenberg & Gonzalez-Voyer (2025) to fit
@@ -62,7 +60,8 @@ autocorrelation, genetic relatedness etc.).
 
 ### Installation
 
-Before using `because`, you need to have `JAGS` (Just Another Gibbs Sampler) installed on your machine.
+Before using `because`, you need to have `JAGS` (Just Another Gibbs
+Sampler) installed on your machine.
 
 -   **macOS**: `brew install jags` or download from
     [SourceForge](http://mcmc-jags.sourceforge.net).
@@ -73,7 +72,7 @@ Before using `because`, you need to have `JAGS` (Just Another Gibbs Sampler) ins
 After installing JAGS, install the `because` package from GitHub using
 `remotes` or `devtools` and call the library:
 
-```r
+``` r
 # Install from GitHub
 remotes::install_github("achazhardenberg/because", build_vignettes = TRUE)
 library(because)
@@ -81,16 +80,21 @@ library(because)
 
 ### Your First Model
 
-The main function of the package is `because()`, which compiles and fits your specified Structural Equation Model in JAGS. The function is very rich with functionalities allowing to model complex models with different error structures and hierarchically structured data. However,
-here, to show the basic workflow, we will use `because()` to fit a simple linear model involving only two variables. Having only two variables this is not a typical SEM being equivalent to a simple linear regression which can not be used to infer causality, but it serves to illustrate the basic usage of the package.
+The main function of the package is `because()`, which compiles and fits
+your specified Structural Equation Model in JAGS. The function is very
+rich with functionalities allowing to model complex models with
+different error structures and hierarchically structured data. However,
+here, to show the basic workflow, we will use `because()` to fit a
+simple linear model involving only two variables. Having only two
+variables this is not a typical SEM being equivalent to a simple linear
+regression which can not be used to infer causality, but it serves to
+illustrate the basic usage of the package.
 
 Let's start simulating two variables X and Y where Y is correlated to X:
 
 ```{r}
 # set seed for reproducibility
-set.seed(67)
-library(because)
-
+set.seed(6767)
 
 # Simulate predictor
 n <- 100
@@ -108,7 +112,29 @@ sim.dat <- data.frame(X, Y)
 summary(lm(Y ~ X, data = sim.dat))
 ```
 
-Now we can fit the same model using because. We need to specify the structural equations (in this case only one) using R's formula syntax and then call `because()` passing the equation and the data frame:
+``` txt
+Call:
+lm(formula = Y ~ X, data = sim.dat)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-26.1185  -7.2237   0.0885   7.8117  24.5652 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 19.91122    4.93675   4.033 0.000109 ***
+X            0.50093    0.09727   5.150 1.35e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 10.65 on 98 degrees of freedom
+Multiple R-squared:  0.213, Adjusted R-squared:  0.205 
+F-statistic: 26.52 on 1 and 98 DF,  p-value: 1.347e-06
+```
+
+Now we can fit the same model using because. We need to specify the
+structural equations (in this case only one) using R's formula syntax
+and then call `because()` passing the equation and the data frame:
 
 ```{r}
 # Define the equations
@@ -124,16 +150,40 @@ fit <- because(
 summary(fit)
 ```
 
-To check for convergence of the MCMC chains, you can look at the Rhat values in the summary output (should be < 1.1). You can also plot the trace plots of the MCMC samples:
+``` txt
+          Mean    SD Naive SE Time-series SE
+alphaY   19.483 4.997    0.091          0.188
+beta_Y_X  0.510 0.098    0.002          0.004
+sigmaY   10.623 0.750    0.014          0.013
+           2.5%    50%  97.5%  Rhat n.eff
+alphaY   10.046 19.351 29.319 1.001   739
+beta_Y_X  0.317  0.512  0.694 1.001   739
+sigmaY    9.256 10.567 12.168 1.000  3103
+
+DIC:
+Mean deviance:  757.8 
+penalty 2.995 
+Penalized deviance: 760.8 
+```
+
+To check for convergence of the MCMC chains, you can look at the Rhat
+values in the summary output (should be \< 1.1). You can also plot the
+trace plots of the MCMC samples:
 
 ```{r, fig.height=8, fig.width=8}
 # Plot trace plots
 plot(fit$samples)
 ```
 
-`fit$samples` is an MCMC object, so you can use all coda functions to analyze and plot the MCMC samples.
+```{r, echo=FALSE, eval=TRUE, out.width="100%"}
+knitr::include_graphics("figures/traceplot_1.png")
+```
 
-You can see how `because()` translates your model into JAGS syntax calling `fit$model` or, before fitting it, using `because_model()`:
+`fit$samples` is an MCMC object, so you can use all coda functions to
+analyze and plot the MCMC samples.
+
+You can see how `because()` translates your model into JAGS syntax
+calling `fit$model` or, before fitting it, using `because_model()`:
 
 ```{r}
 # Generate JAGS model code
@@ -144,9 +194,53 @@ jags_model_code <- because_model(
 cat(jags_model_code$model)
 ```
 
-When specifing the equations you can include multiple predictors as well as factors,interaction terms and polynomial terms following the conventional R formula syntax. See the [Advanced Model Specifications](06_advanced_models.html) vignette for more details.
+``` txt
+model {
+  # Dummy usage of ID to prevent warnings in GLMM-only models
+  dummy_ID <- ID[1,1]
+  # Structural equations
+  for (i in 1:N) {
+
+    muY[i] <- alphaY + beta_Y_X*X[i]
+  }
+  # Multivariate normal likelihoods
+  u_std_Y_phylo[1:N] ~ dmnorm(zeros[1:N], Prec_phylo[1:N, 1:N])
+  for (i in 1:N) { u_Y_phylo[i] <- u_std_Y_phylo[i] / sqrt(tau_u_Y_phylo) }
+  for (i in 1:N) {
+    Y[i] ~ dnorm(muY[i] + u_Y_phylo[i], tau_e_Y)
+    log_lik_Y[i] <- logdensity.norm(Y[i], muY[i] + u_Y_phylo[i], tau_e_Y)
+  }
+  # Priors for structural parameters
+  alphaY ~ dnorm(0, 1.0E-6)
+  tau_e_Y ~ dgamma(1, 1)
+  tau_u_Y_phylo ~ dgamma(1, 1)
+  sigma_Y_phylo <- 1/sqrt(tau_u_Y_phylo)
+  sigma_Y_res <- 1/sqrt(tau_e_Y)
+  beta_Y_X ~ dnorm(0, 1.0E-6)
+  # Covariance structure for responses
+  # Predictor priors for imputation
+}
+```
+
+When specifing the equations you can include multiple predictors as well
+as factors,interaction terms and polynomial terms following the
+conventional R formula syntax. See the [Advanced Model
+Specifications](06_advanced_models.html) vignette for more details.
 
 ## Next: Causal Inference with D-Separation
 
-One of the main features of because is the ability to test your causal model's fit to the data using d-separation tests. D-separation tests evaluate whether the conditional independencies implied by your causal model hold in the data (Shipley, 2016). If they do not, this suggests
-that your model may be misspecified and that you may need to add or remove paths. More details on d-separation tests, how to interpret them and a full tutorial can be found in the [D-Separation Tests](02_dseparation.html) vignette.
+One of the main features of because is the ability to test your causal
+model's fit to the data using d-separation tests. D-separation tests
+evaluate whether the conditional independencies implied by your causal
+model hold in the data (Shipley, 2016). If they do not, this suggests
+that your model may be misspecified and that you may need to add or
+remove paths. More details on d-separation tests, how to interpret them
+and a full tutorial can be found in the [D-Separation
+Tests](02_dseparation.html) vignette.
+
+## References
+
+von Hardenberg, A. and Gonzalez-Voyer, A. (2025). PhyBaSE: A Bayesian approach to Phylogenetic Structural Equation Models. *Methods in Ecology and Evolution*. <https://doi.org/10.1111/2041-210X.70044>
+
+Shipley, B. (2016). Cause and Correlation in Biology: A User's Guide to Path Analysis, Structural Equations and Causal Inference with R
+(2nd ed.). Cambridge University Press.

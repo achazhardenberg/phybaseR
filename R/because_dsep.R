@@ -85,137 +85,92 @@ because_dsep <- function(
   ))
 }
 
-# Standard d-separation for DAGs (original logic)
+# Standard d-separation for DAGs (using ggm::basiSet)
 dsep_standard <- function(
   equations,
   random_terms = list(),
   hierarchical_info = NULL,
   quiet = FALSE
 ) {
-  # Parse equations to extract parent-child relationships
-  parents <- list()
-  children <- list()
-
-  for (eq in equations) {
-    lhs <- as.character(formula(eq))[2] # Left-hand side (child)
-    rhs <- attr(terms(eq), "term.labels") # Right-hand side (parents)
-
-    parents[[lhs]] <- rhs
-    for (var in rhs) {
-      children[[var]] <- c(children[[var]], lhs)
-    }
+  # Extract variables to exclude (random groupings, polynomial terms)
+  grouping_vars <- NULL
+  if (length(random_terms) > 0) {
+    grouping_vars <- unique(sapply(random_terms, function(x) x$group))
   }
 
-  # Get the list of all variables (children and parents)
-  all_vars <- unique(c(names(parents), unlist(parents)))
+  poly_internal_vars <- NULL
+  all_poly_terms <- get_all_polynomial_terms(equations)
+  if (!is.null(all_poly_terms)) {
+    poly_internal_vars <- sapply(all_poly_terms, function(x) x$internal_name)
+  }
 
-  # Initialize a list to store the conditional independence regressions
-  cond_indep_regressions <- list()
+  exclude_vars <- c(grouping_vars, poly_internal_vars)
 
-  # Loop through all pairs of non-adjacent variables
-  for (i in seq_len(length(all_vars) - 1)) {
-    for (j in (i + 1):length(all_vars)) {
-      var1 <- all_vars[i]
-      var2 <- all_vars[j]
+  # Convert equations to ggm DAG format
+  dag <- equations_to_dag(equations, exclude_vars = exclude_vars)
 
-      # Check if var1 and var2 are non-adjacent (no direct edge between them)
-      if (!var2 %in% children[[var1]] && !var1 %in% children[[var2]]) {
-        # Get the parents of both variables
-        parents_var1 <- parents[[var1]]
-        parents_var2 <- parents[[var2]]
+  # Get Basis Set using ggm::basiSet
+  basis <- tryCatch(
+    {
+      ggm::basiSet(dag)
+    },
+    error = function(e) {
+      warning("Failed to generate basis set: ", e$message)
+      return(NULL)
+    }
+  )
 
-        # Determine the conditioning set
-        if (!is.null(parents_var1) && !is.null(parents_var2)) {
-          conditioning_vars <- intersect(parents_var1, parents_var2)
-        } else {
-          conditioning_vars <- NULL
-        }
+  # Filter out random effect grouping variables from basis set conditioning sets
+  if (length(random_terms) > 0 && !is.null(basis)) {
+    basis <- lapply(basis, function(test) {
+      if (length(test) > 2) {
+        # Keep var1 and var2, filter conditioning variables
+        cond_vars <- test[3:length(test)]
+        filtered_cond <- cond_vars[!cond_vars %in% grouping_vars]
+        c(test[1:2], filtered_cond)
+      } else {
+        test
+      }
+    })
+  }
 
-        # Identify Test Variable & Response Variable logic
-        # Rule: The variable with NO parents in the pair usually becomes the predictor?
-        # Actually, in basis set construction:
-        # If neither has parents (exogenous), I(X,Y). One predicts other.
-        # If X->Z<-Y (collider), they are independent given empty set. I(X,Y).
-        # Standard algorithm:
-        # conditioning set = parents(var1) U parents(var2) ? No, that's not general d-sep.
-        # This implementation assumes a specific basis set construction for acyclic graphs.
-        # It seems to verify independence given the *common causes*.
+  # Convert basis set to formulas
+  tests <- mag_basis_to_formulas(basis, latent_children = NULL)
 
-        # Let's trust the existing logic for variable assignment, just capturing variables.
+  # Save tests without random effects for clean display
+  tests_for_display <- tests
 
-        p1_len <- length(parents_var1)
-        p2_len <- length(parents_var2)
+  # Append random terms to test formulas if needed
+  if (length(random_terms) > 0 && length(tests) > 0) {
+    new_tests <- list()
+    for (t_idx in seq_along(tests)) {
+      t_eq <- tests[[t_idx]]
+      resp <- as.character(t_eq)[2]
 
-        test_var <- NULL
-        response_var <- NULL
-        reg_rhs <- NULL
+      # Find random terms for response
+      vocab_rand <- Filter(function(x) x$response == resp, random_terms)
 
-        if (p1_len == 0 && p2_len == 0) {
-          # Both exogenous. Test: var1 ~ var2 (or vice versa)
-          response_var <- var1
-          test_var <- var2
-          reg_rhs <- c(test_var, conditioning_vars)
-        } else if (p1_len == 0) {
-          # var1 exogenous. var2 has parents.
-          # Usually we test Indep conditioned on common parents.
-          # Original code: var2 ~ var1 + inputs
-          response_var <- var2
-          test_var <- var1
-          reg_rhs <- c(test_var, conditioning_vars)
-        } else if (p2_len == 0) {
-          # var2 exogenous
-          response_var <- var1
-          test_var <- var2
-          reg_rhs <- c(test_var, conditioning_vars)
-        } else {
-          # Both have parents.
-          # Original logic: if var1 is child of var2 (impossible if non-adjacent).
-          # It checks children[[var2]].
-          # Wait, if they are non-adjacent, var1 CANNOT be in children[[var2]].
-          # So the check `if (var1 %in% children[[var2]])` in original code was weird/dead given the non-adjacent check above.
-          # We will assume arbitrary assignment or based on topological order if we had it.
-          # Let's stick to var1 ~ var2 + parents.
-          response_var <- var1
-          test_var <- var2
-          reg_rhs <- c(test_var, conditioning_vars)
-        }
-
-        # Construct formula string
-        reg_formula_str <- paste(
-          response_var,
-          "~",
-          paste(reg_rhs, collapse = " + ")
+      if (length(vocab_rand) > 0) {
+        rand_str <- paste(
+          sapply(vocab_rand, function(rt) {
+            paste0("(1 | ", rt$group, ")")
+          }),
+          collapse = " + "
         )
 
-        # Add random effects if present for the RESPONSE variable
-        if (length(random_terms) > 0) {
-          # Find random terms where the response variable is the LHS
-          vocab_rand <- Filter(
-            function(x) x$response == response_var,
-            random_terms
-          )
+        # Reconstruct formula with random effects
+        # Use deparse for safety
+        f_str <- paste(deparse(t_eq), collapse = " ")
+        f_str <- paste0(f_str, " + ", rand_str)
+        new_eq <- as.formula(f_str)
 
-          if (length(vocab_rand) > 0) {
-            # Construct random string like " + (1|Group)"
-            rand_str <- paste(
-              sapply(vocab_rand, function(rt) {
-                paste0("(1 | ", rt$group, ")")
-              }),
-              collapse = " + "
-            )
-            # Append to formula
-            reg_formula_str <- paste0(reg_formula_str, " + ", rand_str)
-          }
-        }
-
-        # Create the formula object
-        f <- as.formula(reg_formula_str)
-        attr(f, "test_var") <- test_var
-
-        # Add the formula to the list
-        cond_indep_regressions[[length(cond_indep_regressions) + 1]] <- f
+        # Preserve test_var attribute if needed (handled by logic)
+        new_tests[[t_idx]] <- new_eq
+      } else {
+        new_tests[[t_idx]] <- t_eq
       }
     }
+    tests <- new_tests
   }
 
   # Print basis set if not quiet
@@ -225,16 +180,16 @@ dsep_standard <- function(
       "I(X,Y|Z) means X is d-separated from Y given the set Z in the DAG",
       "\n"
     )
-    if (length(cond_indep_regressions) == 0) {
+    if (length(tests_for_display) == 0) {
       cat("No elements in the basis set", "\n")
     } else {
-      for (test in cond_indep_regressions) {
+      for (test in tests_for_display) {
         cat(format_dsep_test(test), "\n")
       }
     }
   }
 
-  return(cond_indep_regressions)
+  return(tests)
 }
 
 # M-separation for MAGs (with latent variables)
