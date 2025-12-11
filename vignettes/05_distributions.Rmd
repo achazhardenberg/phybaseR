@@ -4,7 +4,7 @@ author: "Achaz von Hardenberg"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{05. Non-Gaussian Distributions}
+  %\VignetteIndexEntry{Non-Gaussian Distributions}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,13 +12,13 @@ vignette: >
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
     collapse = TRUE,
-    comment = "#>"
+    comment = "#>", eval = FALSE
 )
 ```
 
 # Non-Gaussian Response Distributions
 
-becauseR supports multiple response distributions to match different data types. Choose the distribution that matches your response variable's characteristics.
+because supports multiple response distributions to match different data types. Choose the distribution that matches your response variable's characteristics.
 
 ## Quick Reference
 
@@ -75,7 +75,7 @@ data <- data.frame(
 data$eggs_hatched <- rbinom(50, data$eggs_laid, plogis(-2 + 0.3 * data$temperature))
 data$prop_hatched <- data$eggs_hatched / data$eggs_laid
 
-# becauseR needs: N (trials) and k (successes)
+# because needs: N (trials) and k (successes)
 data$N_trials <- data$eggs_laid
 data$N_success <- data$eggs_hatched
 
@@ -475,7 +475,7 @@ Each distribution uses a specific link function:
 | Multinomial | Logit | probabilities |
 |  | Cumulative logit | cumulative probs |
 
-becauseR uses standard links automatically. Custom links are not currently supported.
+because uses standard links automatically. Custom links are not currently supported.
 
 ---
 

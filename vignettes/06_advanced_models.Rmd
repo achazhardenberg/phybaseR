@@ -4,7 +4,7 @@ author: "Achaz von Hardenberg"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{06. Advanced Model Specifications}
+  %\VignetteIndexEntry{Advanced Model Specifications}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,13 +12,13 @@ vignette: >
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
     collapse = TRUE,
-    comment = "#>"
+    comment = "#>", eval = FALSE
 )
 ```
 
 # Advanced Model Specifications
 
-This vignette covers advanced features in becauseR for specifying complex statistical models.
+This vignette covers advanced features in because for specifying complex statistical models.
 
 ## Random Effects (Mixed Models)
 
@@ -109,7 +109,7 @@ fit <- because(
 ```
 
 **What happens**:
-- becauseR detects `I(age^2)` 
+- because detects `I(age^2)` 
 - Creates internal variable `age_pow2`
 - Generates deterministic JAGS node: `age_pow2[i] <- age[i]^2`
 - No residual error (perfectly deterministic!)
@@ -195,7 +195,7 @@ fit <- because(
 
 ## Categorical Predictors
 
-becauseR automatically handles factor variables.
+because automatically handles factor variables.
 
 ### Basic Usage
 

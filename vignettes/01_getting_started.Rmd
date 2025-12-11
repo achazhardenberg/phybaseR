@@ -4,7 +4,7 @@ author: "Achaz von Hardenberg"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{01. Getting Started with becauseR}
+  %\VignetteIndexEntry{Getting Started with because}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options: 
@@ -15,7 +15,7 @@ editor_options:
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>", eval = FALSE
 )
 ```
 
@@ -70,18 +70,18 @@ Sampler) installed on your machine.
     [SourceForge](http://mcmc-jags.sourceforge.net).
 -   **Linux**: `sudo apt-get install jags`.
 
-After installing JAGS, install the becauseR package from GitHub using
+After installing JAGS, install the because package from GitHub using
 `remotes` or `devtools` and call the library:
 
 ```{r}
 # Install from GitHub
-remotes::install_github("achazhardenberg/becauseR"
-library(becauseR)
+remotes::install_github("achazhardenberg/because"
+library(because)
 ```
 
 ### Your First Model
 
-The main function in becauseR is `because()`, which compiles and fits
+The main function in because is `because()`, which compiles and fits
 your specified Structural Equation Model in JAGS. The function is very
 rich with functionalities allowing to model complex models with
 different error structures and hierarchically structured data. However,
@@ -111,7 +111,7 @@ sim.dat <- data.frame(X, Y)
 summary(lm(Y ~ X, data = sim.dat))
 ```
 
-Now we can fit the same model using becauseR. We need to specify the
+Now we can fit the same model using because. We need to specify the
 structural equations (in this case only one) using R's formula syntax
 and then call `because()` passing the equation and the data frame:
 
@@ -159,7 +159,7 @@ Specifications](06_advanced_models.html) vignette for more details.
 
 ## Next: Causal Inference with D-Separation
 
-One of the main features of becauseR is the ability to test your causal
+One of the main features of because is the ability to test your causal
 model's fit to the data using d-separation tests. D-separation tests
 evaluate whether the conditional independencies implied by your causal
 model hold in the data (Shipley, 2016). If they do not, this suggests

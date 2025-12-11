@@ -4,7 +4,7 @@ author: "Achaz von Hardenberg"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{03. Phylogenetic Models}
+  %\VignetteIndexEntry{Phylogenetic Models}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,610 +12,187 @@ vignette: >
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
     collapse = TRUE,
-    comment = "#>"
+    comment = "#>",
+    eval = FALSE
 )
 ```
 
-# Phylogenetic Structural Equation Models
+## Back to the Rhinograds: Phylogenetic Structural Equation Models with `because`
 
-The core strength of becauseR is combining structural equation modeling with phylogenetic comparative methods. This accounts for the non-independence of species data due to shared evolutionary history.
+One of the core features of `because` is the ability to fit phylogenetic structural equation models (PSEMs), allowing researchers to account for shared evolutionary history among species when analysing trait relationships.
 
-## Why Phylogenetic Correction?
+Once again we will use the Rhinogradentia dataset and tree previously analysed in Gonzalez-Voyer and von Hardenberg, (2014) and in von Hardenberg and Gonzalez-Voyer (2025). Let's start by loading the necessary packages and data:
 
-Species are not independent data points - they share evolutionary history. Closely related species are more similar than distantly related ones, violating standard statistical assumptions.
-
-**Without phylogenetic correction**: Inflated Type I error, incorrect parameter estimates
-
-**With phylogenetic correction**: Proper statistical inference accounting for evolutionary relationships
-
-## Basic Phylogenetic SEM
-
-### Requirements
-
-1. **Phylogenetic tree**: An `ape::phylo` object
-2. **Species matching**: Tree tip labels must match data row names or ID column
-3. **Structural model**: Your hypothesized causal relationships
-
-### Simple Example
-
-```{r, eval=FALSE}
-library(becauseR)
+```{r}
+library(because)
 library(ape)
 
-# Load or create phylogeny
-tree <- read.tree("my_phylogeny.nwk")
+data(rhino.dat)
+data(rhino.tree)
+```
 
-# Species data (row names = species names matching tree)
-data <- data.frame(
-    species = tree$tip.label,
-    body_size = rnorm(length(tree$tip.label), 100, 20),
-    range_size = rnorm(length(tree$tip.label), 500, 100),
-    population = rnorm(length(tree$tip.label), 1000, 200),
-    row.names = "species"
+While in previous implementations it was necessary to compute the variance-covariance matrix from the tree and pass it to JAGS, `because` handles this internally. You only need to provide the phylogenetic tree (class `phylo`) via the `structure` argument. Also, `because` automatically matches the species names in the data and tree: you only need to ensure that the species names in the data frame column specified by `species` match the tip labels in the tree and provide the name of the species column to the `because()` function through the `id_col` argument. Also, you do not need to rescale the total tree length to 1 (needed for a correct estimation of Pagel's lambda parameter), as `because` will handle this internally.
+
+So, let's specify the structural equations of the best model (sem8) as fitted by von Hardenberg and Gonzalez-Voyer (2025):
+
+```{r}
+sem8_eq <- list(
+    LS ~ BM,
+    NL ~ BM + RS,
+    DD ~ NL
+)
+```
+
+Now we can fit the model with `because()` including the phylogenetic tree with the `structure` argument. Also, as this is a more complex model than in the previous examples, to speed up the model fitting we will run 3 chains in parallel using the `parallel = TRUE` and `n.cores = 3` arguments. Also we will request the WAIC information criterion to be computed by setting `WAIC = TRUE`:
+
+```{r}
+fit_sem8 <- because(
+    equations = sem8_eq,
+    data = rhino.dat,
+    structure = rhino.tree,
+    id_col = "SP",
+    WAIC = TRUE,
+    parallel = TRUE,
+    n.cores = 3
 )
 
-# Phylogenetic SEM
-fit <- because(
-    equations = list(
-        range_size ~ body_size,
-        population ~ range_size + body_size
-    ),
-    data = data,
-    tree = tree, # Include phylogeny!
+summary(fit_sem8)
+```
+
+```         
+summary(fit_sem8)
+                 Mean    SD Naive SE Time-series SE   2.5%    50% 97.5%
+alphaDD         0.581 0.276    0.005          0.007  0.036  0.582 1.146
+alphaLS         0.344 0.416    0.008          0.016 -0.490  0.346 1.138
+alphaNL        -0.055 0.339    0.006          0.015 -0.731 -0.054 0.601
+beta_DD_NL      0.536 0.074    0.001          0.001  0.390  0.538 0.682
+beta_LS_BM      0.472 0.085    0.002          0.002  0.309  0.470 0.641
+beta_NL_BM      0.470 0.068    0.001          0.001  0.336  0.471 0.604
+beta_NL_RS      0.597 0.068    0.001          0.001  0.461  0.596 0.728
+lambdaDD        0.462 0.130    0.002          0.003  0.218  0.462 0.717
+lambdaLS        0.696 0.107    0.002          0.003  0.459  0.709 0.862
+lambdaNL        0.719 0.086    0.002          0.002  0.533  0.727 0.863
+sigma_DD_phylo  0.803 0.174    0.003          0.003  0.503  0.790 1.178
+sigma_DD_res    0.856 0.088    0.002          0.002  0.694  0.852 1.041
+sigma_LS_phylo  1.253 0.204    0.004          0.005  0.865  1.246 1.675
+sigma_LS_res    0.804 0.104    0.002          0.002  0.615  0.802 1.013
+sigma_NL_phylo  1.026 0.145    0.003          0.004  0.766  1.013 1.338
+sigma_NL_res    0.626 0.075    0.001          0.002  0.490  0.622 0.783
+                Rhat n.eff
+alphaDD        1.000  1408
+alphaLS        1.003   639
+alphaNL        1.000   553
+beta_DD_NL     1.000  3088
+beta_LS_BM     1.001  2178
+beta_NL_BM     1.000  2255
+beta_NL_RS     1.001  2801
+lambdaDD       1.002  2136
+lambdaLS       1.000  1595
+lambdaNL       1.001  1788
+sigma_DD_phylo 1.002  2741
+sigma_DD_res   1.000  2712
+sigma_LS_phylo 1.000  1612
+sigma_LS_res   1.001  2103
+sigma_NL_phylo 1.001  1600
+sigma_NL_res   1.001  2427
+
+DIC:
+Mean deviance:  670 
+penalty 133.7 
+Penalized deviance: 803.6 
+
+WAIC:
+WAIC with Standard Errors
+-------------------------
+N = 300 observations, 3000 MCMC samples
+
+          Estimate   SE
+elpd_waic   -395.1  9.9
+p_waic        93.7  5.1
+waic         790.2 19.8
+```
+
+The output shows that the posterior parameters are consistent with those we obtained coding the model directly in JAGS (von Hardenberg and Gonzalez-Voyer, 2025; the code is available in the supplementary materials of the paper). 
+
+### The random effects formulation of because
+If you are familiar with the output obtained from that model, you may however have noticed that besides Pagel's $\lambda$ parameters for each response variable, with `because()` we also get estimates of the standard deviations of the phylogenetic and residual components (`sigma_[RESP]_phylo` and `sigma_[RESP]_res`, respectively). These are estimated because `because` uses an optimised random effect formulation to improve MCMC and significantly reduce runtime. While standard phylogenetic models must invert the covariance matrix at every iteration (as $\lambda$ changes), the random effect approach is mathematically equivalent but computationally more efficent. `because` decomposes the response into three additive components:
+
+$$y_i = \mu_i + u_i + \epsilon_i$$
+
+where:
+
+-   $\mu_i$ is the fixed effect (structural equation mean)
+-   $u_i$ is the phylogenetic random effect: $\mathbf{u} \sim \mathcal{N}(\mathbf{0}, \sigma_u^2 \mathbf{V})$
+-   $\epsilon_i$ is the residual error: $\boldsymbol{\epsilon} \sim \mathcal{N}(\mathbf{0}, \sigma_e^2 \mathbf{I})$
+
+This allows us to pre-compute the inverse phylogenetic variance-covariance matrix ($\mathbf{V}^{-1}$) only once and pass it to JAGS as fixed data. JAGS simply scales this fixed precision matrix by 1/$\sigma$, avoiding costly repeated inversions.
+
+Consequently, $\lambda$ is derived from the posterior variance components as: $$\lambda = \frac{\sigma_{phylo}^2}{\sigma_{phylo}^2 + \sigma_{res}^2}$$
+
+This is the approach also used in other packages such as `MCMCglmm` (Hadfield, 2010) and `brms` (Bürkner, 2017).
+
+### Improved WAIC calculation
+In `because` we also improved the WAIC calculation. The WAIC is now computed directly from the pointwise log-likelihoods monitored during model fitting, rather than approximating it from the deviance as done previously. This approach, besides providing more accurate estimates of the WAIC than the deviance-based approximation provided by JAGS, also allows us to compute the standard errors for WAIC (following the method suggested by Vehtari et al. 2017) allowing for more reliable model comparisons.
+
+### Testing conditional independencies with d-separation
+Let's now test the conditional independencies implied by the model (We will set WAIC = FALSE here to speed up the computation, as we do not need to compare models):
+
+```{r}
+test_sem8_dsep <- because(
+    equations = sem8_eq,
+    data = rhino.dat,
+    structure = rhino.tree,
+    id_col = "SP",
     dsep = TRUE,
-    n.chains = 3,
-    n.iter = 5000
+    WAIC = FALSE,
+    parallel = TRUE,
+    n.cores = 3
 )
 ```
 
-## How It Works
+```
+d-separation Tests
+==================
 
-### Variance-Covariance Matrix (VCV)
+Test: RS _||_ BM | {}  
+  Parameter Estimate LowerCI UpperCI Indep    P  Rhat n.eff
+ beta_RS_BM   -0.029  -0.238   0.177   Yes 0.78 1.002  2177
 
-becauseR uses the phylogenetic VCV matrix to model evolutionary correlations:
+Test: RS _||_ DD | {NL} 
+  Parameter Estimate LowerCI UpperCI Indep     P Rhat n.eff
+ beta_RS_DD   -0.117   -0.33   0.107   Yes 0.301    1  2563
 
-```r
-# Internally computed from your tree:
-VCV <- ape::vcv.phylo(tree, corr = TRUE)
+Test: RS _||_ LS | {BM} 
+  Parameter Estimate LowerCI UpperCI Indep     P Rhat n.eff
+ beta_RS_LS   -0.019  -0.248    0.22   Yes 0.873    1  2423
 
-# Used in JAGS to model phylogenetic correlations
-# between residuals
+Test: BM _||_ DD | {NL} 
+  Parameter Estimate LowerCI UpperCI Indep     P Rhat n.eff
+ beta_BM_DD    0.117  -0.111   0.342   Yes 0.322    1  1824
+
+Test: NL _||_ LS | {RS,BM} 
+  Parameter Estimate LowerCI UpperCI Indep    P Rhat n.eff
+ beta_NL_LS    0.013  -0.151   0.177   Yes 0.86    1  2134
+
+Test: DD _||_ LS | {NL,BM} 
+  Parameter Estimate LowerCI UpperCI Indep     P  Rhat n.eff
+ beta_DD_LS   -0.063  -0.245   0.114   Yes 0.495 1.002  2693
+
+
+Legend:
+  Indep: 'Yes' = Conditionally Independent, 'No' = Dependent (based on 95% CI)
+  P: Bayesian probability that the posterior distribution overlaps with zero
+```
+As expected, all conditional independencies are supported, indicating that the the hypothesised causal structure is consistent with the data.
+
+### Accounting for variability in traits in PhyBaSE models
+
+In von Hardenberg and Gonzalez-Voyer (2025), we showed how PhyBaSE models can be specified to account for measurement error or intraspecific variability in the traits. These models can also be fitted with `because()`. In the case of repeated measures per species, it is sufficient to provide the data frame with all measurements (i.e. multiple rows per species) and specify the `id_col` argument to indicate the species identifier column. `because()` will automatically format the data to create a response matrix with species in rows and replicates in columns, padding with `NA`s as necessary. As an example, we will use the same simulated data as in von Hardenberg and Gonzalez-Voyer (2025):
+
+```{r}
+
 ```
 
-### The Model Structure
 
-For each response variable, the model includes:
-
-1. **Structural relationships** (your equations)
-2. **Phylogenetic correlation** (from VCV matrix)
-3. **Residual variance** (species-specific deviations)
-
-**JAGS representation**:
-```
-# Phylogenetically structured errors
-epsilon ~ MVN(0, Sigma_phylo)
-
-# Where Sigma_phylo = sigma^2 * VCV
-```
-
-## Tree Preparation
-
-### Matching Species
-
-Tree tips must match data:
-
-```{r, eval=FALSE}
-# Option 1: Row names
-rownames(data) <- data$species
-data$species <- NULL # Remove column
-
-# Option 2: Specify id_col
-fit <- because(
-    equations = equations,
-    data = data,
-    tree = tree,
-    id_col = "species" # Column name with species IDs
-)
-```
-
-### Pruning the Tree
-
-If your data don't include all tree species:
-
-```{r, eval=FALSE}
-# Prune tree to match data
-library(ape)
-tree_pruned <- keep.tip(tree, rownames(data))
-
-# Or use geiger for matching
-library(geiger)
-matched <- treedata(tree, data, sort = TRUE)
-tree_clean <- matched$phy
-data_clean <- matched$data
-```
-
-### Tree Requirements
-
-✅ **Ultrametric**: All tips at same distance from root (for time-calibrated analyses)
-✅ **Bifurcating**: No polytomies (resolve with `ape::multi2di()`)
-✅ **Branch lengths**: Present and positive
-
-**Check your tree**:
-```{r, eval=FALSE}
-is.ultrametric(tree) # Should be TRUE
-is.binary(tree) # Should be TRUE
-all(tree$edge.length > 0) # Should be TRUE
-```
-
-## Multiple Trees (Phylogenetic Uncertainty)
-
-Account for phylogenetic uncertainty with multiple trees:
-
-```{r, eval=FALSE}
-# Load multiple trees (e.g., from BEAST posterior)
-trees <- read.nexus("posterior_trees.nex")
-
-# Sample subset for computational efficiency
-sampled_trees <- sample(trees, size = 100)
-
-# Fit model
-fit <- because(
-    equations = equations,
-    data = data,
-    tree = sampled_trees, # List of trees!
-    dsep = TRUE,
-    n.chains = 3,
-    n.iter = 5000
-)
-```
-
-**What happens**:
-- Each MCMC iteration samples a random tree
-- Integrates over phylogenetic uncertainty
-- More robust parameter estimates
-
-## Optimization vs. Full Bayes
-
-### Full Bayesian (default)
-
-```{r, eval=FALSE}
-fit <- because(
-    equations = equations,
-    data = data,
-    tree = tree,
-    optimise = FALSE # Full MCMC
-)
-```
-
-- Samples full posterior distribution
-- Slower but complete inference
-- Best for final analyses
-
-### Optimization Mode
-
-```{r, eval=FALSE}
-fit <- because(
-    equations = equations,
-    data = data,
-    tree = tree,
-    optimise = TRUE # Faster!
-)
-```
-
-- Uses VCV matrix directly in JAGS
-- Much faster
-- Good for exploratory analyses
-- Recommended for large trees (>100 species)
-
-## Comparing Non-Phylogenetic vs Phylogenetic
-
-```{r, eval=FALSE}
-# Model without phylogeny
-fit_nophy <- because(
-    equations = equations,
-    data = data,
-    # No tree!
-    n.chains = 3,
-    n.iter = 5000
-)
-
-# Model with phylogeny
-fit_phy <- because(
-    equations = equations,
-    data = data,
-    tree = tree, # With tree
-    n.chains = 3,
-    n.iter = 5000
-)
-
-# Compare estimates
-summary(fit_nophy)
-summary(fit_phy)
-```
-
-**Common patterns**:
-- Phylogenetic models often have wider credible intervals (more conservative)
-- Effect sizes may differ if phylogenetic signal is strong
-- Non-phylogenetic models may show spurious correlations
-
-## Phylogenetic Signal
-
-### Lambda (Pagel's λ)
-
-Not currently implemented in becauseR, but you can:
-
-1. **Test beforehand** using `phytools::phylosig()`
-2. **Transform tree** to reduce/increase signal:
-
-```{r, eval=FALSE}
-library(geiger)
-
-# Reduce phylogenetic signal
-tree_lambda <- rescale(tree, "lambda", 0.5) # λ = 0.5
-
-# Use transformed tree
-fit <- because(
-    equations = equations,
-    data = data,
-    tree = tree_lambda
-)
-```
-
-### When Phylogenetic Correction Matters
-
-**High phylogenetic signal** (closely related species similar):
-- Phylogenetic correction critical
-- Large difference between phylo/non-phylo estimates
-
-**Low phylogenetic signal** (species evolution independent):
-- Less critical but still recommended
-- Similar results with/without phylogeny
-
-**Check signal**:
-```{r, eval=FALSE}
-library(phytools)
-
-# Pagel's lambda for each variable
-phylosig(tree, data$body_size, method = "lambda")
-phylosig(tree, data$range_size, method = "lambda")
-```
-
-## Beyond Phylogeny: Other Covariance Structures
-
-becauseR's `tree` argument accepts **any covariance structure**, not just phylogenies! You can model:
-- Spatial autocorrelation
-- Pedigrees (animal models / quantitative genetics)
-- Social networks
-- Custom similarity matrices
-
-### Spatial Autocorrela
-
-tion
-
-Model spatial non-independence using geographic distances:
-
-```{r, eval=FALSE}
-library(sp)
-library(geosphere)
-
-# Your data with coordinates
-data <- data.frame(
-    site_id = 1:50,
-    latitude = runif(50, 40, 50),
-    longitude = runif(50, -10, 10),
-    temperature = rnorm(50, 15, 3),
-    species_richness = rpois(50, 20)
-)
-
-# Create spatial distance matrix
-coords <- cbind(data$longitude, data$latitude)
-distances <- distm(coords) / 1000 # km
-
-# Convert to covariance (exponential decay)
-spatial_sigma <- 100 # Spatial scale parameter (km)
-spatial_cov <- exp(-distances / spatial_sigma)
-
-# Ensure proper format (row names match data)
-rownames(spatial_cov) <- data$site_id
-colnames(spatial_cov) <- data$site_id
-rownames(data) <- data$site_id
-
-# Use as "tree" argument!
-fit <- because(
-    equations = list(
-        species_richness ~ temperature
-    ),
-    data = data,
-    tree = spatial_cov, # Spatial covariance matrix
-    dsep = TRUE,
-    n.chains = 3,
-    n.iter = 5000
-)
-```
-
-**What it does**: Accounts for spatial autocorrelation - nearby sites are more similar than distant ones.
-
-**Common spatial models**:
-- **Exponential**: `exp(-distance/σ)`
-- **Gaussian**: `exp(-(distance/σ)²)`
-- **Matérn**: More complex, flexible decay
-
-### Pedigrees (Animal Models)
-
-Use pedigree-based relatedness matrices for quantitative genetics:
-
-```{r, eval=FALSE}
-library(kinship2) # or nadiv
-
-# Pedigree data
-pedigree <- data.frame(
-    id = 1:100,
-    sire = c(NA, NA, 1, 1, 2, 2, 3, ...), # Father IDs
-    dam = c(NA, NA, 2, 2, 1, 1, 4, ...) # Mother IDs
-)
-
-# Phenotype data
-data <- data.frame(
-    individual = 1:100,
-    body_size = rnorm(100, 50, 10),
-    litter_size = rpois(100, 5),
-    food_availability = rnorm(100, 0, 1)
-)
-
-# Calculate additive genetic relatedness matrix (A-matrix)
-ped <- pedigree(
-    id = pedigree$id,
-    dadid = pedigree$sire,
-    momid = pedigree$dam
-)
-A_matrix <- kinship(ped) * 2 # A = 2 × kinship
-
-# Ensure matching
-rownames(A_matrix) <- pedigree$id
-colnames(A_matrix) <- pedigree$id
-rownames(data) <- data$individual
-
-# Quantitative genetics SEM!
-fit <- because(
-    equations = list(
-        body_size ~ food_availability,
-        litter_size ~ body_size
-    ),
-    data = data,
-    tree = A_matrix, # Genetic relatedness
-    dsep = TRUE,
-    n.chains = 3,
-    n.iter = 5000
-)
-```
-
-**What it does**: Partitions variance into genetic and environmental components, accounting for relatedness among individuals.
-
-**Applications**:
-- Heritability estimation
-- Breeding values
-- Genetic correlations
-- Selection gradients
-
-### Social Networks
-
-Model dependencies from social structure:
-
-```{r, eval=FALSE}
-library(igraph)
-
-# Social network adjacency matrix
-# (who interacts with whom)
-social_network <- matrix(0, 30, 30)
-# ... fill with interaction data ...
-
-# Convert to correlation matrix (or use directly)
-social_cov <- cov2cor(social_network %*% t(social_network))
-
-# Behavioral data
-data <- data.frame(
-    individual = 1:30,
-    dominance_rank = 1:30,
-    mating_success = rpois(30, 3),
-    foraging_efficiency = rnorm(30, 100, 20)
-)
-
-rownames(social_cov) <- data$individual
-colnames(social_cov) <- data$individual
-rownames(data) <- data$individual
-
-# Account for social structure
-fit <- because(
-    equations = list(
-        mating_success ~ dominance_rank,
-        foraging_efficiency ~ dominance_rank
-    ),
-    data = data,
-    tree = social_cov,
-    n.chains = 3,
-    n.iter = 5000
-)
-```
-
-### Custom Similarity Matrices
-
-Any similarity/covariance structure works:
-
-```{r, eval=FALSE}
-# Functional similarity (trait-based)
-# Morphological distances
-# Ecological niche overlap
-# Genomic similarity (SNPs)
-# Temporal autocorrelation
-
-# Just ensure:
-# 1. Symmetric matrix
-# 2. Positive semi-definite
-# 3. Row/column names match data
-# 4. Diagonal typically = 1 (correlation) or max (covariance)
-
-custom_cov <- your_similarity_function(data)
-rownames(custom_cov) <- data$id
-colnames(custom_cov) <- data$id
-
-fit <- because(
-    equations = equations,
-    data = data,
-    tree = custom_cov,
-    n.chains = 3,
-    n.iter = 5000
-)
-```
-
-### Multiple Covariance Structures
-
-Combine phylogeny with other structures using random effects:
-
-```{r, eval=FALSE}
-# Phylogeny for species + random effects for space
-fit <- because(
-    equations = list(
-        trait ~ environment + (1 | site)
-    ),
-    data = data,
-    tree = phylo_tree, # Phylogenetic correlation
-    random = ~ (1 | site), # Spatial grouping
-    n.chains = 3,
-    n.iter = 5000
-)
-```
-
-**Or** provide multiple matrices (advanced - may require custom JAGS):
-
-```{r, eval=FALSE}
-# Phylogenetic + spatial
-# Genetic + environmental
-# Multiple levels of structure
-```
-
-### Requirements for Custom Matrices
-
-✅ **Symmetric**: `all(cov_matrix == t(cov_matrix))`  
-✅ **Positive semi-definite**: All eigenvalues ≥ 0  
-✅ **Proper dimensions**: n × n for n observations  
-✅ **Named**: Row/column names match data IDs  
-✅ **Scaled appropriately**: Typically correlation matrix (diagonal = 1)  
-
-**Check your matrix**:
-```{r, eval=FALSE}
-# Is it symmetric?
-isSymmetric(my_matrix)
-
-# Is it positive semi-definite?
-all(eigen(my_matrix)$values >= -1e-8) # Allow tiny negative for numerical error
-
-# Are dimensions correct?
-nrow(my_matrix) == nrow(data)
-
-# Do names match?
-all(rownames(my_matrix) %in% rownames(data))
-```
-
-## Combining with Other Features
-
-### Phylogenetic + Random Effects
-
-```{r, eval=FALSE}
-# Account for phylogeny AND repeated measures
-fit <- because(
-    equations = list(
-        trait ~ environment + (1 | population)
-    ),
-    data = data,
-    tree = tree,
-    random = ~ (1 | species), # Additional random effect
-    n.chains = 3,
-    n.iter = 5000
-)
-```
-
-### Phylogenetic + Hierarchical Data
-
-```{r, eval=FALSE}
-# Species-level phylogeny with individual-level data
-fit <- because(
-    data = list(
-        species = species_data,
-        individual = individual_data
-    ),
-    levels = list(
-        species = c("range_size", "habitat"),
-        individual = c("body_mass", "age")
-    ),
-    hierarchy = "species > individual",
-    link_vars = "species_id",
-    tree = tree, # Applied at species level
-    equations = equations
-)
-```
-
-## Troubleshooting
-
-### Error: "Tree tips don't match data"
-
-**Solution**: Check matching
-```{r, eval=FALSE}
-# What's in tree?
-tree$tip.label
-
-# What's in data?
-rownames(data) # or data$species
-
-# Find mismatches
-setdiff(tree$tip.label, rownames(data)) # In tree but not data
-setdiff(rownames(data), tree$tip.label) # In data but not tree
-```
-
-### Error: "Tree is not ultrametric"
-
-**Solution**: Make ultrametric
-```{r, eval=FALSE}
-library(ape)
-tree_ultra <- chronos(tree) # Date the tree
-```
-
-### Warning: "Tree has polytomies"
-
-**Solution**: Resolve polytomies
-```{r, eval=FALSE}
-tree_binary <- multi2di(tree) # Randomly resolve
-```
-
-### Poor convergence with large trees
-
-**Solution**: Use optimization
-```{r, eval=FALSE}
-fit <- because(
-    equations = equations,
-    data = data,
-    tree = tree,
-    optimise = TRUE, # Much faster for large trees
-    n.chains = 3,
-    n.iter = 5000
-)
-```
-
-## Best Practices
-
-1. **Always visualize your tree first**
-```{r, eval=FALSE}
-plot(tree)
-```
-
-2. **Check tree-data matching carefully**
-3. **Start with optimization mode** for large trees
-4. **Compare phylo vs non-phylo** to assess impact
-5. **Test phylogenetic signal** in your traits
-6. **Use multiple trees** if available (phylogenetic uncertainty)
-
-## See Also
-
-- **[Getting Started](01_getting_started.html)** - Basic usage
-- **[Advanced Models](06_advanced_models.html)** - Random effects and polynomials
-- **[Model Diagnostics](09_model_diagnostics.html)** - Interpreting results
-- **[Latent Variables](08_latent_variables.html)** - Measurement models
+##References 
+Vehtari, A., Gelman, A., & Gabry, J. (2017). Practical Bayesian model evaluation using leave-one-out cross-validation and WAIC. Statistics and Computing, 27(5), 1413-1432.

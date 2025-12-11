@@ -13,12 +13,14 @@ because_model(
   random_terms = list(),
   vars_with_na = NULL,
   induced_correlations = NULL,
-  latent = NULL,
   variability = NULL,
   distribution = NULL,
   optimise = TRUE,
   standardize_latent = TRUE,
-  poly_terms = NULL
+  poly_terms = NULL,
+  latent = NULL,
+  compute_waic = FALSE,
+  fix_residual_variance = NULL
 )
 }
 \arguments{
@@ -34,8 +36,6 @@ These variables will use element-wise likelihoods instead of multivariate normal
 \item{induced_correlations}{Optional list of variable pairs with induced correlations
 from latent variables. Each element should be a character vector of length 2 specifying
 the pair of variables that share a latent common cause.}
-
-\item{latent}{Optional character vector of latent variable names.}
 
 \item{variability}{Optional character vector or named character vector of variable names that have measurement error or within-species variability.
 If named, the names should be the variable names and the values should be the type of variability: "se" (for mean and standard error) or "reps" (for repeated measures).
@@ -53,6 +53,12 @@ For "binomial" variables, the model uses a logit link and a Bernoulli likelihood
 If FALSE, use original marginal covariance formulation.}
 
 \item{standardize_latent}{Logical (default TRUE). If TRUE, standardizes latent variables to unit variance.}
+
+\item{poly_terms}{(Internal) List of polynomial terms for model generation.}
+
+\item{latent}{Optional character vector of latent variable names.}
+
+\item{fix_residual_variance}{Optional numeric value or named vector to fix residual variance.}
 }
 \value{
 A list with two elements:

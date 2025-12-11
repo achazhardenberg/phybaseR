@@ -33,7 +33,8 @@ because(
   random = NULL,
   levels = NULL,
   hierarchy = NULL,
-  link_vars = NULL
+  link_vars = NULL,
+  fix_residual_variance = NULL
 )
 }
 \arguments{

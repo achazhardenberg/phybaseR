@@ -43,8 +43,8 @@ summary.because <- function(object, ...) {
 
     # If this was a d-sep run, we want to format the output specifically
     if (!is.null(object$dsep) && object$dsep) {
-        cat("Because d-separation Tests\n")
-        cat("==========================\n\n")
+        cat("d-separation Tests\n")
+        cat("==================\n\n")
 
         tests <- object$dsep_tests
         map <- object$parameter_map
@@ -57,7 +57,7 @@ summary.because <- function(object, ...) {
             LowerCI = numeric(),
             UpperCI = numeric(),
             Indep = character(),
-            P_approx_0 = numeric(),
+            P = numeric(),
             Rhat = numeric(),
             n.eff = numeric(),
             stringsAsFactors = FALSE
@@ -211,25 +211,32 @@ summary.because <- function(object, ...) {
                     LowerCI = round(lower, 3),
                     UpperCI = round(upper, 3),
                     Indep = indep,
-                    P_approx_0 = round(p_approx_0, 3),
+                    P = round(p_approx_0, 3), # Renamed from P_approx_0
                     Rhat = round(p_rhat, 3),
                     n.eff = round(p_neff, 0)
                 )
             }
         }
 
-        print(results, row.names = FALSE)
+        # Custom printing for readability
+        # Print each test on a separate block
+        for (i in 1:nrow(results)) {
+            cat(paste0("Test: ", results$Test[i]), "\n")
+            # Print stats row without the Test column
+            print(results[i, -1], row.names = FALSE)
+            cat("\n")
+        }
 
         cat("\nLegend:\n")
         cat(
             "  Indep: 'Yes' = Conditionally Independent, 'No' = Dependent (based on 95% CI)\n"
         )
         cat(
-            "  P(~0): Bayesian probability that effect crosses zero (0-1 scale)\n"
+            "  P: Bayesian probability that the posterior distribution overlaps with zero\n"
         )
-        cat(
-            "\nNote: For d-separation, we expect high P(~0) values (close to 1).\n"
-        )
+        # cat(
+        #    "\nNote: For d-separation, we expect high P(~0) values (close to 1).\n"
+        # )
 
         invisible(results)
     } else {

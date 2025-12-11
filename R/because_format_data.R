@@ -153,6 +153,8 @@ because_format_data <- function(data, species_col = "SP", tree) {
         rownames(trait_matrix) <- tree_species
 
         # Fill matrix with observations
+        is_constant <- TRUE
+
         for (i in seq_along(tree_species)) {
             sp <- tree_species[i]
 
@@ -161,21 +163,36 @@ because_format_data <- function(data, species_col = "SP", tree) {
                 sp_values <- data[data[[species_col]] == sp, trait, drop = TRUE]
                 n_obs <- length(sp_values)
 
+                # Check for within-species variation (ignoring NA if mixed with values?)
+                # Stricter: if multiple values exist and they differ, it's not constant
+                if (length(unique(na.omit(sp_values))) > 1) {
+                    is_constant <- FALSE
+                }
+
                 # Fill in the observations (rest remain NA)
                 trait_matrix[i, 1:n_obs] <- sp_values
             }
             # else: species not in data, row remains all NA
         }
 
-        # If all species have exactly 1 observation, convert to vector
-        if (max_reps == 1) {
-            trait_matrix <- as.vector(trait_matrix)
-            names(trait_matrix) <- tree_species
+        # Smart simplification:
+        # If all species have <= 1 unique value (constant within species), convert to vector.
+        # UNLESS the user explicitly requested this variable as 'reps' (via attribute?)
+        # But here we don't know the user's intent from 'variability'.
+        # However, passing a vector for a constant variable is safer for JAGS.
+        # If the user WANTED a matrix for a constant variable (why?), they can cast it back?
+        # Usually, constant variables -> vector. Varying variables -> matrix.
+
+        if (max_reps == 1 || is_constant) {
+            # Take the first column (which contains the value for constant vars)
+            # Note: for constant vars, all replicates are identical, so col 1 is sufficient.
+            trait_vector <- trait_matrix[, 1]
+            names(trait_vector) <- tree_species
+            data_list[[trait]] <- trait_vector
+        } else {
+            data_list[[trait]] <- trait_matrix
         }
-
-        data_list[[trait]] <- trait_matrix
     }
-
     # Store categorical variable info as attribute for reference
     if (length(categorical_vars) > 0) {
         attr(data_list, "categorical_vars") <- categorical_vars
