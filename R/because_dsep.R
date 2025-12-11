@@ -56,6 +56,9 @@
 #' @param quiet Logical; if FALSE (default), print the basis set and MAG structure.
 #'   If TRUE, suppress informational output.
 #' @param random_terms Optional list of random effects (group, type) parsed from equations.
+#' @param hierarchical_info Internal argument used to pass data hierarchy information
+#'   (levels, grouping variables) for future implementation of multilevel d-separation
+#'   tests (following Shipley 2009). Currently unused by the d-separation logic.
 #' @export
 #' @importFrom stats formula terms as.formula
 because_dsep <- function(
@@ -92,55 +95,37 @@ dsep_standard <- function(
   hierarchical_info = NULL,
   quiet = FALSE
 ) {
-  # Extract variables to exclude (random groupings, polynomial terms)
+  # Extract grouping variables from random terms to exclude from DAG
   grouping_vars <- NULL
   if (length(random_terms) > 0) {
     grouping_vars <- unique(sapply(random_terms, function(x) x$group))
   }
 
+  # Extract polynomial internal variables to exclude
   poly_internal_vars <- NULL
   all_poly_terms <- get_all_polynomial_terms(equations)
   if (!is.null(all_poly_terms)) {
     poly_internal_vars <- sapply(all_poly_terms, function(x) x$internal_name)
   }
 
+  # Combine exclusions
   exclude_vars <- c(grouping_vars, poly_internal_vars)
 
-  # Convert equations to ggm DAG format
+  # Convert equations to adjacency matrix (DAG)
   dag <- equations_to_dag(equations, exclude_vars = exclude_vars)
 
-  # Get Basis Set using ggm::basiSet
-  basis <- tryCatch(
-    {
-      ggm::basiSet(dag)
-    },
-    error = function(e) {
-      warning("Failed to generate basis set: ", e$message)
-      return(NULL)
-    }
-  )
-
-  # Filter out random effect grouping variables from basis set conditioning sets
-  if (length(random_terms) > 0 && !is.null(basis)) {
-    basis <- lapply(basis, function(test) {
-      if (length(test) > 2) {
-        # Keep var1 and var2, filter conditioning variables
-        cond_vars <- test[3:length(test)]
-        filtered_cond <- cond_vars[!cond_vars %in% grouping_vars]
-        c(test[1:2], filtered_cond)
-      } else {
-        test
-      }
-    })
+  # Use ggm::basiSet to get the correct d-separation basis set
+  if (!requireNamespace("ggm", quietly = TRUE)) {
+    stop("Package 'ggm' is required for d-separation tests.")
   }
 
-  # Convert basis set to formulas
-  tests <- mag_basis_to_formulas(basis, latent_children = NULL)
+  basis <- ggm::basiSet(dag)
 
-  # Save tests without random effects for clean display
-  tests_for_display <- tests
+  # Convert basis set to formula list
+  # We reuse mag_basis_to_formulas as the format is identical (list of vectors)
+  tests <- mag_basis_to_formulas(basis)
 
-  # Append random terms to test formulas if needed
+  # Append random terms if relevant (same logic as in with_latents)
   if (length(random_terms) > 0 && length(tests) > 0) {
     new_tests <- list()
     for (t_idx in seq_along(tests)) {
@@ -158,13 +143,12 @@ dsep_standard <- function(
           collapse = " + "
         )
 
-        # Reconstruct formula with random effects
-        # Use deparse for safety
         f_str <- paste(deparse(t_eq), collapse = " ")
         f_str <- paste0(f_str, " + ", rand_str)
         new_eq <- as.formula(f_str)
-
-        # Preserve test_var attribute if needed (handled by logic)
+        # Preserve attribute? mag_basis_to_formulas sets test_var, we might lose it?
+        # Re-attach test_var from original
+        attr(new_eq, "test_var") <- attr(t_eq, "test_var")
         new_tests[[t_idx]] <- new_eq
       } else {
         new_tests[[t_idx]] <- t_eq
@@ -180,10 +164,10 @@ dsep_standard <- function(
       "I(X,Y|Z) means X is d-separated from Y given the set Z in the DAG",
       "\n"
     )
-    if (length(tests_for_display) == 0) {
+    if (length(tests) == 0) {
       cat("No elements in the basis set", "\n")
     } else {
-      for (test in tests_for_display) {
+      for (test in tests) {
         cat(format_dsep_test(test), "\n")
       }
     }

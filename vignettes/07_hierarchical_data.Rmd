@@ -4,7 +4,7 @@ author: "Achaz von Hardenberg"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{07. Hierarchical Data Structures}
+  %\VignetteIndexEntry{Hierarchical Data Structures}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,8 +12,7 @@ vignette: >
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
     collapse = TRUE,
-    comment = "#>",
-    eval = FALSE
+    comment = "#>", eval = FALSE
 )
 ```
 
@@ -284,7 +283,85 @@ site_year_data <- data.frame(
 )
 ```
 
-## See Also
+## Simplified Workflow: Using Long-Format Data Directly
+
+If you have repeated measures for species (e.g., a "long" dataframe where each row is an individual observation), you can now use `because()` directly without manually splitting or formatting your data.
+
+**Requirements**:
+1.  **`id_col`**: You must specify the column name that links rows to the phylogenetic tree (e.g., "Species").
+2.  **`variability`**: You must explicitly tell the model which variables have repeated measures using `c(TraitName = "reps")`.
+    *   **Include**: Any trait that varies within species (e.g., body mass, length).
+    *   **Do NOT Include**: Constant variables (grouping factors like Sex, Diet) - these are handled automatically.
+
+### Example
+
+Suppose `long_data` contains 500 rows for 100 species, measuring `body_mass` multiple times per species.
+
+```r
+# No need to manually create matrices!
+fit <- because(
+    data = long_data,
+    tree = tree,
+    id_col = "Species",                     # Maps data rows to tree tips
+    variability = c(body_mass = "reps"),    # Tells model to treat this as replicated
+    equations = list(
+        body_mass ~ age + temperature       # Underlying relationship
+    )
+)
+```
+
+**What Happens Internally:**
+1.  `because` automatically detects the long format.
+2.  It converts `body_mass` into a species x replicates matrix (`body_mass_obs`).
+3.  It converts constant variables (like `Species`, `Diet`) into species-level vectors.
+4.  It fits the Measurement Error model (`body_mass_obs ~ N(body_mass_true, error)`).
+
+This is ideal for Measurement Error models, where you want to account for observation noise in your predictors or responses.
+
+## Combining Measurement Error and Random Effects
+
+One of the most powerful features of `because` is the ability to combine **Measurement Error models** (for individual variability) with **Random Effects** (for group-level clustering) in the same analysis.
+
+This allows you to simultaneously:
+1.  **De-noise your predictors**: Use `variability` to estimate true latent traits from noisy replicates.
+2.  **Account for grouping**: Use `random` to control for shared environmental or taxonomic effects (e.g., Diet, Location).
+
+### Key Distinction
+
+*   **`variability`**: Use this when you have repeated measurements of the same individual/species that inform the **true state** of a trait (e.g., estimating True Body Mass from 5 weighings). This cleans up measurement error and prevents attenuation bias.
+*   **`random`**: Use this for **grouping factors** (e.g., Diet, Location, Year) to account for **shared variance** or clustering, without implying you are estimating a "true latent value" for the group itself.
+
+### Example: The "Ultimate" Model
+
+Imagine testing if *True Body Mass* affects *Lifespan*, while controlling for *Diet* and *Phylogeny*:
+
+```r
+fit <- because(
+    data = long_data,
+    tree = tree,
+    id_col = "Species",
+    
+    # 1. Measurement Error Component (Input Side)
+    #    Handles noise in Body Mass using replicates
+    variability = c(body_mass = "reps"),
+    
+    # 2. Random Effects Component (Structure Side)
+    #    Handles clustering by Diet
+    random = ~ (1 | Diet),
+    
+    # 3. Structural Equation (The Relationship)
+    equations = list(
+        lifespan ~ body_mass
+    )
+)
+```
+
+**What this model does:**
+$$BM_{obs,ij} \sim \mathcal{N}(BM_{true,j}, \sigma_{ME})$$
+$$u_{Diet} \sim \mathcal{N}(0, \sigma_{Diet})$$
+$$Lifespan_j \sim \mathcal{N}(\alpha + \beta \cdot BM_{true,j} + u_{Diet[j]} + \lambda \cdot u_{phylo}, \sigma_{res})$$
+
+This properly propagates the uncertainty in Body Mass into the regression, while also accounting for the non-independence of Diet groups and Phylogeny.
 
 - **[Advanced Models](06_advanced_models.html)** - Random effects and interactions
 - **[Model Diagnostics](09_model_diagnostics.html)** - Checking sample sizes

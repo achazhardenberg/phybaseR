@@ -137,9 +137,19 @@ because <- function(
   random = NULL, # Global random effects applied to all equations
   levels = NULL, # Hierarchical data: variable-to-level mapping
   hierarchy = NULL, # Hierarchical data: level ordering (e.g., "site > individual")
-  link_vars = NULL # Hierarchical data: variables linking levels
+  link_vars = NULL, # Hierarchical data: variables linking levels
+  fix_residual_variance = NULL # Optional: fix residual variance (tau_e) for specific variables
 ) {
   # --- Input Validation & Setup ---
+
+  # WAIC Validity Check: Conditional WAIC (optimise=FALSE) is misleading
+  if (!optimise && WAIC) {
+    warning(
+      "WAIC is calculated using conditional likelihoods when optimise=FALSE, which produces much higher values than marginal pseudo-likelihoods and is NOT comparable to optimise=TRUE results. Disabling WAIC to avoid confusion. Please use DIC for model comparison in this mode."
+    )
+    WAIC <- FALSE
+  }
+
   latent_method <- match.arg(latent_method)
 
   if (is.matrix(data)) {
@@ -333,6 +343,67 @@ because <- function(
         ncol(data),
         " variables"
       )
+    }
+  }
+
+  if (is.data.frame(data)) {
+    # INTEGRATION: Check for long format data requiring matrix conversion
+    # If any variability specified as 'reps', we attempt to auto-format using because_format_data
+    has_reps <- any(grepl("reps", variability))
+
+    if (has_reps) {
+      if (missing(tree) || is.null(tree)) {
+        # Cannot auto-format without tree to determine species order
+        # But maybe the user provided pre-formatted matrices in columns? (unlikely for DF)
+        warning(
+          "Variability 'reps' specified but no tree provided. Automatic formatting requires a tree to order species rows. Assuming data is already aggregated or user handles index mapping."
+        )
+      } else if (!is.null(id_col) && id_col %in% names(data)) {
+        if (!quiet) {
+          message(
+            "Detected 'reps' variability and long-format data. Auto-formatting matrices using because_format_data()..."
+          )
+        }
+
+        # Determine the tree to use (first one if list)
+        use_tree <- if (inherits(tree, "multiPhylo")) tree[[1]] else tree
+
+        formatted_list <- because_format_data(
+          data,
+          species_col = id_col,
+          tree = use_tree
+        )
+
+        # Now rename the variables that are 'reps' to include '_obs' suffix
+        # And keep others as is
+        reps_vars <- names(variability)[variability == "reps"]
+
+        final_data_list <- list()
+        for (nm in names(formatted_list)) {
+          if (nm %in% reps_vars) {
+            # This is a matrix of replicates, rename to _obs
+            final_data_list[[paste0(nm, "_obs")]] <- formatted_list[[nm]]
+          } else {
+            # This is a regular variable (vector or matrix depending on because_format_data logic)
+            final_data_list[[nm]] <- formatted_list[[nm]]
+          }
+        }
+
+        # Update data to be this list
+        data <- final_data_list
+
+        if (!quiet) {
+          message(
+            "  Formatted ",
+            length(reps_vars),
+            " variables as replicate matrices."
+          )
+        }
+      } else {
+        warning(
+          "Variability 'reps' specified but 'id_col' missing or not in data. Cannot auto-format long data."
+        )
+      }
     }
   }
 
@@ -564,7 +635,9 @@ because <- function(
         obj <- standardize_tree(obj)
         V <- ape::vcv.phylo(obj)
         P <- solve(V)
-        data[[paste0("Prec_", s_name)]] <- P
+        if (optimise) {
+          data[[paste0("Prec_", s_name)]] <- P
+        }
 
         if (is.null(N)) {
           N <- nrow(V)
@@ -577,8 +650,9 @@ because <- function(
         }
       } else if (is.matrix(obj)) {
         V <- obj
-        P <- solve(V)
-        data[[paste0("Prec_", s_name)]] <- P
+        if (optimise) {
+          data[[paste0("Prec_", s_name)]] <- solve(V)
+        }
 
         if (is.null(N)) {
           N <- nrow(V)
@@ -588,7 +662,9 @@ because <- function(
       }
     }
 
-    data$zeros <- rep(0, N)
+    if (optimise) {
+      data$zeros <- rep(0, N)
+    }
   }
 
   data$ID <- diag(N)
@@ -604,6 +680,64 @@ because <- function(
 
   # Handle multinomial and ordinal data
   if (!is.null(distribution)) {
+    # If distribution is provided but unnamed, try to auto-assign if there is only one response
+    if (is.null(names(distribution))) {
+      response_vars <- unique(sapply(equations, function(eq) all.vars(eq[[2]])))
+      if (length(distribution) == 1 && length(response_vars) == 1) {
+        names(distribution) <- response_vars
+        message(sprintf(
+          "Auto-assigned distribution '%s' to response variable '%s'",
+          distribution,
+          response_vars
+        ))
+      } else if (length(distribution) == length(response_vars)) {
+        # Riskier, but if lengths match, assume order?
+        # Better to warn and ask for names.
+        warning(
+          "Argument 'distribution' is unnamed. Please provide a named vector like c(Response = 'binomial'). Assuming defaults (Gaussian) for safety."
+        )
+      } else {
+        warning(
+          "Argument 'distribution' is unnamed and length does not match response variables. Ignoring."
+        )
+      }
+    }
+
+    # Auto-fix residual variance for non-Gaussian distributions if not specified
+    for (var in names(distribution)) {
+      dist <- distribution[[var]]
+      if (dist %in% c("binomial", "multinomial", "ordinal")) {
+        should_fix <- FALSE
+        if (is.null(fix_residual_variance)) {
+          should_fix <- TRUE
+          fix_residual_variance <- c()
+        } else if (
+          is.numeric(fix_residual_variance) &&
+            length(fix_residual_variance) == 1 &&
+            is.null(names(fix_residual_variance))
+        ) {
+          # It's a global fix (e.g. fix=1), so it applies to this var too. No action needed.
+          should_fix <- FALSE
+        } else if (!var %in% names(fix_residual_variance)) {
+          should_fix <- TRUE
+        }
+
+        if (should_fix) {
+          # Append to fixed variance vector
+          new_fix <- setNames(1, var)
+          fix_residual_variance <- c(fix_residual_variance, new_fix)
+
+          if (!quiet) {
+            message(sprintf(
+              "Note: Fixing residual variance of '%s' (%s) to 1 for identifiability.",
+              var,
+              dist
+            ))
+          }
+        }
+      }
+    }
+
     for (var in names(distribution)) {
       if (distribution[[var]] %in% c("multinomial", "ordinal")) {
         if (!var %in% names(data)) {
@@ -1062,6 +1196,7 @@ because <- function(
         dsep = FALSE,
         variability = variability,
         distribution = distribution,
+        fix_residual_variance = fix_residual_variance,
         latent = NULL, # D-sep tests are on observed variables only
         latent_method = latent_method,
         parallel = FALSE, # Disable nested parallelism
@@ -1268,12 +1403,12 @@ because <- function(
         combined_samples <- samples
       } else {
         # Check if dimensions match
-        if (niter(combined_samples) != niter(samples)) {
+        if (coda::niter(combined_samples) != coda::niter(samples)) {
           stop("MCMC iteration mismatch between d-sep tests")
         }
         # Combine chains: for each chain, cbind the variables
         new_samples <- coda::mcmc.list()
-        for (ch in 1:nchain(combined_samples)) {
+        for (ch in 1:coda::nchain(combined_samples)) {
           # Combine matrices
           mat1 <- combined_samples[[ch]]
           mat2 <- samples[[ch]]
@@ -1281,8 +1416,8 @@ because <- function(
           new_mat <- cbind(mat1, mat2)
           new_samples[[ch]] <- coda::mcmc(
             new_mat,
-            start = start(mat1),
-            thin = thin(mat1)
+            start = stats::start(mat1),
+            thin = coda::thin(mat1)
           )
         }
         combined_samples <- new_samples
@@ -1479,7 +1614,8 @@ because <- function(
     structure_names = structure_names,
     random_structure_names = names(random_structures),
     random_terms = random_terms,
-    poly_terms = all_poly_terms # Add polynomial terms
+    poly_terms = all_poly_terms, # Add polynomial terms
+    compute_waic = WAIC # Pass WAIC flag
   )
 
   model_string <- model_output$model
@@ -1585,15 +1721,15 @@ because <- function(
 
       monitor <- all_params[
         (grepl("^alpha", all_params) &
-          gsub("^alpha", "", all_params) %in% response_vars &
-          !gsub("^alpha", "", all_params) %in% mag_exogenous_vars) | # Response intercepts, excluding MAG exogenous
+          gsub("^alpha_?", "", all_params) %in% response_vars &
+          !gsub("^alpha_?", "", all_params) %in% mag_exogenous_vars) | # Response intercepts, excluding MAG exogenous
           grepl("^beta", all_params) | # All regression coefficients
           grepl("^rho", all_params) | # Induced correlations
           grepl("^sigma", all_params) | # Variance components
           grepl("^rho", all_params) | # Induced correlations
           (grepl("^lambda", all_params) &
-            gsub("^lambda", "", all_params) %in% response_vars &
-            !gsub("^lambda", "", all_params) %in% mag_exogenous_vars) # Response lambdas, excluding MAG exogenous
+            gsub("^lambda_?", "", all_params) %in% response_vars &
+            !gsub("^lambda_?", "", all_params) %in% mag_exogenous_vars) # Response lambdas, excluding MAG exogenous
       ]
     } else {
       # monitor_mode == "all" or NULL: include everything
@@ -1681,7 +1817,7 @@ because <- function(
         .RNG.seed = 12345 + chain_id
       )
 
-      model <- jags.model(
+      model <- rjags::jags.model(
         model_file,
         data = data,
         inits = inits_list,
@@ -1694,7 +1830,7 @@ because <- function(
       update(model, n.iter = n.burnin)
 
       # Sample
-      samples <- coda.samples(
+      samples <- rjags::coda.samples(
         model,
         variable.names = monitor,
         n.iter = n.iter - n.burnin,
@@ -1741,9 +1877,9 @@ because <- function(
   } else {
     # Sequential execution (default)
     if (!quiet) {
-      message("--- JAGS Model Code (Pre-Compile) ---")
-      message(paste(model_output$model, collapse = "\n"))
-      message("-------------------------------------")
+      # message("--- JAGS Model Code (Pre-Compile) ---")
+      # message(paste(model_output$model, collapse = "\n"))
+      # message("-------------------------------------")
     }
     # Compile model
     model <- rjags::jags.model(

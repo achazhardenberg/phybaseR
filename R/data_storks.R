@@ -1,20 +1,14 @@
-#' Storks and Babies Data
+#' Data on Stork Populations and Human Birth Rates
 #'
-#' Data form Matthews (2000) used to demonstrate spurious correlation.
+#' A dataset containing information on stork populations, human birth rates, and area size for 17 European countries, as described in Matthews (2000). This dataset is famously used to demonstrate spurious correlations (d-separation).
 #'
 #' @format A data frame with 17 rows and 5 variables:
 #' \describe{
 #'   \item{Country}{Name of the country}
-#'   \item{Area}{Area of the country in km^2}
-#'   \item{Storks}{Number of stork pairs}
-#'   \item{Humans}{Human population size in millions}
-#'   \item{Birth}{Number of births in thousands per year}
+#'   \item{Area}{Area of the country in square kilometers}
+#'   \item{Storks}{Number of breeding stork pairs}
+#'   \item{Humans}{Human population size (in millions)}
+#'   \item{Birth}{Human birth rate (1000s per year)}
 #' }
-#'
-#' @source Matthews, R. (2000). Storks deliver babies (p= 0.008).
-#' Teaching Statistics, 22(2), 36-38.
-#'
-#' @examples
-#' data(storks.dat)
-#' plot(Birth ~ Storks, data = storks.dat)
-"storks.dat"
+#' @source Matthews, R. (2000). Storks deliver babies (p= 0.008). \emph{Teaching Statistics}, 22(2), 36-38.
+"storks"

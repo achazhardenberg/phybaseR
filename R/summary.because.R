@@ -52,7 +52,7 @@ summary.because <- function(object, ...) {
         # Create a results table
         results <- data.frame(
             Test = character(),
-            Param = character(),
+            Parameter = character(),
             Estimate = numeric(),
             LowerCI = numeric(),
             UpperCI = numeric(),
@@ -206,51 +206,26 @@ summary.because <- function(object, ...) {
 
                 results[nrow(results) + 1, ] <- list(
                     Test = test_str,
-                    Param = param_name,
+                    Parameter = param_name,
                     Estimate = round(est, 3),
                     LowerCI = round(lower, 3),
                     UpperCI = round(upper, 3),
                     Indep = indep,
-                    P = round(p_approx_0, 3),
+                    P = round(p_approx_0, 3), # Renamed from P_approx_0
                     Rhat = round(p_rhat, 3),
                     n.eff = round(p_neff, 0)
                 )
             }
         }
 
-        # Print layout with Test above stats
-        # We need to manually format this since we want headers + rows separated by test names
-
-        # Get simplified results for printing (stats only)
-        print_results <- results[, !names(results) %in% "Test"]
-
-        # Increase width to prevent wrapping
-        op <- options(width = 1000)
-        on.exit(options(op), add = TRUE)
-
-        # Capture the whole table output to ensure correct alignment across all rows
-        # text_table will contain:
-        # [1] Header line
-        # [2...] Data rows
-        text_table <- capture.output(print(print_results, row.names = FALSE))
-
-        # 1. Print Header
-        if (length(text_table) > 0) {
-            cat(text_table[1], "\n")
+        # Custom printing for readability
+        # Print each test on a separate block
+        for (i in 1:nrow(results)) {
+            cat(paste0("Test: ", results$Test[i]), "\n")
+            # Print stats row without the Test column
+            print(results[i, -1], row.names = FALSE)
+            cat("\n")
         }
-
-        # 2. Print Rows interleaved with Test names
-        # Check if we have data rows (length > 1 means header + at least one row)
-        if (length(text_table) > 1) {
-            # Data rows start at index 2
-            for (i in seq_len(nrow(results))) {
-                cat(paste0("\nTest: ", results$Test[i], "\n"))
-                # Print the corresponding data row
-                # Use i+1 because text_table[1] is header
-                cat(text_table[i + 1], "\n")
-            }
-        }
-        cat("\n")
 
         cat("\nLegend:\n")
         cat(
@@ -259,6 +234,9 @@ summary.because <- function(object, ...) {
         cat(
             "  P: Bayesian probability that the posterior distribution overlaps with zero\n"
         )
+        # cat(
+        #    "\nNote: For d-separation, we expect high P(~0) values (close to 1).\n"
+        # )
 
         invisible(results)
     } else {

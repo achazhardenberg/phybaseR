@@ -1,5 +1,5 @@
 ---
-title: "d-Separation and causal inference"
+title: "D-separation makes because a tool for causal inference"
 author: "Achaz von Hardenberg"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
@@ -14,9 +14,9 @@ editor_options:
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
-    collapse = TRUE,
-    comment = "#>",
-    eval = FALSE
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
 )
 ```
 
@@ -40,8 +40,8 @@ Let's load the storks.dat dataframe available in the package and take a look at 
 # load data
 data(storks.dat)
 plot(storks.dat$Storks, storks.dat$Birth,
-    xlab = "Number of Stork Pairs",
-    ylab = "Number of Babies Born (thousands)"
+  xlab = "Number of Stork Pairs",
+  ylab = "Number of Babies Born (thousands)"
 )
 ```
 
@@ -101,7 +101,7 @@ observed correlation between Storks and Births is actually due to the confoundin
 
 ```{r}
 lm_birth_storks_area <- lm(Birth ~ Storks + Area,
-    data = storks.dat
+  data = storks.dat
 )
 summary(lm_birth_storks_area)
 
@@ -147,9 +147,9 @@ Let's now see how to test this causal model with `because`. First, we have to sp
 
 ```{r}
 equations_storks <- list(
-    Storks ~ Area,
-    Birth ~ Area,
-    Humans ~ Birth
+  Storks ~ Area,
+  Birth ~ Area,
+  Humans ~ Birth
 )
 ```
 
@@ -167,9 +167,9 @@ with the `dsep = TRUE` argument:
 
 ```{r}
 fit_storks <- because(
-    equations = equations_storks,
-    data = storks.dat,
-    dsep = TRUE
+  equations = equations_storks,
+  data = storks.dat,
+  dsep = TRUE
 )
 summary(fit_storks)
 ```
@@ -229,8 +229,8 @@ parameter estimates:
 
 ```{r}
 fit_storks_final <- because(
-    equations = equations_storks,
-    data = storks.dat
+  equations = equations_storks,
+  data = storks.dat
 )
 summary(fit_storks_final)
 ```
@@ -275,9 +275,9 @@ This notation helps to quickly identify which variables are involved in each pat
 
 Birth \~ alphaBirth + beta_Birth_Area \* Area + error, where error is normally distributed with standard deviation = sigmaBirth.
 
-## Next: Phylogenetic Bayesian SEMs (PhyBaSE)
+## Next: Phylogenetic Models
 
-Now that you understand d-separation and how to test causal models with `because`, you can explore more complex models and datasets. The next vignette will guide you through fitting Phylogenetic Bayesian structural equation models (PhyBaSE), which account for shared evolutionary history among species: [**Phylogenetic Models**](03_phylogenetic_models.html)
+Now that you understand d-separation and how to test causal models with `because`, you can explore more complex models and datasets. The next vignette will guide you through fitting Phylogenetic Bayesian models, which account for shared evolutionary history among species: [**Phylogenetic Models**](03_phylogenetic_models.html)
 
 ## References
 

@@ -52,6 +52,8 @@
 #' @param standardize_latent Logical (default TRUE). If TRUE, standardizes latent variables to unit variance.
 #' @param structure_names (Internal) Character vector of names for multiple trees/structures.
 #' @param latent Optional character vector of latent variable names.
+#' @param poly_terms (Internal) List of polynomial terms for model generation.
+#' @param fix_residual_variance Optional numeric value or named vector to fix residual variance.
 #' @export
 #' @importFrom stats formula terms setNames sd
 #' @importFrom utils combn
@@ -65,12 +67,14 @@ because_model <- function(
   random_terms = list(),
   vars_with_na = NULL,
   induced_correlations = NULL,
-  latent = NULL,
   variability = NULL,
   distribution = NULL,
   optimise = TRUE,
   standardize_latent = TRUE,
-  poly_terms = NULL # Polynomial transformation terms
+  poly_terms = NULL, # Polynomial transformation terms
+  latent = NULL,
+  compute_waic = FALSE, # Default to FALSE to force explicit opt-in
+  fix_residual_variance = NULL
 ) {
   # Helper: returns b if a is NULL or if a is a list element that doesn't exist
   `%||%` <- function(a, b) {
@@ -126,8 +130,6 @@ because_model <- function(
   # Start model
   model_lines <- c(
     "model {",
-    "  # Dummy usage of ID to prevent warnings in GLMM-only models",
-    "  dummy_ID <- ID[1,1]",
     "  # Structural equations",
     "  for (i in 1:N) {"
   )
@@ -502,7 +504,6 @@ because_model <- function(
               "  # GLMM likelihood for missing data (preserves phylo signal)"
             ),
             paste0("  for (i in 1:N) {"),
-            paste0("    ", mu_err, "[i] <- 0"),
             paste0(
               "    ",
               response_var,
@@ -513,23 +514,30 @@ because_model <- function(
               "[i], ",
               tau_res,
               ")"
-            ),
-            paste0(
-              "    log_lik_",
-              response,
-              suffix,
-              "[i] <- logdensity.norm(",
-              response_var,
-              "[i], ",
-              mu,
-              "[i] + ",
-              err,
-              "[i], ",
-              tau_res,
-              ")"
-            ),
-            paste0("  }")
+            )
           )
+          if (compute_waic) {
+            model_lines <- c(
+              model_lines,
+              paste0(
+                "    log_lik_",
+                response,
+                suffix,
+                "[i] <- logdensity.norm(",
+                response_var,
+                "[i], ",
+                mu,
+                "[i] + ",
+                err,
+                "[i], ",
+                tau_res,
+                ")"
+              ),
+              paste0("  }")
+            )
+          } else {
+            model_lines <- c(model_lines, paste0("  }"))
+          }
         } else {
           if (independent) {
             # Independent Model (No random effects)
@@ -549,21 +557,28 @@ because_model <- function(
                 "[i], ",
                 tau_e,
                 ")"
-              ),
-              paste0(
-                "    log_lik_",
-                response,
-                suffix,
-                "[i] <- logdensity.norm(",
-                response_var,
-                "[i], ",
-                mu,
-                "[i], ",
-                tau_e,
-                ")"
-              ),
-              paste0("  }")
+              )
             )
+            if (compute_waic) {
+              model_lines <- c(
+                model_lines,
+                paste0(
+                  "    log_lik_",
+                  response,
+                  suffix,
+                  "[i] <- logdensity.norm(",
+                  response_var,
+                  "[i], ",
+                  mu,
+                  "[i], ",
+                  tau_e,
+                  ")"
+                ),
+                paste0("  }")
+              )
+            } else {
+              model_lines <- c(model_lines, paste0("  }"))
+            }
           } else if (optimise) {
             # Optimized Random Effects Formulation (Additive)
             additive_terms <- ""
@@ -685,23 +700,30 @@ because_model <- function(
                 ", ",
                 tau_e,
                 ")"
-              ),
-              paste0(
-                "    log_lik_",
-                response,
-                suffix,
-                "[i] <- logdensity.norm(",
-                response_var,
-                "[i], ",
-                mu,
-                "[i]",
-                additive_terms,
-                ", ",
-                tau_e,
-                ")"
-              ),
-              paste0("  }")
+              )
             )
+            if (compute_waic) {
+              model_lines <- c(
+                model_lines,
+                paste0(
+                  "    log_lik_",
+                  response,
+                  suffix,
+                  "[i] <- logdensity.norm(",
+                  response_var,
+                  "[i], ",
+                  mu,
+                  "[i]",
+                  additive_terms,
+                  ", ",
+                  tau_e,
+                  ")"
+                ),
+                paste0("  }")
+              )
+            } else {
+              model_lines <- c(model_lines, paste0("  }"))
+            }
           } else {
             # Standard MVN for complete data (Marginal)
             # Note: dmnorm is joint, so we compute pointwise log-lik separately
@@ -715,32 +737,37 @@ because_model <- function(
                 "[1:N], ",
                 tau,
                 ")"
-              ),
-              paste0("  # Pointwise log-likelihood for MVN"),
-              paste0("  for (i in 1:N) {"),
-              paste0(
-                "    tau_marg_",
-                response,
-                suffix,
-                "[i] <- ",
-                tau,
-                "[i, i]  # Extract diagonal precision (marginal variance)"
-              ),
-              paste0(
-                "    log_lik_",
-                response,
-                suffix,
-                "[i] <- logdensity.norm(",
-                response_var,
-                "[i], ",
-                mu,
-                "[i], tau_marg_",
-                response,
-                suffix,
-                "[i])"
-              ),
-              paste0("  }")
+              )
             )
+            if (compute_waic) {
+              model_lines <- c(
+                model_lines,
+                "  # Pointwise log-likelihood for MVN",
+                paste0("  for (i in 1:N) {"),
+                paste0(
+                  "    tau_marg_",
+                  response,
+                  suffix,
+                  "[i] <- ",
+                  tau,
+                  "[i, i]  # Extract diagonal precision (marginal variance)"
+                ),
+                paste0(
+                  "    log_lik_",
+                  response,
+                  suffix,
+                  "[i] <- logdensity.norm(",
+                  response_var,
+                  "[i], ",
+                  mu,
+                  "[i], tau_marg_",
+                  response,
+                  suffix,
+                  "[i])"
+                ),
+                paste0("  }")
+              )
+            }
           }
         }
       } else if (dist == "binomial") {
@@ -906,29 +933,6 @@ because_model <- function(
 
             prec_name <- paste0("Prec_", s_name)
             prec_index <- if (multi.tree && s_name == "phylo") {
-              paste0(prec_name, "[1:N, 1:N, K]") # Should this be k (loop var) or K (constant)?
-              # Original code used K. If multi-tree varies by category, it might need to be k if we unrolled?
-              # But here it seems to perform one tree per category? Or same tree?
-              # If multi.tree is true, we have K trees. So it should likely be k?
-              # Original code had Prec_Index dependent on... wait.
-              # Original code: "Prec_phylo[1:N, 1:N, K]"
-              # If K is a constant (number of categories), then it uses the K-th matrix?
-              # Or did it mean `k` (the loop variable)?
-              # If the loop variable is `k`, then `K` usually refers to max categories.
-              # Let's assume original code meant `k` if it was inside loop?
-              # Original code printed "K". If "K" equals dimensions[3], then it's wrong inside a loop over k=2:K.
-              # But maybe multi.tree implies independent trees?
-              # Let's keep it as "k" (loop variable) if multi.tree seems to imply specific tree per category.
-              # Actually, check original code again.
-              # Original: `prec_index <- ... "Prec...[..., K]"` (literal K)
-              # But inside JAGS loop `for (k in 2:K_var)`.
-              # If it used literal "K", it meant the last matrix? That seems wrong.
-              # It probably SHOULD be `k`.
-              # I will change it to `k` if safe, but safer to match original string literal if unsure.
-              # Original literal was `K` (which is likely a variable in JAGS data, or maybe typo?).
-              # Wait, `K` usually means number of levels.
-              # If multi.tree = TRUE, we pass an array of matrices.
-              # I will use `k` to be correct: each category gets its own precision matrix slice.
               paste0(prec_name, "[1:N, 1:N, k]")
             } else {
               paste0(prec_name, "[1:N, 1:N]")
@@ -999,6 +1003,7 @@ because_model <- function(
               ),
               paste0("    }")
             )
+
             total_u <- paste0(total_u, " + ", u, "[", group_idx, "[i], k]")
           }
 
@@ -1092,10 +1097,7 @@ because_model <- function(
           )
         } else if (optimise) {
           # Optimized Random Effects
-          u_std <- paste0("u_std_", response, suffix)
-          u <- paste0("u_", response, suffix)
           epsilon <- paste0("epsilon_", response, suffix)
-          tau_u <- paste0("tau_u_", response, suffix)
           tau_e <- paste0("tau_e_", response, suffix)
 
           # Initialize accumulator
@@ -1496,26 +1498,31 @@ because_model <- function(
           ", tau_obs_",
           var,
           ")"
-        ),
-        paste0(
-          "    log_lik_",
-          var,
-          suffix,
-          "[i] <- logdensity.norm(",
-          var,
-          "[i], mu",
-          var,
-          suffix,
-          "[i]",
-          phylo_term,
-          " + ",
-          sum_res_errs,
-          ", tau_obs_",
-          var,
-          ")"
-        ),
-        paste0("  }")
+        )
       )
+      if (compute_waic) {
+        model_lines <- c(
+          model_lines,
+          paste0(
+            "    log_lik_",
+            var,
+            suffix,
+            "[i] <- logdensity.norm(",
+            var,
+            "[i], mu",
+            var,
+            suffix,
+            "[i]",
+            phylo_term,
+            " + ",
+            sum_res_errs,
+            ", tau_obs_",
+            var,
+            ")"
+          )
+        )
+      }
+      model_lines <- c(model_lines, paste0("  }"))
     }
   }
 
@@ -1557,27 +1564,40 @@ because_model <- function(
             "[i], ",
             var,
             "_tau_obs[i])"
-          ),
-          paste0(
-            "    log_lik_",
-            var,
-            "_mean[i] <- logdensity.norm(",
-            var,
-            "_mean[i], ",
-            var,
-            "[i], ",
-            var,
-            "_tau_obs[i])"
-          ),
-          paste0("  }")
+          )
         )
+        if (compute_waic) {
+          model_lines <- c(
+            model_lines,
+            paste0(
+              "    log_lik_",
+              var,
+              "_mean[i] <- logdensity.norm(",
+              var,
+              "_mean[i], ",
+              var,
+              "[i], ",
+              var,
+              "_tau_obs[i])"
+            )
+          )
+        }
+        model_lines <- c(model_lines, paste0("  }"))
       } else if (type == "reps") {
         # For repeated measures, we need log_lik for EACH observation
         # Then sum them per individual for WAIC
         model_lines <- c(
           model_lines,
-          paste0("  for (i in 1:N) {"),
-          paste0("    log_lik_", var, "_reps[i] <- 0  # Initialize sum"),
+          paste0("  for (i in 1:N) {")
+        )
+        if (compute_waic) {
+          model_lines <- c(
+            model_lines,
+            paste0("    log_lik_", var, "_reps[i] <- 0  # Initialize sum")
+          )
+        }
+        model_lines <- c(
+          model_lines,
           paste0("    for (j in 1:N_reps_", var, "[i]) {"),
           paste0(
             "      ",
@@ -1587,23 +1607,31 @@ because_model <- function(
             "[i], ",
             var,
             "_tau)"
-          ),
-          paste0(
-            "      # Sum pointwise log-likelihoods for this individual"
-          ),
-          paste0(
-            "      log_lik_",
-            var,
-            "_reps[i] <- log_lik_",
-            var,
-            "_reps[i] + logdensity.norm(",
-            var,
-            "_obs[i, j], ",
-            var,
-            "[i], ",
-            var,
-            "_tau)"
-          ),
+          )
+        )
+        if (compute_waic) {
+          model_lines <- c(
+            model_lines,
+            paste0(
+              "      # Sum pointwise log-likelihoods for this individual"
+            ),
+            paste0(
+              "      log_lik_",
+              var,
+              "_reps[i] <- log_lik_",
+              var,
+              "_reps[i] + logdensity.norm(",
+              var,
+              "_obs[i, j], ",
+              var,
+              "[i], ",
+              var,
+              "_tau)"
+            )
+          )
+        }
+        model_lines <- c(
+          model_lines,
           paste0("    }"),
           paste0("  }"),
           paste0("  ", var, "_tau ~ dgamma(1, 1)"),
@@ -1648,9 +1676,37 @@ because_model <- function(
         if (independent) {
           # Independent Priors (only tau_e)
           # We can also generate sigma for monitoring convenience
+          if (
+            !is.null(fix_residual_variance) &&
+              (response %in%
+                names(fix_residual_variance) ||
+                length(fix_residual_variance) == 1)
+          ) {
+            val <- if (response %in% names(fix_residual_variance)) {
+              fix_residual_variance[[response]]
+            } else {
+              fix_residual_variance[[1]]
+            }
+            prec <- 1 / val # Inverse variance
+            model_lines <- c(
+              model_lines,
+              paste0(
+                "  tau_e_",
+                response,
+                suffix,
+                " <- ",
+                prec,
+                " # Fixed residual variance"
+              )
+            )
+          } else {
+            model_lines <- c(
+              model_lines,
+              paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)")
+            )
+          }
           model_lines <- c(
             model_lines,
-            paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)"),
             paste0(
               "  sigma",
               response,
@@ -1664,10 +1720,35 @@ because_model <- function(
         } else if (optimise) {
           # Component-wise: Estimate independent variance components
           # Note: We now use this even for single structure to match the restored model logic
-          model_lines <- c(
-            model_lines,
-            paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)")
-          )
+          if (
+            !is.null(fix_residual_variance) &&
+              (response %in%
+                names(fix_residual_variance) ||
+                length(fix_residual_variance) == 1)
+          ) {
+            val <- if (response %in% names(fix_residual_variance)) {
+              fix_residual_variance[[response]]
+            } else {
+              fix_residual_variance[[1]]
+            }
+            prec <- 1 / val # Inverse variance
+            model_lines <- c(
+              model_lines,
+              paste0(
+                "  tau_e_",
+                response,
+                suffix,
+                " <- ",
+                prec,
+                " # Fixed residual variance"
+              )
+            )
+          } else {
+            model_lines <- c(
+              model_lines,
+              paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)")
+            )
+          }
 
           for (s_name in structure_names) {
             s_suffix <- paste0("_", s_name) # Always append suffix to match model logic
@@ -1772,15 +1853,61 @@ because_model <- function(
     if (dist == "multinomial") {
       K_var <- paste0("K_", response)
       if (independent) {
+        if (
+          !is.null(fix_residual_variance) &&
+            (response %in%
+              names(fix_residual_variance) ||
+              length(fix_residual_variance) == 1)
+        ) {
+          val <- if (response %in% names(fix_residual_variance)) {
+            fix_residual_variance[[response]]
+          } else {
+            fix_residual_variance[[1]]
+          }
+          prec <- 1 / val
+          tau_line <- paste0(
+            "    tau_e_",
+            response,
+            "[k] <- ",
+            prec,
+            " # Fixed"
+          )
+        } else {
+          tau_line <- paste0("    tau_e_", response, "[k] ~ dgamma(1, 1)")
+        }
+
         model_lines <- c(
           model_lines,
           paste0("  # Independent Priors for ", response, " (Multinomial)"),
           paste0("  for (k in 2:", K_var, ") {"),
           paste0("    alpha_", response, "[k] ~ dnorm(0, 1.0E-6)"),
-          paste0("    tau_e_", response, "[k] ~ dgamma(1, 1)"),
+          tau_line,
           "  }"
         )
       } else if (optimise) {
+        if (
+          !is.null(fix_residual_variance) &&
+            (response %in%
+              names(fix_residual_variance) ||
+              length(fix_residual_variance) == 1)
+        ) {
+          val <- if (response %in% names(fix_residual_variance)) {
+            fix_residual_variance[[response]]
+          } else {
+            fix_residual_variance[[1]]
+          }
+          prec <- 1 / val
+          tau_line <- paste0(
+            "    tau_e_",
+            response,
+            "[k] <- ",
+            prec,
+            " # Fixed"
+          )
+        } else {
+          tau_line <- paste0("    tau_e_", response, "[k] ~ dgamma(1, 1)")
+        }
+
         model_lines <- c(
           model_lines,
           # Priors for ", response, " (Multinomial)"),
@@ -1788,7 +1915,7 @@ because_model <- function(
           paste0("    alpha_", response, "[k] ~ dnorm(0, 1.0E-6)"),
 
           # Residual error
-          paste0("    tau_e_", response, "[k] ~ dgamma(1, 1)"),
+          tau_line,
 
           # Random effects priors (loop over structures)
           {
@@ -2401,7 +2528,13 @@ because_model <- function(
   }
 
   # Imputation priors for predictors (those not modeled as responses)
-  model_lines <- c(model_lines, "  # Predictor priors for imputation")
+  if (
+    length(setdiff(all_vars, names(response_counter))) > 0 &&
+      (length(latent) > 0 ||
+        (!is.null(vars_with_na) && length(vars_with_na) > 0))
+  ) {
+    model_lines <- c(model_lines, "  # Predictor priors for imputation")
+  }
   non_response_vars <- setdiff(all_vars, names(response_counter))
   for (var in non_response_vars) {
     # Check if this is a latent variable
@@ -2580,18 +2713,64 @@ because_model <- function(
       )
     } else {
       if (independent) {
+        if (
+          !is.null(fix_residual_variance) &&
+            (var %in%
+              names(fix_residual_variance) ||
+              length(fix_residual_variance) == 1)
+        ) {
+          val <- if (var %in% names(fix_residual_variance)) {
+            fix_residual_variance[[var]]
+          } else {
+            fix_residual_variance[[1]]
+          }
+          prec <- 1 / val # Inverse variance
+          tau_line <- paste0(
+            "  tau_e_",
+            var,
+            " <- ",
+            prec,
+            " # Fixed residual variance"
+          )
+        } else {
+          tau_line <- paste0("  tau_e_", var, " ~ dgamma(1, 1)")
+        }
+
         # Independent Predictor Prior
         model_lines <- c(
           model_lines,
-          paste0("  tau_e_", var, " ~ dgamma(1, 1)"),
+          tau_line,
           paste0("  sigma", var, " <- 1/sqrt(tau_e_", var, ")")
         )
       } else if (optimise) {
         if (length(structure_names) > 1) {
+          if (
+            !is.null(fix_residual_variance) &&
+              (var %in%
+                names(fix_residual_variance) ||
+                length(fix_residual_variance) == 1)
+          ) {
+            val <- if (var %in% names(fix_residual_variance)) {
+              fix_residual_variance[[var]]
+            } else {
+              fix_residual_variance[[1]]
+            }
+            prec <- 1 / val # Inverse variance
+            tau_line <- paste0(
+              "  tau_e_",
+              var,
+              " <- ",
+              prec,
+              " # Fixed residual variance"
+            )
+          } else {
+            tau_line <- paste0("  tau_e_", var, " ~ dgamma(1, 1)")
+          }
+
           # Multiple Structures: Estimate independent variance components
           model_lines <- c(
             model_lines,
-            paste0("  tau_e_", var, " ~ dgamma(1, 1)")
+            tau_line
           )
 
           for (s_name in structure_names) {
@@ -2677,6 +2856,21 @@ because_model <- function(
         )
       }
     }
+  }
+
+  # Verify if "ID" is actually used in the model (e.g. for residuals or GLMMs)
+  # If not, add a dummy usage to prevent JAGS warning "Unused variable ID"
+  # This avoids clutter when 'optimise=TRUE' or for non-GLMM/non-phylogenetic models
+  if (!any(grepl("\\bID\\b", model_lines))) {
+    # Check if we are inserting it at the top or bottom. JAGS declarations order doesn't strictly matter
+    # but let's put it near the top for clarity, or just append.
+    # Appending is safer logic-wise here.
+    model_lines <- c(
+      model_lines[1], # "model {"
+      "  # Dummy usage of ID to prevent warnings for unused data",
+      "  dummy_ID <- ID[1,1]",
+      model_lines[-1]
+    )
   }
 
   model_lines <- c(model_lines, "}")

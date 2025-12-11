@@ -35,7 +35,6 @@ First, load the package:
 
 ```{r setup}
 library(because)
-knitr::opts_chunk$set(eval = FALSE)
 ```
 
 **Note**: `because` uses `ape` internally for phylogenetic calculations (it's automatically loaded as a dependency). We'll also load it explicitly here for the tutorial examples, since we use `ape` functions like `rtree()` and `rTraitCont()` to simulate data:

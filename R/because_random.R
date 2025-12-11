@@ -157,11 +157,7 @@ All.vars <- function(x) all.vars(x)
 # Helper to safely all vars from list of formulas (if needed locally)
 All.vars <- function(x) all.vars(x)
 
-#' Parse a single random term string
-#'
-#' @param part String like "(1|Group)"
-#' @return List with group and type, or NULL if not a random term
-#' @noRd
+
 #' Expand Nesting Syntax in Random Effects
 #'
 #' Converts lme4-style nesting (1|A/B) to (1|A) + (1|A:B)

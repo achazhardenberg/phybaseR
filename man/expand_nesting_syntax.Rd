@@ -2,21 +2,17 @@
 % Please edit documentation in R/because_random.R
 \name{expand_nesting_syntax}
 \alias{expand_nesting_syntax}
-\title{Parse a single random term string}
+\title{Expand Nesting Syntax in Random Effects}
 \usage{
 expand_nesting_syntax(rhs)
 }
 \arguments{
 \item{rhs}{Character string, RHS of random effects formula}
-
-\item{part}{String like "(1|Group)"}
 }
 \value{
-List with group and type, or NULL if not a random term
-
 Expanded character string
 }
 \description{
-Parse a single random term string
+Converts lme4-style nesting (1|A/B) to (1|A) + (1|A:B)
 }
 \keyword{internal}
