@@ -71,6 +71,8 @@
 #'     \item "ordinal" (ordered categorical > 2 levels)
 #'     \item "poisson" (count data)
 #'     \item "negbinomial" (overdispersed count data)
+#'     \item "zip" (zero-inflated poisson)
+#'     \item "zinb" (zero-inflated negative binomial)
 #'   }
 #'   Example: \code{distribution = c(Gregarious = "binomial")}.
 #' @param latent Optional character vector of latent (unmeasured) variable names.
@@ -791,6 +793,12 @@ because <- function(
           }
         }
       }
+    }
+  }
+
+  if ((!is.null(distribution) && any(distribution %in% c("zip", "zinb")))) {
+    if (is.null(data$zeros)) {
+      data$zeros <- rep(0, N)
     }
   }
 
@@ -1688,7 +1696,9 @@ because <- function(
       extract_names("^\\s*lambda"),
       extract_names("^\\s*tau"),
       extract_names("^\\s*rho"),
-      extract_names("^\\s*sigma")
+      extract_names("^\\s*sigma"),
+      extract_names("^\\s*psi"),
+      extract_names("^\\s*r_")
     ))
 
     # Remove tau_obs_* (deterministic constants, not stochastic parameters)
@@ -1727,6 +1737,8 @@ because <- function(
           grepl("^rho", all_params) | # Induced correlations
           grepl("^sigma", all_params) | # Variance components
           grepl("^rho", all_params) | # Induced correlations
+          grepl("^psi", all_params) | # Zero-inflation probability
+          grepl("^r_", all_params) | # Negative Binomial size
           (grepl("^lambda", all_params) &
             gsub("^lambda_?", "", all_params) %in% response_vars &
             !gsub("^lambda_?", "", all_params) %in% mag_exogenous_vars) # Response lambdas, excluding MAG exogenous

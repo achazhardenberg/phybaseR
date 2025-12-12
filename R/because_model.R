@@ -463,6 +463,156 @@ because_model <- function(
           ")"
         )
       )
+    } else if (dist == "zip") {
+      # Zero-Inflated Poisson:
+      # P(Y=0) = psi + (1-psi)*exp(-mu)
+      # P(Y=y) = (1-psi)*dpois(y, mu) for y>0
+
+      err <- paste0("err_", response, suffix)
+      mu <- paste0("mu_", response, suffix)
+      psi <- paste0("psi_", response, suffix)
+
+      model_lines <- c(
+        model_lines,
+        paste0("    # ZIP log link for ", response),
+        paste0("    log(", mu, "[i]) <- ", linpred, " + ", err, "[i]"),
+
+        # Zeros trick for custom likelihood
+        # log_lik terms
+        paste0(
+          "    lik_zero_",
+          response,
+          "[i] <- ",
+          psi,
+          " + (1-",
+          psi,
+          ") * exp(-",
+          mu,
+          "[i])"
+        ),
+        paste0(
+          "    lik_pos_",
+          response,
+          "[i] <- (1-",
+          psi,
+          ") * exp(logdensity.pois(",
+          response,
+          "[i], ",
+          mu,
+          "[i]))"
+        ),
+
+        # Select likelihood based on Y[i]
+        # Use a small epsilon to avoid log(0) if needed, but here lik_zero is > 0 if psi > 0
+        paste0(
+          "    lik_",
+          response,
+          "[i] <- ifelse(",
+          response,
+          "[i] == 0, lik_zero_",
+          response,
+          "[i], lik_pos_",
+          response,
+          "[i])"
+        ),
+
+        paste0(
+          "    log_lik_",
+          response,
+          suffix,
+          "[i] <- log(lik_",
+          response,
+          "[i])"
+        ),
+        paste0(
+          "    phi_",
+          response,
+          "[i] <- -log_lik_",
+          response,
+          suffix,
+          "[i] + 10000"
+        ),
+        paste0("    zeros[i] ~ dpois(phi_", response, "[i])")
+      )
+    } else if (dist == "zinb") {
+      # Zero-Inflated Negative Binomial:
+      # P(Y=0) = psi + (1-psi)*(r/(r+mu))^r
+      # P(Y=y) = (1-psi)*dnegbin(y, p, r) for y>0
+
+      err <- paste0("err_", response, suffix)
+      mu <- paste0("mu_", response, suffix)
+      r <- paste0("r_", response, suffix)
+      p <- paste0("p_", response, suffix)
+      psi <- paste0("psi_", response, suffix)
+
+      model_lines <- c(
+        model_lines,
+        paste0("    # ZINB log link for ", response),
+        paste0("    log(", mu, "[i]) <- ", linpred, " + ", err, "[i]"),
+        paste0("    ", p, "[i] <- ", r, " / (", r, " + ", mu, "[i])"),
+
+        # Zeros trick
+        # Zero case: psi + (1-psi) * p^r
+        paste0(
+          "    lik_zero_",
+          response,
+          "[i] <- ",
+          psi,
+          " + (1-",
+          psi,
+          ") * pow(",
+          p,
+          "[i], ",
+          r,
+          ")"
+        ),
+
+        # Positive case: (1-psi) * dnegbin(...)
+        paste0(
+          "    lik_pos_",
+          response,
+          "[i] <- (1-",
+          psi,
+          ") * exp(logdensity.negbin(",
+          response,
+          "[i], ",
+          p,
+          "[i], ",
+          r,
+          "))"
+        ),
+
+        # Select likelihood
+        paste0(
+          "    lik_",
+          response,
+          "[i] <- ifelse(",
+          response,
+          "[i] == 0, lik_zero_",
+          response,
+          "[i], lik_pos_",
+          response,
+          "[i])"
+        ),
+
+        paste0(
+          "    log_lik_",
+          response,
+          suffix,
+          "[i] <- log(lik_",
+          response,
+          "[i])"
+        ),
+        paste0(
+          "    phi_",
+          response,
+          "[i] <- -log_lik_",
+          response,
+          suffix,
+          "[i] + 10000"
+        ),
+        paste0("    zeros[i] ~ dpois(phi_", response, "[i])")
+      )
     } else {
       stop(paste("Unknown distribution:", dist))
     }
@@ -1077,7 +1227,7 @@ because_model <- function(
             paste0("  }")
           )
         }
-      } else if (dist == "poisson") {
+      } else if (dist == "poisson" || dist == "zip") {
         # Poisson error term: err[1:N]
         # Single phylogenetic effect (like ordinal)
         err <- paste0("err_", response, suffix)
@@ -1193,7 +1343,7 @@ because_model <- function(
             paste0("  }")
           )
         }
-      } else if (dist == "negbinomial") {
+      } else if (dist == "negbinomial" || dist == "zinb") {
         # Negative Binomial error term: err[1:N]
         # Single phylogenetic effect (like Poisson/ordinal)
         err <- paste0("err_", response, suffix)
@@ -2107,7 +2257,7 @@ because_model <- function(
   # Priors for Negative Binomial parameters (size only - others handled in main loop)
   for (response in names(response_counter)) {
     dist <- dist_list[[response]] %||% "gaussian"
-    if (dist == "negbinomial") {
+    if (dist == "negbinomial" || dist == "zinb") {
       # Loop over response instances
       for (k in 1:response_counter[[response]]) {
         suffix <- if (k == 1) "" else as.character(k)
@@ -2135,6 +2285,25 @@ because_model <- function(
   # Priors for correlated vars alphas (intercepts)
   for (var in correlated_vars) {
     model_lines <- c(model_lines, paste0("  alpha", var, " ~ dnorm(0, 1.0E-6)"))
+  }
+
+  # Priors for Zero-Inflation parameters (psi)
+  for (response in names(response_counter)) {
+    dist <- dist_list[[response]] %||% "gaussian"
+    if (dist %in% c("zip", "zinb")) {
+      for (k in 1:response_counter[[response]]) {
+        suffix <- if (k == 1) "" else as.character(k)
+        model_lines <- c(
+          model_lines,
+          paste0(
+            "  psi_",
+            response,
+            suffix,
+            " ~ dunif(0, 1) # Zero-inflation probability"
+          )
+        )
+      }
+    }
   }
 
   # Priors for regression coefficients

@@ -88,3 +88,12 @@ These would be separate helper functions to strengthen the causal claims made by
 
 *   **`because_iv_strength(fit)`**: Instrumental Variable Diagnostics.
     *   **Goal**: If using an IV (e.g., Rainfall as an IV for Productivity), test its strength (F-statistic equivalent) and validity constraints where possible.
+
+## 10. Custom Priors
+*   **Request**: Users need the ability to override default informative/weakly-informative priors.
+*   **Implementation**: Add a `priors` argument to `because()`.
+*   **Mechanism**:
+    *   Accept a named list: `list(alpha_Birth = "dnorm(0, 0.001)", sigma_Storks = "dunif(0, 10)")`.
+    *   During JAGS model generation, replace the default prior string for that specific parameter with the user-supplied string.
+*   **Validation**: Check that the provided string is valid JAGS syntax (or catch errors from JAGS).
+

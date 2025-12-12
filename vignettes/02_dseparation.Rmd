@@ -34,12 +34,12 @@ The problem is that correlation alone cannot distinguish between these three sce
 
 Let's look at a classic example A correlative study trying to establish if storks deliver babies (Matthews, 2000). we investigated this example previously in Gonzalez-Voyer & von Hardenberg (2014), and the data and a tutorial analysing this example with traditional path analysis is available as supplementary materials to that book chapter and here: <https://github.com/achazhardenberg/mpcm-OPM>.
 
-Let's load the storks.dat dataframe available in the package and take a look at the relationship between the number of stork pairs and the number of babies born in different European countries (in thousands per year):
+Let's load the storks dataframe available in the package and take a look at the relationship between the number of stork pairs and the number of babies born in different European countries (in thousands per year):
 
 ```{r}
 # load data
-data(storks.dat)
-plot(storks.dat$Storks, storks.dat$Birth,
+data(storks)
+plot(storks$Storks, storks$Birth,
   xlab = "Number of Stork Pairs",
   ylab = "Number of Babies Born (thousands)"
 )
@@ -52,13 +52,13 @@ knitr::include_graphics("figures/storks_vs_babies.png")
 We can see that there appears to be a positive correlation between the number of stork pairs and the number of babies born and we can confirm this with a simple linear regression:
 
 ```{r}
-lm_storks <- lm(Birth ~ Storks, data = storks.dat)
+lm_storks <- lm(Birth ~ Storks, data = storks)
 summary(lm_storks)
 ```
 
 ``` txt
 Call:
-lm(formula = Birth ~ Storks, data = storks.dat)
+lm(formula = Birth ~ Storks, data = storks)
 
 Residuals:
    Min     1Q Median     3Q    Max 
@@ -80,14 +80,14 @@ F-statistic:  9.38 on 1 and 15 DF,  p-value: 0.007898
 The positive relationship between stork pairs and births is confirmed (p = 0.008, as already reported by Matthews, 2000), but does this mean that storks deliver babies? Or could it be that both are influenced by a third variable, such as Country Area? Let's check if Area correlates with Births and Storks:
 
 ```{r}
-birth_area.lm <- lm(Birth ~ Area, data = storks.dat)
+birth_area.lm <- lm(Birth ~ Area, data = storks)
 summary(birth_area.lm)
 # Coefficients:
 #              Estimate Std. Error t value Pr(>|t|)
 # (Intercept) -7.7754992 56.9376784  -0.137    0.893
 # Area         0.0017229  0.0001861   9.259 1.36e-07 ***
 
-storks_area.lm <- lm(Storks ~ Area, data = storks.dat)
+storks_area.lm <- lm(Storks ~ Area, data = storks)
 summary(storks_area.lm)
 # Coefficients:
 #              Estimate Std. Error t value Pr(>|t|)
@@ -101,7 +101,7 @@ observed correlation between Storks and Births is actually due to the confoundin
 
 ```{r}
 lm_birth_storks_area <- lm(Birth ~ Storks + Area,
-  data = storks.dat
+  data = storks
 )
 summary(lm_birth_storks_area)
 
@@ -159,7 +159,7 @@ standardized effects (and it also helps with convergence of the mcmc
 chains):
 
 ```{r}
-storks.dat <- scale(storks.dat[2:5])
+storks <- scale(storks[2:5])
 ```
 
 Now we can fit the model with `because()`, enabling d-separation tests
@@ -168,7 +168,7 @@ with the `dsep = TRUE` argument:
 ```{r}
 fit_storks <- because(
   equations = equations_storks,
-  data = storks.dat,
+  data = storks,
   dsep = TRUE
 )
 summary(fit_storks)
@@ -230,7 +230,7 @@ parameter estimates:
 ```{r}
 fit_storks_final <- because(
   equations = equations_storks,
-  data = storks.dat
+  data = storks
 )
 summary(fit_storks_final)
 ```

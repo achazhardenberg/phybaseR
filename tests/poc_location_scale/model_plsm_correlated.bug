@@ -1,0 +1,56 @@
+model {
+  # --- Likelihood ---
+  for (i in 1:N) {
+    y[i] ~ dnorm(mu[i], tau[i])
+    
+    # Linear predictors
+    mu[i] <- alpha_m + beta_m * x[i] + u_m[i]
+    
+    log_sigma[i] <- alpha_v + beta_v * x[i] + u_v[i]
+    sigma[i] <- exp(log_sigma[i])
+    tau[i] <- 1 / (sigma[i] * sigma[i])
+    
+    # Just for diagnostics/checking
+    # u_m and u_v are extracted from u_vec
+  }
+  
+  # --- Correlated Random Effects (Optimized) ---
+  # Decomposition strategy for Separable Covariance (Sigma_traits (x) V)
+  # We generate two INDEPENDENT phylogenetically structured vectors:
+  # z_raw_m ~ N(0, V)  <-- Implemented as z_raw_m ~ dmnorm(0, invC)
+  # z_raw_v ~ N(0, V)
+  
+  # Then mix them to create correlation rho:
+  # u_m = sigma_m * z_raw_m
+  # u_v = sigma_v * (rho * z_raw_m + sqrt(1-rho^2) * z_raw_v)
+  
+  # 1. Standardized Phylogenetic Random Effects (Independent)
+  z_raw_m[1:N] ~ dmnorm(zeros[1:N], invC[1:N, 1:N])
+  z_raw_v[1:N] ~ dmnorm(zeros[1:N], invC[1:N, 1:N])
+  
+  # 2. Mixing to induce correlation
+  # Precompute mixing factor
+  rho_compl <- sqrt(1 - rho^2)
+  
+  for (i in 1:N) {
+    u_m[i] <- sigma_phy_m * z_raw_m[i]
+    u_v[i] <- sigma_phy_v * (rho * z_raw_m[i] + rho_compl * z_raw_v[i])
+  }
+  
+  # --- Priors ---
+  
+  # Fixed Effects
+  alpha_m ~ dnorm(0, 0.01)
+  beta_m  ~ dnorm(0, 0.01)
+  alpha_v ~ dnorm(0, 0.01)
+  beta_v  ~ dnorm(0, 0.01)
+  
+  # Variance / Correlation Priors
+  sigma_phy_m ~ dunif(0, 10)
+  sigma_phy_v ~ dunif(0, 10)
+  rho ~ dunif(-1, 1)
+  
+  # Derived params
+  lambda_m_est <- sigma_phy_m^2
+  lambda_v_est <- sigma_phy_v^2
+}
