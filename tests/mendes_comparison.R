@@ -2,7 +2,8 @@
 # Purpose: Test 'because' package against the simulation scenarios from:
 # "The use, misuse and opportunities for structural equation modelling (SEM) in wildlife ecology"
 
-library(because)
+# library(because)
+devtools::load_all()
 library(tidyverse)
 
 # --- 1. Simulation Function (Adapted directly from Mendes et al.) ---
@@ -157,20 +158,18 @@ cat("Generating simulated data...\n")
 data <- create_count_sim_data(
     nlandscapes = 80,
     nsurveys = 240,
-    zero_inflation = 0
+    zero_inflation = 0.3
 )
 
 # --- 3. Run 'because' Model ---
-cat("Fitting 'because' model...\n")
+cat("Fitting 'because' model (ZINB)...\n")
+start_time <- Sys.time()
 
 # Model structure from paper:
 # Boars ~ Crops (+ random landscape)
 # Herbivores ~ Boars + HumanActivity (+ random landscape)
 # Predators ~ HumanActivity (+ random landscape)
 # All have offset(log(effort)), which we model as a covariate 'log_effort'
-# since explicit offset() isn't standard in current 'because' version formulas.
-
-# Note: We treat log_effort as a covariate. Ideally its beta should be ~1.0.
 
 mod <- because(
     equations = list(
@@ -180,9 +179,9 @@ mod <- because(
     ),
     data = data,
     distribution = list(
-        boars = "negbinomial",
-        herbivores = "negbinomial",
-        predators = "negbinomial"
+        boars = "zinb",
+        herbivores = "zinb",
+        predators = "zinb"
     ),
     random = ~ (1 | landscapeID), # Global random effect for landscape
     n.iter = 5000,
@@ -190,14 +189,30 @@ mod <- because(
     n.chains = 3,
     quiet = TRUE
 )
+end_time <- Sys.time()
+duration <- end_time - start_time
+cat(paste(
+    "Model runtime:",
+    round(as.numeric(duration, units = "mins"), 2),
+    "mins\n"
+))
 
 # --- 4. Compare Results ---
 cat("\n--- Results Comparison ---\n")
 print(summary(mod))
 
 # Extract betas
-sum_tab <- summary(mod)
-# summary.because returns a matrix, not a list with $coefficients
+# Extract betas
+sum_obj <- summary(mod)
+if (
+    inherits(sum_obj, "summary.because") ||
+        (is.list(sum_obj) && "results" %in% names(sum_obj))
+) {
+    sum_tab <- sum_obj$results
+} else {
+    sum_tab <- sum_obj
+}
+
 betas <- sum_tab[grep("beta", rownames(sum_tab)), "Mean"]
 names(betas) <- rownames(sum_tab)[grep("beta", rownames(sum_tab))]
 

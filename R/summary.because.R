@@ -43,9 +43,6 @@ summary.because <- function(object, ...) {
 
     # If this was a d-sep run, we want to format the output specifically
     if (!is.null(object$dsep) && object$dsep) {
-        cat("d-separation Tests\n")
-        cat("==================\n\n")
-
         tests <- object$dsep_tests
         map <- object$parameter_map
 
@@ -218,27 +215,13 @@ summary.because <- function(object, ...) {
             }
         }
 
-        # Custom printing for readability
-        # Print each test on a separate block
-        for (i in 1:nrow(results)) {
-            cat(paste0("Test: ", results$Test[i]), "\n")
-            # Print stats row without the Test column
-            print(results[i, -1], row.names = FALSE)
-            cat("\n")
-        }
-
-        cat("\nLegend:\n")
-        cat(
-            "  Indep: 'Yes' = Conditionally Independent, 'No' = Dependent (based on 95% CI)\n"
+        # Store components in list instead of printing
+        out <- list(
+            type = "dsep",
+            results = results
         )
-        cat(
-            "  P: Bayesian probability that the posterior distribution overlaps with zero\n"
-        )
-        # cat(
-        #    "\nNote: For d-separation, we expect high P(~0) values (close to 1).\n"
-        # )
-
-        invisible(results)
+        class(out) <- "summary.because"
+        return(out)
     } else {
         # Standard summary
         # Combine statistics with diagnostics
@@ -288,18 +271,58 @@ summary.because <- function(object, ...) {
             combined[, "n.eff"] <- round(combined[, "n.eff"], 0)
         }
 
-        print(combined)
-
-        if (!is.null(object$DIC)) {
-            cat("\nDIC:\n")
-            print(object$DIC)
-        }
-
-        if (!is.null(object$WAIC)) {
-            cat("\nWAIC:\n")
-            print(object$WAIC)
-        }
-
-        invisible(combined)
+        # Store components in list instead of printing
+        out <- list(
+            type = "standard",
+            results = combined,
+            DIC = object$DIC,
+            WAIC = object$WAIC
+        )
+        class(out) <- "summary.because"
+        return(out)
     }
+}
+
+#' Print Summary for Because Model
+#'
+#' @param x A summary object of class \code{"summary.because"}.
+#' @param ... Additional arguments.
+#'
+#' @export
+print.summary.because <- function(x, ...) {
+    if (x$type == "dsep") {
+        results <- x$results
+        cat("d-separation Tests\n")
+        cat("==================\n\n")
+        # Custom printing for readability
+        # Print each test on a separate block
+        for (i in 1:nrow(results)) {
+            cat(paste0("Test: ", results$Test[i]), "\n")
+            # Print stats row without the Test column
+            print(results[i, -1], row.names = FALSE)
+            cat("\n")
+        }
+
+        cat("\nLegend:\n")
+        cat(
+            "  Indep: 'Yes' = Conditionally Independent, 'No' = Dependent (based on 95% CI)\n"
+        )
+        cat(
+            "  P: Bayesian probability that the posterior distribution overlaps with zero\n"
+        )
+    } else {
+        # Standard summary
+        print(x$results)
+
+        if (!is.null(x$DIC)) {
+            cat("\nDIC:\n")
+            print(x$DIC)
+        }
+
+        if (!is.null(x$WAIC)) {
+            cat("\nWAIC:\n")
+            print(x$WAIC)
+        }
+    }
+    invisible(x)
 }

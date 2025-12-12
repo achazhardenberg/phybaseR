@@ -29,6 +29,7 @@ because supports multiple response distributions to match different data types. 
 | Proportions | `binomial` | Hatching success, germination rate |
 | Counts | `poisson` | Offspring number, species count |
 | Overdispersed counts | `negbinomial` | Parasite load, disease cases |
+| Zero-inflated counts | `zip` / `zinb` | Counts with excess zeros |
 | Positive continuous | `gamma` | Lifespan, time to event |
 | Unordered categories (3+) | `multinomial` | Habitat type, color morph |
 | Ordered categories (3+) | `ordinal` | Condition score, severity level |
@@ -180,6 +181,67 @@ fit <- because(
 - Allows variance > mean (more realistic)
 - Better fit for biological count data
 - Extra dispersion parameter
+
+### Zero-Inflated Distributions (ZIP and ZINB)
+
+**For**: Count data with excess zeros (more than expected by Poisson/NegBin)
+
+#### Zero-Inflated Poisson (ZIP)
+
+```{r, eval=FALSE}
+# Abundance data (many sites have 0 species)
+data <- data.frame(
+    site_id = 1:100,
+    abundance = rpois(100, 2),
+    habitat_suitability = rnorm(100, 0, 1)
+)
+# Add excess zeros (structural zeros)
+data$abundance[sample(1:100, 30)] <- 0
+
+fit <- because(
+    equations = list(
+        abundance ~ habitat_suitability
+    ),
+    data = data,
+    distribution = list(abundance = "zip"),
+    n.chains = 3,
+    n.iter = 5000
+)
+```
+
+**Model**: Mixture of structural zeros and Poisson counts
+```
+P(Y=0) = ψ + (1-ψ) * exp(-λ)
+P(Y=y) = (1-ψ) * Poisson(y|λ)  (for y > 0)
+```
+- **ψ (psi)**: Probability of structural zero (Zero-Inflation)
+- **λ (lambda)**: Mean of count process
+
+#### Zero-Inflated Negative Binomial (ZINB)
+
+Use when data has both excess zeros AND overdispersion in the non-zero counts.
+
+```{r, eval=FALSE}
+fit <- because(
+    equations = list(
+        abundance ~ habitat_suitability
+    ),
+    data = data,
+    distribution = list(abundance = "zinb"),
+    # ...
+)
+```
+
+**Model**: Mixture of structural zeros and Negative Binomial counts
+```
+P(Y=0) = ψ + (1-ψ) * (r/(r+μ))^r
+P(Y=y) = (1-ψ) * NegBin(y|μ, r) (for y > 0)
+```
+
+**Interpretation**:
+- **ψ (psi)**: Proportion of "extra" zeros.
+- **Count part (μ)**: Interpreted as in standard Poisson/NegBin.
+
 
 ---
 
@@ -379,6 +441,8 @@ fit <- because(
 3. **Count data**
    - Variance ≈ mean → `poisson`
    - Variance > mean → `negbinomial`
+   - Excess zeros → `zip` (if var ≈ mean) or `zinb` (if var > mean)
+
 
 4. **Categorical data**
    - 2 categories → `binomial`
@@ -471,7 +535,9 @@ Each distribution uses a specific link function:
 | Binomial | Logit | p ∈ (0, 1) |
 | Poisson | Log | λ ∈ (0, ∞) |
 | Negative binomial | Log | λ ∈ (0, ∞) |
+| ZIP / ZINB | Log (count) / Identity* (zero) | λ ∈ (0, ∞), ψ ∈ (0, 1) |
 | Gamma | Log | μ ∈ (0, ∞) |
+
 | Multinomial | Logit | probabilities |
 |  | Cumulative logit | cumulative probs |
 

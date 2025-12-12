@@ -71,9 +71,10 @@
 #'     \item "ordinal" (ordered categorical > 2 levels)
 #'     \item "poisson" (count data)
 #'     \item "negbinomial" (overdispersed count data)
-#'     \item "zip" (zero-inflated poisson)
-#'     \item "zinb" (zero-inflated negative binomial)
+#'     \item "zip" (zero-inflated poisson): Models excess zeros with probability \code{psi} and counts with mean \code{lambda}.
+#'     \item "zinb" (zero-inflated negative binomial): Models excess zeros with probability \code{psi} and overdispersed counts with mean \code{mu} and size \code{r}.
 #'   }
+#'   The model will estimate a zero-inflation probability parameter \code{psi_Response} for these distributions.
 #'   Example: \code{distribution = c(Gregarious = "binomial")}.
 #' @param latent Optional character vector of latent (unmeasured) variable names.
 #'   If specified, the model will account for induced correlations among observed
@@ -101,6 +102,18 @@
 #' @param optimise Logical; if \code{TRUE} (default), use the optimized random effects formulation
 #'   for phylogenetic models. This is significantly faster (5-10x) and more numerically stable.
 #'   If \code{FALSE}, use the traditional marginal formulation (slower, but provided for comparison).
+#' @param random Optional formula or list of formulas specifying global random effects
+#'   applied to all equations (e.g. \code{~(1|species)}).
+#' @param levels (Hierarchical Data) A named list mapping variables to their hierarchy levels.
+#'   Required if \code{data} is a list of data frames (hierarchical format).
+#'   Example: \code{list(individual = c("y", "x"), site = c("z"))}.
+#' @param hierarchy (Hierarchical Data) Character string describing the topological ordering of levels
+#'   (e.g., \code{"site > individual"}). Required for hierarchical data if not fully inferred from random effects.
+#' @param link_vars (Hierarchical Data) Optional named character vector specifying variables used to link
+#'   data levels (e.g. \code{c(site = "site_id")}).
+#' @param fix_residual_variance Optional named vector for fixing residual variances.
+#'   Useful for handling non-identified models or specific theoretical constraints.
+#'   Example: \code{c(response_var = 1)}.
 #'
 #' @return A list of class \code{"because"} with model output and diagnostics.
 #' @export
@@ -796,9 +809,15 @@ because <- function(
     }
   }
 
-  if ((!is.null(distribution) && any(distribution %in% c("zip", "zinb")))) {
-    if (is.null(data$zeros)) {
-      data$zeros <- rep(0, N)
+  if (!is.null(distribution)) {
+    for (var_name in names(distribution)) {
+      dist_type <- distribution[[var_name]]
+      if (dist_type %in% c("zip", "zinb")) {
+        zeros_name <- paste0("zeros_", var_name)
+        if (is.null(data[[zeros_name]])) {
+          data[[zeros_name]] <- rep(0, N)
+        }
+      }
     }
   }
 

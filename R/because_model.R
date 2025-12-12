@@ -596,10 +596,36 @@ because_model <- function(
         ),
 
         paste0(
+          "    log_lik_zero_",
+          response,
+          "[i] <- log(max(1.0E-30, ",
+          "lik_zero_",
+          response,
+          "[i]))"
+        ),
+        paste0(
+          "    log_lik_pos_",
+          response,
+          "[i] <- log(max(1.0E-30, 1-",
+          psi,
+          ")) + ",
+          "logdensity.negbin(",
+          response,
+          "[i], ",
+          p,
+          "[i], ",
+          r,
+          ")"
+        ),
+        paste0(
           "    log_lik_",
           response,
           suffix,
-          "[i] <- log(lik_",
+          "[i] <- ifelse(",
+          response,
+          "[i] == 0, log_lik_zero_",
+          response,
+          "[i], log_lik_pos_",
           response,
           "[i])"
         ),
@@ -611,7 +637,13 @@ because_model <- function(
           suffix,
           "[i] + 10000"
         ),
-        paste0("    zeros[i] ~ dpois(phi_", response, "[i])")
+        paste0(
+          "    zeros_",
+          response,
+          "[i] ~ dpois(phi_",
+          response,
+          "[i])"
+        )
       )
     } else {
       stop(paste("Unknown distribution:", dist))
@@ -1429,14 +1461,27 @@ because_model <- function(
             total_u <- paste0(total_u, " + ", u, "[", group_idx, "[i]]")
           }
 
+          # For Negative Binomial / ZINB, we do NOT add an independent residual error (epsilon)
+          # because the distribution already handles overdispersion via 'r' (size).
+          # Adding epsilon creates identifiability issues (double overdispersion).
+
           model_lines <- c(
             model_lines,
             paste0("  # Random effects for Negative Binomial: ", response),
-            paste0("  for (i in 1:N) {"),
-            paste0("    ", epsilon, "[i] ~ dnorm(0, ", tau_e, ")"),
-            paste0("    ", err, "[i] <- ", epsilon, "[i]", total_u),
-            paste0("  }")
+            paste0("  for (i in 1:N) {")
           )
+
+          if (total_u == "") {
+            model_lines <- c(model_lines, paste0("    ", err, "[i] <- 0"))
+          } else {
+            # total_u starts with " + ...", so we prepend "0"
+            model_lines <- c(
+              model_lines,
+              paste0("    ", err, "[i] <- 0", total_u)
+            )
+          }
+
+          model_lines <- c(model_lines, "  }")
         }
       }
     }
@@ -1894,10 +1939,14 @@ because_model <- function(
               )
             )
           } else {
-            model_lines <- c(
-              model_lines,
-              paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)")
-            )
+            # Only define tau_e if NOT Negative Binomial or ZINB
+            # (since those use 'r' size parameter for dispersion)
+            if (!dist %in% c("negbinomial", "zinb")) {
+              model_lines <- c(
+                model_lines,
+                paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)")
+              )
+            }
           }
 
           for (s_name in structure_names) {
@@ -1921,8 +1970,11 @@ because_model <- function(
           }
 
           # Generate lambda for compatibility if single structure
+          # Only if tau_e exists (i.e. not NB/ZINB)
           if (
-            length(structure_names) == 1 && length(random_structure_names) == 0
+            length(structure_names) == 1 &&
+              length(random_structure_names) == 0 &&
+              !dist %in% c("negbinomial", "zinb")
           ) {
             s_name <- structure_names[1]
             s_suffix <- paste0("_", s_name)
@@ -1965,17 +2017,20 @@ because_model <- function(
             )
           }
 
-          model_lines <- c(
-            model_lines,
-            paste0(
-              "  sigma_",
-              response,
-              "_res <- 1/sqrt(tau_e_",
-              response,
-              suffix,
-              ")"
+          # Residual Sigma (only if tau_e exists)
+          if (!dist %in% c("negbinomial", "zinb")) {
+            model_lines <- c(
+              model_lines,
+              paste0(
+                "  sigma_",
+                response,
+                "_res <- 1/sqrt(tau_e_",
+                response,
+                suffix,
+                ")"
+              )
             )
-          )
+          }
         } else {
           # Marginal Priors (lambda, tau)
           model_lines <- c(

@@ -125,7 +125,10 @@ Default is "gaussian" for all variables. Supported values:
   \item "ordinal" (ordered categorical > 2 levels)
   \item "poisson" (count data)
   \item "negbinomial" (overdispersed count data)
+  \item "zip" (zero-inflated poisson): Models excess zeros with probability \code{psi} and counts with mean \code{lambda}.
+  \item "zinb" (zero-inflated negative binomial): Models excess zeros with probability \code{psi} and overdispersed counts with mean \code{mu} and size \code{r}.
 }
+The model will estimate a zero-inflation probability parameter \code{psi_Response} for these distributions.
 Example: \code{distribution = c(Gregarious = "binomial")}.}
 
 \item{latent}{Optional character vector of latent (unmeasured) variable names.

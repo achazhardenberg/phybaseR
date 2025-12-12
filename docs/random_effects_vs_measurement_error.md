@@ -57,7 +57,7 @@ $$x_{obs, ij} \sim \mathcal{N}(x_{true, j}, \tau_{obs})$$ $$y_j \sim \mathcal{N}
 ## Summary Recommendation
 
 | Scenario | Recommended Approach | Why? |
-|:-----------------------|:-----------------------|:-----------------------|
+|:---|:---|:---|
 | **Response (**$Y$) has repeats | **Random Effect** (or ME) | Both capture within-species variance. ME is useful if you want to fix the observation error variance. |
 | **Predictor (**$X$) has repeats | **Measurement Error** | **Essential.** A Random Effect on $Y$ cannot allow for uncertainty in $X$. Only the ME model gets the slope right. |
 | **Grouping (Genus/Diet)** | **Random Effect** | Best tool for hierarchical grouping structure. |
