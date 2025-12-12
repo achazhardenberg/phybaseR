@@ -66,6 +66,7 @@ because_dsep <- function(
   latent = NULL,
   random_terms = list(),
   hierarchical_info = NULL,
+  poly_terms = NULL,
   quiet = FALSE
 ) {
   # If no latents, use standard DAG d-separation
@@ -74,6 +75,7 @@ because_dsep <- function(
       equations,
       random_terms = random_terms,
       hierarchical_info = hierarchical_info,
+      poly_terms = poly_terms,
       quiet = quiet
     ))
   }
@@ -84,6 +86,7 @@ because_dsep <- function(
     latent,
     random_terms = random_terms,
     hierarchical_info = hierarchical_info,
+    poly_terms = poly_terms,
     quiet = quiet
   ))
 }
@@ -93,6 +96,7 @@ dsep_standard <- function(
   equations,
   random_terms = list(),
   hierarchical_info = NULL,
+  poly_terms = NULL,
   quiet = FALSE
 ) {
   # Extract grouping variables from random terms to exclude from DAG
@@ -103,7 +107,13 @@ dsep_standard <- function(
 
   # Extract polynomial internal variables to exclude
   poly_internal_vars <- NULL
-  all_poly_terms <- get_all_polynomial_terms(equations)
+  # Use passed poly_terms if available, otherwise try to detect (fallback)
+  if (!is.null(poly_terms)) {
+    all_poly_terms <- poly_terms
+  } else {
+    all_poly_terms <- get_all_polynomial_terms(equations)
+  }
+
   if (!is.null(all_poly_terms)) {
     poly_internal_vars <- sapply(all_poly_terms, function(x) x$internal_name)
   }
@@ -120,6 +130,32 @@ dsep_standard <- function(
   }
 
   basis <- ggm::basiSet(dag)
+
+  # Check for polynomial term injection in conditioning sets
+  if (!is.null(all_poly_terms) && length(basis) > 0) {
+    basis <- lapply(basis, function(test) {
+      if (length(test) > 2) {
+        cond_vars <- test[3:length(test)]
+        new_cond_vars <- cond_vars
+
+        # Check each conditioning variable
+        for (cv in cond_vars) {
+          # Find any polynomial terms derived from this variable
+          for (pt in all_poly_terms) {
+            if (pt$base_var == cv) {
+              new_cond_vars <- c(new_cond_vars, pt$internal_name)
+            }
+          }
+        }
+        new_cond_vars <- unique(new_cond_vars)
+
+        # Reconstruct test vector
+        return(c(test[1:2], new_cond_vars))
+      } else {
+        return(test)
+      }
+    })
+  }
 
   # Convert basis set to formula list
   # We reuse mag_basis_to_formulas as the format is identical (list of vectors)
@@ -182,6 +218,7 @@ dsep_with_latents <- function(
   latent,
   random_terms = list(),
   hierarchical_info = NULL,
+  poly_terms = NULL,
   quiet = FALSE
 ) {
   # Extract grouping variables from random terms to exclude from DAG
@@ -193,7 +230,13 @@ dsep_with_latents <- function(
   # Extract polynomial internal variables to exclude from DAG
   # They're deterministic transformations, not causal nodes
   poly_internal_vars <- NULL
-  all_poly_terms <- get_all_polynomial_terms(equations)
+  # Use passed poly_terms if available, otherwise try to detect (fallback)
+  if (!is.null(poly_terms)) {
+    all_poly_terms <- poly_terms
+  } else {
+    all_poly_terms <- get_all_polynomial_terms(equations)
+  }
+
   if (!is.null(all_poly_terms)) {
     poly_internal_vars <- sapply(all_poly_terms, function(x) x$internal_name)
   }
@@ -221,6 +264,32 @@ dsep_with_latents <- function(
     },
     type = "output"
   ))
+
+  # Check for polynomial term injection in conditioning sets
+  if (!is.null(all_poly_terms) && length(basis) > 0) {
+    basis <- lapply(basis, function(test) {
+      if (length(test) > 2) {
+        cond_vars <- test[3:length(test)]
+        new_cond_vars <- cond_vars
+
+        # Check each conditioning variable
+        for (cv in cond_vars) {
+          # Find any polynomial terms derived from this variable
+          for (pt in all_poly_terms) {
+            if (pt$base_var == cv) {
+              new_cond_vars <- c(new_cond_vars, pt$internal_name)
+            }
+          }
+        }
+        new_cond_vars <- unique(new_cond_vars)
+
+        # Reconstruct test vector
+        return(c(test[1:2], new_cond_vars))
+      } else {
+        return(test)
+      }
+    })
+  }
 
   # Filter out random effect grouping variables from basis set conditioning sets
   # These should not be treated as causal/fixed predictors

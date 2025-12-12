@@ -280,37 +280,30 @@ because <- function(
         paste(sapply(all_poly_terms, function(x) x$original), collapse = ", ")
       )
     }
-  }
-  random_structures <- list()
 
-  if (length(random_terms) > 0 & is.null(tree)) {
-    if (is.null(optimise)) optimise <- TRUE
-  }
+    # Auto-assign polynomial variables to the same level as their base variable
+    if (is_hierarchical && !is.null(levels)) {
+      for (poly in all_poly_terms) {
+        base_var <- poly$base_var
+        new_var <- poly$internal_name
 
-  # --- Random Effects Data Prep ---
-  # Create structures for JAGS (indices, precisions)
-  if (length(random_terms) > 0) {
-    if (is.null(data)) {
-      stop("Data must be provided for random effects.")
+        # Find level of base_var
+        for (lvl_name in names(levels)) {
+          if (base_var %in% levels[[lvl_name]]) {
+            # Add the new poly var to this level
+            levels[[lvl_name]] <- c(levels[[lvl_name]], new_var)
+            break
+          }
+        }
+      }
+
+      # Update the info stored for later data retrieval
+      hierarchical_info$levels <- levels
     }
-
-    # Needs to process data first if it's a list?
-    # data is converted to list later. We should do this on the data.frame first if possible.
-    # But code below handles data.frame to list conversion.
-    # We should perform structure creation using the original data.frame logic
-
-    # We'll rely on data being a data.frame or having the columns
-
-    rand_structs <- create_group_structures(data, random_terms)
-    random_structures <- rand_structs$structures
-
-    # We need to merge these updates into the final data list
-    # But `data` variable is modified below.
-    # We'll store updates and apply them after data is finalized
-    random_data_updates <- rand_structs$data_updates
-  } else {
-    random_data_updates <- list()
   }
+  # Initialize random structures (will be populated later)
+  random_structures <- list()
+  random_data_updates <- list()
 
   # Initialize result variables
   dsep_tests <- NULL
@@ -359,6 +352,23 @@ because <- function(
         " variables"
       )
     }
+  }
+
+  # --- Random Effects Data Prep (Post-Assembly) ---
+  # Create structures for JAGS using the assembled data
+  if (length(random_terms) > 0) {
+    if (is.null(optimise) & is.null(tree)) {
+      optimise <- TRUE
+    }
+
+    if (is_hierarchical && !is.data.frame(data)) {
+      # Should not happen if assembly worked, but safety check
+      stop("Failed to assemble hierarchical data frame for random effects.")
+    }
+
+    rand_structs <- create_group_structures(data, random_terms)
+    random_structures <- rand_structs$structures
+    random_data_updates <- rand_structs$data_updates
   }
 
   if (is.data.frame(data)) {
@@ -527,7 +537,9 @@ because <- function(
     data <- as.list(data)
   }
 
-  # Compute polynomial values and add to data
+  # Compute polynomial values
+  # We add them to original_data (for d-sep/residuals) but NOT to 'data' passed to JAGS
+  # because JAGS creates deterministic nodes for them (var_pow2 <- var^2)
   if (!is.null(all_poly_terms)) {
     for (poly_term in all_poly_terms) {
       base_var <- poly_term$base_var
@@ -537,14 +549,29 @@ because <- function(
       # Check if base variable exists in data
       if (base_var %in% names(data)) {
         # Compute polynomial: x^2, x^3, etc.
-        data[[internal_name]] <- data[[base_var]]^power
-      }
-    }
+        poly_vals <- data[[base_var]]^power
 
-    # Update original_data with polynomial values for d-separation
-    # But only if it wasn't hierarchical (avoid breaking hierarchical validation)
-    if (!is_hierarchical) {
-      original_data <- data
+        # Add to original_data if possible
+        if (is.list(original_data) || is.data.frame(original_data)) {
+          original_data[[internal_name]] <- poly_vals
+        }
+
+        # If hierarchical, we MUST also add it to the source dataframes in hierarchical_info
+        # Otherwise d-separation tests (which re-fetch data) won't find the new variable
+        if (is_hierarchical && !is.null(hierarchical_info)) {
+          # Find which level/dataframe holds the base variable
+          for (lvl_name in names(hierarchical_info$data)) {
+            if (base_var %in% names(hierarchical_info$data[[lvl_name]])) {
+              # Add computed column to this level's dataframe
+              source_df <- hierarchical_info$data[[lvl_name]]
+              hierarchical_info$data[[lvl_name]][[internal_name]] <- source_df[[
+                base_var
+              ]]^power
+              break
+            }
+          }
+        }
+      }
     }
   }
 
@@ -1126,6 +1153,7 @@ because <- function(
       latent = latent,
       random_terms = random_terms,
       hierarchical_info = hierarchical_info,
+      poly_terms = all_poly_terms,
       quiet = !dsep
     )
 
@@ -1602,7 +1630,7 @@ because <- function(
           dummies <- categorical_vars[[var]]$dummies
 
           # Convert formula to character for manipulation
-          eq_str <- deparse(eq)
+          eq_str <- paste(deparse(eq), collapse = " ")
 
           # Replace categorical variable with its dummies
           # Match whole word only (avoid partial matches)

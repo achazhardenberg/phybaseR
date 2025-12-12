@@ -7,7 +7,7 @@
 #' @keywords internal
 extract_polynomial_terms <- function(formula) {
     # Convert formula to character
-    formula_str <- deparse(formula)
+    formula_str <- paste(deparse(formula), collapse = " ")
 
     # Pattern to match I(var^power)
     # Matches: I(age^2), I(weight^3), etc.
@@ -74,7 +74,7 @@ expand_polynomial_formula <- function(formula, poly_terms) {
         return(formula)
     }
 
-    formula_str <- deparse(formula)
+    formula_str <- paste(deparse(formula), collapse = " ")
 
     # Replace each I(var^power) with internal name
     for (term in poly_terms) {
