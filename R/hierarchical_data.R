@@ -175,8 +175,30 @@ get_data_for_variables <- function(
             drop = FALSE
         ]
 
+        # Helper: Prune colliding variables from result that are claimed by coarser level
+        # This ensures 'WINt' from enviro overrides 'WINt' in individual (if present but unmapped)
+        # and prevents them from becoming unintended join keys.
+        vars_to_add <- vars_from_this_level
+        potential_collisions <- intersect(vars_to_add, names(result))
+
+        # Don't prune if it's explicitly a link var (we want to use it for joining)
+        if (!is.null(link_vars)) {
+            potential_collisions <- setdiff(potential_collisions, link_vars)
+        }
+
+        if (length(potential_collisions) > 0) {
+            # Drop colliding columns from result to prefer the coarser (source) version
+            result[potential_collisions] <- NULL
+        }
+
         # Join to result
-        result <- merge(result, coarser_data, by = link_vars, all.x = TRUE)
+        # Handle by=NULL case explicitly to avoid Cross Join mangling (.x, .y)
+        join_by <- link_vars
+        if (is.null(join_by)) {
+            join_by <- intersect(names(result), names(coarser_data))
+        }
+
+        result <- merge(result, coarser_data, by = join_by, all.x = TRUE)
     }
 
     return(result)

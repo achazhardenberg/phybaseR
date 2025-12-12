@@ -164,6 +164,23 @@ This adds a small sequential overhead but enables information criteria calculati
 \item{optimise}{Logical; if \code{TRUE} (default), use the optimized random effects formulation
 for phylogenetic models. This is significantly faster (5-10x) and more numerically stable.
 If \code{FALSE}, use the traditional marginal formulation (slower, but provided for comparison).}
+
+\item{random}{Optional formula or list of formulas specifying global random effects
+applied to all equations (e.g. \code{~(1|species)}).}
+
+\item{levels}{(Hierarchical Data) A named list mapping variables to their hierarchy levels.
+Required if \code{data} is a list of data frames (hierarchical format).
+Example: \code{list(individual = c("y", "x"), site = c("z"))}.}
+
+\item{hierarchy}{(Hierarchical Data) Character string describing the topological ordering of levels
+(e.g., \code{"site > individual"}). Required for hierarchical data if not fully inferred from random effects.}
+
+\item{link_vars}{(Hierarchical Data) Optional named character vector specifying variables used to link
+data levels (e.g. \code{c(site = "site_id")}).}
+
+\item{fix_residual_variance}{Optional named vector for fixing residual variances.
+Useful for handling non-identified models or specific theoretical constraints.
+Example: \code{c(response_var = 1)}.}
 }
 \value{
 A list of class \code{"because"} with model output and diagnostics.
