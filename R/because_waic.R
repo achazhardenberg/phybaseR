@@ -138,13 +138,13 @@ because_waic <- function(model) {
     # 9. Store dimensions
     attr(result, "dims") <- c(n_obs = n_obs, n_samples = n_samples)
 
-    class(result) <- c("waic", "data.frame")
+    class(result) <- c("because_waic", "data.frame")
 
     return(result)
 }
 
 #' @export
-print.waic <- function(x, digits = 1, ...) {
+print.because_waic <- function(x, digits = 1, ...) {
     cat("WAIC with Standard Errors\n")
     cat("-------------------------\n")
 

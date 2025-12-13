@@ -24,7 +24,7 @@ test_that("because_waic calculates WAIC correctly", {
     waic_res <- because_waic(fit)
 
     # Check structure
-    expect_s3_class(waic_res, "data.frame")
+    expect_s3_class(waic_res, "because_waic")
     expect_named(waic_res, c("Estimate", "SE"))
     expect_true(!is.na(waic_res["waic", "Estimate"]))
     expect_true(!is.na(waic_res["p_waic", "Estimate"]))
