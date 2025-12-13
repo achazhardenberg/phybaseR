@@ -24,8 +24,10 @@ Calculates the Widely Applicable Information Criterion (WAIC) with standard erro
 for a fitted Because model using pointwise log-likelihoods.
 }
 \details{
-This function implements WAIC following Vehtari et al. (2017). It requires that
-the model was run with \code{WAIC = TRUE} to monitor pointwise log-likelihoods.
+This function is automatically called by \code{\link{because}} when \code{WAIC = TRUE}.
+It can also be called manually. If the model was not originally fitted with
+\code{WAIC = TRUE} (so pointwise log-likelihoods are missing), this function
+will automatically refit the model (using a short MCMC run) to compute them.
 }
 \section{WAIC Definition}{
 

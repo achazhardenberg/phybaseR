@@ -73,7 +73,7 @@ because_model <- function(
   standardize_latent = TRUE,
   poly_terms = NULL, # Polynomial transformation terms
   latent = NULL,
-  compute_waic = FALSE,
+
   fix_residual_variance = NULL
 ) {
   # Helper: returns b if a is NULL or if a is a list element that doesn't exist
@@ -503,7 +503,7 @@ because_model <- function(
         ),
 
         # Select likelihood based on Y[i]
-        # Use a small epsilon to avoid log(0) if needed, but here lik_zero is > 0 if psi > 0
+        # Use a small epsilon to avoid log(0)
         paste0(
           "    lik_",
           response,
@@ -698,28 +698,24 @@ because_model <- function(
               ")"
             )
           )
-          if (compute_waic) {
-            model_lines <- c(
-              model_lines,
-              paste0(
-                "    log_lik_",
-                response,
-                suffix,
-                "[i] <- logdensity.norm(",
-                response_var,
-                "[i], ",
-                mu,
-                "[i] + ",
-                err,
-                "[i], ",
-                tau_res,
-                ")"
-              ),
-              paste0("  }")
-            )
-          } else {
-            model_lines <- c(model_lines, paste0("  }"))
-          }
+          model_lines <- c(
+            model_lines,
+            paste0(
+              "    log_lik_",
+              response,
+              suffix,
+              "[i] <- logdensity.norm(",
+              response_var,
+              "[i], ",
+              mu,
+              "[i] + ",
+              err,
+              "[i], ",
+              tau_res,
+              ")"
+            ),
+            paste0("  }")
+          )
         } else {
           if (independent) {
             # Independent Model (No random effects)
@@ -741,26 +737,22 @@ because_model <- function(
                 ")"
               )
             )
-            if (compute_waic) {
-              model_lines <- c(
-                model_lines,
-                paste0(
-                  "    log_lik_",
-                  response,
-                  suffix,
-                  "[i] <- logdensity.norm(",
-                  response_var,
-                  "[i], ",
-                  mu,
-                  "[i], ",
-                  tau_e,
-                  ")"
-                ),
-                paste0("  }")
-              )
-            } else {
-              model_lines <- c(model_lines, paste0("  }"))
-            }
+            model_lines <- c(
+              model_lines,
+              paste0(
+                "    log_lik_",
+                response,
+                suffix,
+                "[i] <- logdensity.norm(",
+                response_var,
+                "[i], ",
+                mu,
+                "[i], ",
+                tau_e,
+                ")"
+              ),
+              paste0("  }")
+            )
           } else if (optimise) {
             # Optimized Random Effects Formulation (Additive)
             additive_terms <- ""
@@ -884,28 +876,24 @@ because_model <- function(
                 ")"
               )
             )
-            if (compute_waic) {
-              model_lines <- c(
-                model_lines,
-                paste0(
-                  "    log_lik_",
-                  response,
-                  suffix,
-                  "[i] <- logdensity.norm(",
-                  response_var,
-                  "[i], ",
-                  mu,
-                  "[i]",
-                  additive_terms,
-                  ", ",
-                  tau_e,
-                  ")"
-                ),
-                paste0("  }")
-              )
-            } else {
-              model_lines <- c(model_lines, paste0("  }"))
-            }
+            model_lines <- c(
+              model_lines,
+              paste0(
+                "    log_lik_",
+                response,
+                suffix,
+                "[i] <- logdensity.norm(",
+                response_var,
+                "[i], ",
+                mu,
+                "[i]",
+                additive_terms,
+                ", ",
+                tau_e,
+                ")"
+              ),
+              paste0("  }")
+            )
           } else {
             # Standard MVN for complete data (Marginal)
             # Note: dmnorm is joint, so we compute pointwise log-lik separately
@@ -921,35 +909,33 @@ because_model <- function(
                 ")"
               )
             )
-            if (compute_waic) {
-              model_lines <- c(
-                model_lines,
-                "  # Pointwise log-likelihood for MVN",
-                paste0("  for (i in 1:N) {"),
-                paste0(
-                  "    tau_marg_",
-                  response,
-                  suffix,
-                  "[i] <- ",
-                  tau,
-                  "[i, i]  # Extract diagonal precision (marginal variance)"
-                ),
-                paste0(
-                  "    log_lik_",
-                  response,
-                  suffix,
-                  "[i] <- logdensity.norm(",
-                  response_var,
-                  "[i], ",
-                  mu,
-                  "[i], tau_marg_",
-                  response,
-                  suffix,
-                  "[i])"
-                ),
-                paste0("  }")
-              )
-            }
+            model_lines <- c(
+              model_lines,
+              "  # Pointwise log-likelihood for MVN",
+              paste0("  for (i in 1:N) {"),
+              paste0(
+                "    tau_marg_",
+                response,
+                suffix,
+                "[i] <- ",
+                tau,
+                "[i, i]  # Extract diagonal precision (marginal variance)"
+              ),
+              paste0(
+                "    log_lik_",
+                response,
+                suffix,
+                "[i] <- logdensity.norm(",
+                response_var,
+                "[i], ",
+                mu,
+                "[i], tau_marg_",
+                response,
+                suffix,
+                "[i])"
+              ),
+              paste0("  }")
+            )
           }
         }
       } else if (dist == "binomial") {
@@ -1695,28 +1681,26 @@ because_model <- function(
           ")"
         )
       )
-      if (compute_waic) {
-        model_lines <- c(
-          model_lines,
-          paste0(
-            "    log_lik_",
-            var,
-            suffix,
-            "[i] <- logdensity.norm(",
-            var,
-            "[i], mu",
-            var,
-            suffix,
-            "[i]",
-            phylo_term,
-            " + ",
-            sum_res_errs,
-            ", tau_obs_",
-            var,
-            ")"
-          )
+      model_lines <- c(
+        model_lines,
+        paste0(
+          "    log_lik_",
+          var,
+          suffix,
+          "[i] <- logdensity.norm(",
+          var,
+          "[i], mu",
+          var,
+          suffix,
+          "[i]",
+          phylo_term,
+          " + ",
+          sum_res_errs,
+          ", tau_obs_",
+          var,
+          ")"
         )
-      }
+      )
       model_lines <- c(model_lines, paste0("  }"))
     }
   }
@@ -1761,22 +1745,20 @@ because_model <- function(
             "_tau_obs[i])"
           )
         )
-        if (compute_waic) {
-          model_lines <- c(
-            model_lines,
-            paste0(
-              "    log_lik_",
-              var,
-              "_mean[i] <- logdensity.norm(",
-              var,
-              "_mean[i], ",
-              var,
-              "[i], ",
-              var,
-              "_tau_obs[i])"
-            )
+        model_lines <- c(
+          model_lines,
+          paste0(
+            "    log_lik_",
+            var,
+            "_mean[i] <- logdensity.norm(",
+            var,
+            "_mean[i], ",
+            var,
+            "[i], ",
+            var,
+            "_tau_obs[i])"
           )
-        }
+        )
         model_lines <- c(model_lines, paste0("  }"))
       } else if (type == "reps") {
         # For repeated measures, we need log_lik for EACH observation
@@ -1785,12 +1767,10 @@ because_model <- function(
           model_lines,
           paste0("  for (i in 1:N) {")
         )
-        if (compute_waic) {
-          model_lines <- c(
-            model_lines,
-            paste0("    log_lik_", var, "_reps[i] <- 0  # Initialize sum")
-          )
-        }
+        model_lines <- c(
+          model_lines,
+          paste0("    log_lik_", var, "_reps[i] <- 0  # Initialize sum")
+        )
         model_lines <- c(
           model_lines,
           paste0("    for (j in 1:N_reps_", var, "[i]) {"),
@@ -1804,27 +1784,25 @@ because_model <- function(
             "_tau)"
           )
         )
-        if (compute_waic) {
-          model_lines <- c(
-            model_lines,
-            paste0(
-              "      # Sum pointwise log-likelihoods for this individual"
-            ),
-            paste0(
-              "      log_lik_",
-              var,
-              "_reps[i] <- log_lik_",
-              var,
-              "_reps[i] + logdensity.norm(",
-              var,
-              "_obs[i, j], ",
-              var,
-              "[i], ",
-              var,
-              "_tau)"
-            )
+        model_lines <- c(
+          model_lines,
+          paste0(
+            "      # Sum pointwise log-likelihoods for this individual"
+          ),
+          paste0(
+            "      log_lik_",
+            var,
+            "_reps[i] <- log_lik_",
+            var,
+            "_reps[i] + logdensity.norm(",
+            var,
+            "_obs[i, j], ",
+            var,
+            "[i], ",
+            var,
+            "_tau)"
           )
-        }
+        )
         model_lines <- c(
           model_lines,
           paste0("    }"),

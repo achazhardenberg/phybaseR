@@ -7,7 +7,9 @@
 because_loo(model, ...)
 }
 \arguments{
-\item{model}{A fitted model object of class \code{"because"} returned by \code{\link{because}}.}
+\item{model}{A fitted model object of class \code{"because"} returned by \code{\link{because}}.
+\strong{Note}: If the model was not fitted with \code{WAIC = TRUE} (so \code{log_lik} is missing),
+this function will automatically refit the model (using a short MCMC run) to calculate the likelihoods.}
 
 \item{...}{Additional arguments passed to \code{loo::loo()}.}
 }
@@ -40,13 +42,13 @@ useful for:
 }
 
 **Note on implementation**:
-This function computes pointwise log-likelihoods from the posterior samples. For phylogenetic
-models, this is done by evaluating the multivariate normal log-likelihood for each observation
-given the posterior parameter values.
+This function extracts the pointwise log-likelihoods calculated by the JAGS model
+(monitored as \code{log_lik[i]}) when \code{WAIC = TRUE}. It does not re-compute likelihoods
+from posterior samples in R, ensuring consistency with the fitted model structure.
 }
 \examples{
 \dontrun{
-  fit <- because(data, tree, equations)
+  fit <- because(data, tree, equations, WAIC = TRUE)
   loo_result <- because_loo(fit)
   print(loo_result)
 

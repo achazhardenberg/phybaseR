@@ -4,6 +4,8 @@
 #' for a fitted Because model.
 #'
 #' @param model A fitted model object of class \code{"because"} returned by \code{\link{because}}.
+#'   \strong{Note}: If the model was not fitted with \code{WAIC = TRUE} (so \code{log_lik} is missing),
+#'   this function will automatically refit the model (using a short MCMC run) to calculate the likelihoods.
 #' @param ...  Additional arguments passed to \code{loo::loo()}.
 #'
 #' @return A \code{loo} object containing:
@@ -30,13 +32,13 @@
 #' }
 #'
 #' **Note on implementation**:
-#' This function computes pointwise log-likelihoods from the posterior samples. For phylogenetic
-#' models, this is done by evaluating the multivariate normal log-likelihood for each observation
-#' given the posterior parameter values.
+#' This function extracts the pointwise log-likelihoods calculated by the JAGS model
+#' (monitored as \code{log_lik[i]}) when \code{WAIC = TRUE}. It does not re-compute likelihoods
+#' from posterior samples in R, ensuring consistency with the fitted model structure.
 #'
 #' @examples
 #' \dontrun{
-#'   fit <- because(data, tree, equations)
+#'   fit <- because(data, tree, equations, WAIC = TRUE)
 #'   loo_result <- because_loo(fit)
 #'   print(loo_result)
 #'
@@ -54,38 +56,14 @@ because_loo <- function(model, ...) {
         stop("Input must be a 'because' model object.")
     }
 
-    # Check if loo package is installed
-    if (!requireNamespace("loo", quietly = TRUE)) {
-        stop(
-            "Package 'loo' is required for LOO-CV calculation. ",
-            "Install it with: install.packages('loo')"
-        )
-    }
+    # Extract log_lik using helper (auto-refits if needed)
+    log_lik <- ensure_log_lik(model)
 
-    # For now, provide a helpful error message directing users to use WAIC
-    # Full LOO implementation requires pointwise log-likelihood calculation
-    # which is complex for phylogenetic SEMs
-    stop(
-        "LOO-CV implementation is in development.\n\n",
-        "For model comparison, please use WAIC instead:\n",
-        "  fit <- because(..., WAIC = TRUE)\n",
-        "  fit$WAIC\n\n",
-        "Note: When comparing models with different latent variable structures,\n",
-        "use latent_method = 'correlations' (MAG) to ensure comparable WAIC values.\n",
-        "See ?because and the tutorial vignette for details."
-    )
+    # Calculate LOO
+    # Save indices needed for potential refitting? (Not implemented yet)
+    loo_result <- loo::loo(log_lik, ...)
 
-    # TODO: Implement pointwise log-likelihood calculation
-    # This requires:
-    # 1. Extracting response variable data
-    # 2. For each MCMC sample, computing likelihood for each observation
-    # 3. Accounting for phylogenetic correlation structure
-    # 4. Handling different response types (Gaussian, binomial, etc.)
-
-    # Placeholder code structure:
-    # log_lik <- compute_pointwise_log_lik(model)
-    # loo_result <- loo::loo(log_lik, ...)
-    # return(loo_result)
+    return(loo_result)
 }
 
 
@@ -106,12 +84,5 @@ because_loo <- function(model, ...) {
 #'
 #' @export
 because_loo_compare <- function(...) {
-    if (!requireNamespace("loo", quietly = TRUE)) {
-        stop(
-            "Package 'loo' is required for LOO comparison. ",
-            "Install it with: install.packages('loo')"
-        )
-    }
-
     loo::loo_compare(...)
 }

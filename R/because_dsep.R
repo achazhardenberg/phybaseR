@@ -107,7 +107,7 @@ dsep_standard <- function(
 
   # Extract polynomial internal variables to exclude
   poly_internal_vars <- NULL
-  # Use passed poly_terms if available, otherwise try to detect (fallback)
+  # Use passed poly_terms if available, otherwise detect automatically
   if (!is.null(poly_terms)) {
     all_poly_terms <- poly_terms
   } else {
@@ -230,7 +230,7 @@ dsep_with_latents <- function(
   # Extract polynomial internal variables to exclude from DAG
   # They're deterministic transformations, not causal nodes
   poly_internal_vars <- NULL
-  # Use passed poly_terms if available, otherwise try to detect (fallback)
+  # Use passed poly_terms if available, otherwise detect automatically
   if (!is.null(poly_terms)) {
     all_poly_terms <- poly_terms
   } else {
@@ -256,8 +256,6 @@ dsep_with_latents <- function(
   ))
 
   # Extract basis set from MAG
-  # Always capture output because basiSet.mag prints to stdout,
-  # and we want to print our own modified version (with random effects) later.
   invisible(capture.output(
     {
       basis <- suppressMessages(basiSet.mag(mag))
@@ -349,10 +347,9 @@ dsep_with_latents <- function(
         )
 
         # Rebuild formula
-        # deparse might wrap lines, be careful
+        # deparse might wrap lines
         # Use reliable string construction
         rhs <- labels(terms(t_eq))
-        # d-sep output usually has predictors on RHS
         # Reconstruct: Resp ~ Preds + Random
         # Paste to the formula string representation
 
@@ -373,7 +370,7 @@ dsep_with_latents <- function(
   # Extract bidirected edges (induced correlations)
   correlations <- extract_bidirected_edges(mag)
 
-  # Print basis set if not quiet (our own formatted version)
+  # Print basis set if not quiet
   # Use tests_for_display (without random effects) to avoid showing grouping vars
   if (!quiet) {
     cat("Basis Set for MAG:", "\n")

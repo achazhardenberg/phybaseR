@@ -1668,8 +1668,7 @@ because <- function(
     structure_names = structure_names,
     random_structure_names = names(random_structures),
     random_terms = random_terms,
-    poly_terms = all_poly_terms, # Add polynomial terms
-    compute_waic = WAIC # Pass WAIC flag
+    poly_terms = all_poly_terms # Add polynomial terms
   )
 
   model_string <- model_output$model

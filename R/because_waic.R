@@ -15,8 +15,10 @@
 #' observation contributions for model comparison.
 #'
 #' @details
-#' This function implements WAIC following Vehtari et al. (2017). It requires that
-#' the model was run with \code{WAIC = TRUE} to monitor pointwise log-likelihoods.
+#' This function is automatically called by \code{\link{because}} when \code{WAIC = TRUE}.
+#' It can also be called manually. If the model was not originally fitted with
+#' \code{WAIC = TRUE} (so pointwise log-likelihoods are missing), this function
+#' will automatically refit the model (using a short MCMC run) to compute them.
 #'
 #' @section WAIC Definition:
 #' The Widely Applicable Information Criterion (WAIC) is calculated as:
@@ -72,35 +74,8 @@ because_waic <- function(model) {
         stop("Input must be a 'because' model object.")
     }
 
-    # Extract log_lik from MCMC samples
-    log_lik <- NULL
-
-    if (!is.null(model$samples)) {
-        # Get column names from first chain
-        col_names <- colnames(model$samples[[1]])
-        log_lik_cols <- grep("^log_lik", col_names, value = TRUE)
-
-        if (length(log_lik_cols) == 0) {
-            stop(
-                "No log_lik parameters found in MCMC samples.\n",
-                "Please run the model with WAIC = TRUE to monitor pointwise log-likelihoods."
-            )
-        }
-
-        # Extract log_lik matrix: rows = samples, columns = observations
-        # Combine all chains
-        log_lik <- do.call(
-            rbind,
-            lapply(model$samples, function(chain) {
-                chain[, log_lik_cols, drop = FALSE]
-            })
-        )
-
-        # Remove chain and iteration labels from rownames if present
-        rownames(log_lik) <- NULL
-    } else {
-        stop("Model object has no MCMC samples.")
-    }
+    # Extract log_lik using helper (auto-refits if needed)
+    log_lik <- ensure_log_lik(model)
 
     # Number of observations and samples
     n_obs <- ncol(log_lik)

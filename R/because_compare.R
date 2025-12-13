@@ -78,7 +78,7 @@ because_compare <- function(
     } else if (length(dots) >= 1 && is_spec_list(dots[[1]])) {
         # Check first positional argument (if model_specs was NULL)
         specs <- dots[[1]]
-        # Try to rescue data/tree from dots or named args
+        # Attempt to retrieve data/tree from dots or named args
         if (!is.null(data)) {
             run_data <- data
         } else if (length(dots) >= 2) {
@@ -98,8 +98,7 @@ because_compare <- function(
         }
 
         # Extract extra args for because from dots (excluding rescued pos args)
-        # This is tricky with ... mixing positional and named.
-        # Safest: Use named arguments in ... mainly.
+        # Handling mixed positional and named arguments in ...
         common_args <- dots[nzchar(names(dots))]
 
         # Run Function
@@ -203,7 +202,7 @@ because_compare <- function(
 
         # Name models if needed
         if (length(models) > 0) {
-            # Try to separate named vs unnamed
+            # Separate named vs unnamed arguments
             # Use names if available in source list, else generate
             curr_names <- names(models)
             if (is.null(curr_names)) {

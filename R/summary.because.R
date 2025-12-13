@@ -34,7 +34,7 @@ summary.because <- function(object, ...) {
         rhat <- summ$statistics[, "Rhat"]
         names(rhat) <- rownames(summ$statistics)
     } else if (n_chains > 1) {
-        # Try to calculate if not stored
+        # Calculate if not stored
         rhat <- tryCatch(
             coda::gelman.diag(object$samples, multivariate = FALSE)$psrf[, 1],
             error = function(e) return(NULL)
@@ -78,7 +78,7 @@ summary.because <- function(object, ...) {
 
             test_formula <- tests[[i]]
             test_var <- attr(test_formula, "test_var")
-            # If test_var is missing from attribute, try to guess from formula
+            # If test_var is missing from attribute, infer from formula
             if (is.null(test_var)) {
                 rhs <- labels(stats::terms(test_formula))
                 if (length(rhs) > 0) test_var <- rhs[1]
@@ -96,7 +96,7 @@ summary.because <- function(object, ...) {
             ]
 
             if (nrow(param_row) == 0) {
-                # Fallback: try to find ANY parameter for the test_var
+                # Fallback: scan for any parameter associated with test_var
                 param_row <- map_i[map_i$predictor == test_var, ]
             }
 
@@ -142,7 +142,7 @@ summary.because <- function(object, ...) {
                 # Rhat
                 p_rhat <- NA
                 if (n_chains_i > 1) {
-                    # Try catch for single-parameter Rhat issues
+                    # Handle potential single-parameter Rhat issues
                     p_rhat <- tryCatch(
                         {
                             coda::gelman.diag(

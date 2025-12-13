@@ -9,6 +9,7 @@ because_dsep(
   latent = NULL,
   random_terms = list(),
   hierarchical_info = NULL,
+  poly_terms = NULL,
   quiet = FALSE
 )
 }

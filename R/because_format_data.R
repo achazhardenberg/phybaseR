@@ -175,7 +175,6 @@ because_format_data <- function(data, species_col = "SP", tree) {
             # else: species not in data, row remains all NA
         }
 
-        # Smart simplification:
         # If all species have <= 1 unique value (constant within species), convert to vector.
         # Usually, constant variables -> vector. Varying variables -> matrix.
 
@@ -189,7 +188,7 @@ because_format_data <- function(data, species_col = "SP", tree) {
             data_list[[trait]] <- trait_matrix
         }
     }
-    # Store categorical variable info as attribute for reference
+    # Store categorical variable info as attribute
     if (length(categorical_vars) > 0) {
         attr(data_list, "categorical_vars") <- categorical_vars
     }

@@ -108,7 +108,7 @@ create_group_structures <- function(data, random_terms) {
         # Prec = Identity
 
         prec_mat <- diag(n_groups)
-        # We don't really need dimnames for the matrix sent to JAGS, but good for debugging
+        # Precision matrix for JAGS
         # dimnames(prec_mat) <- list(levels, levels)
 
         # Store definition
