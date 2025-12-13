@@ -2129,7 +2129,7 @@ because_model <- function(
             # Phylogenetic / N-dim Structures
             for (s_name in structure_names) {
               s_suffix <- paste0("_", s_name)
-              tau_u <- paste0("tau_u_", response, s_suffix) # Note: suffix is empty loop var inside K loop? No, suffix is handled outside
+              tau_u <- paste0("tau_u_", response, s_suffix) # Suffix handled outside loop
               # Wait, suffix is from k=1..response_counter. But here we are in k=2..K_var (categories).
               # The external loop is 'response', but 'response' is unique per equation group.
               # Multinomial doesn't support repeats in this logic currently (response_counter[[response]] is likely 1).

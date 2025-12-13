@@ -71,7 +71,7 @@ summary.because <- function(object, ...) {
         for (i in seq_along(dsep_results)) {
             res_i <- dsep_results[[i]]
 
-            # Skip if result is NULL (failed test?)
+            # Skip if result is available
             if (is.null(res_i)) {
                 next
             }

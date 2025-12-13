@@ -182,7 +182,7 @@ dsep_standard <- function(
         f_str <- paste(deparse(t_eq), collapse = " ")
         f_str <- paste0(f_str, " + ", rand_str)
         new_eq <- as.formula(f_str)
-        # Preserve attribute? mag_basis_to_formulas sets test_var, we might lose it?
+        # Preserve attribute
         # Re-attach test_var from original
         attr(new_eq, "test_var") <- attr(t_eq, "test_var")
         new_tests[[t_idx]] <- new_eq

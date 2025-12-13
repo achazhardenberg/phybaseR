@@ -178,7 +178,7 @@ because <- function(
 
   # Check if both are missing (tree is NULL, structure is NULL)
   # This implies Independent Model (tree = NULL is valid for that)
-  # But we want to be explicit?
+
   # If both are NULL, we run as independent model.
 
   # Tree check moved to line 165
@@ -662,7 +662,7 @@ because <- function(
         data[[paste0("Prec_", s_name)]] <- Prec_array
         data$Ntree <- K_tree
 
-        # Legacy VCV/multiVCV required for some logic?
+        # Legacy VCV/multiVCV required for some logic
         # If 'optimise=FALSE', because_model might use VCV.
 
         if (length(structures) == 1) {
@@ -732,7 +732,7 @@ because <- function(
           response_vars
         ))
       } else if (length(distribution) == length(response_vars)) {
-        # Riskier, but if lengths match, assume order?
+        # Riskier, but if lengths match, assume order
         # Better to warn and ask for names.
         warning(
           "Argument 'distribution' is unnamed. Please provide a named vector like c(Response = 'binomial'). Assuming defaults (Gaussian) for safety."
@@ -2067,7 +2067,7 @@ because <- function(
       # Check if the single parameter is log_lik
       param_name <- colnames(samples[[1]])
       if (length(param_name) == 1 && grepl("^log_lik", param_name)) {
-        # If the only parameter is log_lik, decided to return empty stats?
+        # If the only parameter is log_lik, return empty stats
         # Or handle appropriately. For now, empty seems safest or just nullify.
         sum_stats <- NULL
       }

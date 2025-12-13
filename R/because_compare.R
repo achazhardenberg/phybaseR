@@ -133,7 +133,7 @@ because_compare <- function(
         fit_results <- list()
         spec_names <- names(specs)
 
-        # Handle n.cores passed as model object by mistake?
+        # Handle if n.cores was passed as a model object by mistake
         # Ensure n.cores is numeric
         n_cores_val <- if (is.numeric(n.cores)) n.cores else 1
 

@@ -163,7 +163,7 @@ because_format_data <- function(data, species_col = "SP", tree) {
                 sp_values <- data[data[[species_col]] == sp, trait, drop = TRUE]
                 n_obs <- length(sp_values)
 
-                # Check for within-species variation (ignoring NA if mixed with values?)
+                # Check for within-species variation
                 # Stricter: if multiple values exist and they differ, it's not constant
                 if (length(unique(na.omit(sp_values))) > 1) {
                     is_constant <- FALSE
@@ -177,10 +177,6 @@ because_format_data <- function(data, species_col = "SP", tree) {
 
         # Smart simplification:
         # If all species have <= 1 unique value (constant within species), convert to vector.
-        # UNLESS the user explicitly requested this variable as 'reps' (via attribute?)
-        # But here we don't know the user's intent from 'variability'.
-        # However, passing a vector for a constant variable is safer for JAGS.
-        # If the user WANTED a matrix for a constant variable (why?), they can cast it back?
         # Usually, constant variables -> vector. Varying variables -> matrix.
 
         if (max_reps == 1 || is_constant) {

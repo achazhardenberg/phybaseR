@@ -14,29 +14,14 @@ extract_random_effects <- function(equations) {
 
     for (i in seq_along(equations)) {
         eq <- equations[[i]]
-        response <- All.vars(eq)[1] # Safer than as.character(eq)[2]? No, equation is formula.
-        # Let's use as.character for term Extraction
+        response <- All.vars(eq)[1]
 
         # Get terms from formula
         tf <- terms(eq)
         term_labels <- attr(tf, "term.labels")
 
-        # Identify random terms (detect "(1|...")
-        # Note: terms() might mess up the formatting of (1|Group)
-        # Better to parse string representation carefully
-
-        # Using strict string parsing on the formula terms
-        # lme4-style terms might come out as `(1 | Group)` in term.labels if looking at terms object?
-        # Actually, terms() often drops | or treats it differently.
-        # We should look at finding the bars.
-
-        # Let's inspect the raw formula terms
-        # If the user writes Y ~ X + (1|ID), terms() might not parse (1|ID) as a standard term cleanly.
-        # However, standard practice in lme4 parsing is often getting the labels.
-        # Let's assume standard formula string split by + for now, or use findbars approach if we had lme4.
-        # Since we don't depend on lme4, we do simple string matching on terms.
-
-        # Re-approach: split the right hand side character string by "+"
+        # Parse RHS to separate random effects from fixed effects using string manipulation
+        # This avoids issues with terms() parsing non-standard (1|Group) syntax
         char_eq <- as.character(eq)
         lhs <- char_eq[2]
         rhs <- char_eq[3]
@@ -154,8 +139,6 @@ create_group_structures <- function(data, random_terms) {
 
 # Helper to safely all vars from list of formulas (if needed locally)
 All.vars <- function(x) all.vars(x)
-# Helper to safely all vars from list of formulas (if needed locally)
-All.vars <- function(x) all.vars(x)
 
 
 #' Expand Nesting Syntax in Random Effects
@@ -263,8 +246,7 @@ parse_global_random <- function(random_arg, equations) {
         rhs <- as.character(random_arg)
     }
 
-    # EXPANSION: Convert nesting syntax (1|A/B) to (1|A) + (1|A:B)
-    # This matches lme4 behavior
+    # Convert nesting syntax (1|A/B) to (1|A) + (1|A:B) to match lme4 behavior
     rhs <- expand_nesting_syntax(rhs)
 
     parts <- trimws(strsplit(rhs, "\\+")[[1]])
