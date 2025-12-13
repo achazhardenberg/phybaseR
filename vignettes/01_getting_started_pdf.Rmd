@@ -1,0 +1,13 @@
+---
+title: "Getting Started with because (PDF)"
+author: "Achaz von Hardenberg"
+date: "`r Sys.Date()`"
+output: rmarkdown::pdf_document
+vignette: >
+  %\VignetteIndexEntry{Getting Started with because (PDF)}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, child='01_getting_started.Rmd'}
+```

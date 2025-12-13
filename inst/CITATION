@@ -4,9 +4,9 @@ citEntry(entry = "Manual",
   title = "because: Bayesian Estimation of Causal Effects",
   author = person("Achaz", "von Hardenberg", email = "achaz.hardenberg@unipv.it", role = c("aut", "cre")),
   year = "2025",
-  note = "R package version 0.9.3",
+  note = "R package version 0.9.4",
   url = "https://github.com/achazhardenberg/because",
-  textVersion = "von Hardenberg, A. (2025). because: Bayesian Estimation of Causal Effects. R package version 0.9.3. https://github.com/achazhardenberg/because"
+  textVersion = "von Hardenberg, A. (2025). because: Bayesian Estimation of Causal Effects. R package version 0.9.4. https://github.com/achazhardenberg/because"
 )
 
 citEntry(entry = "Article",

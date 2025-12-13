@@ -71,12 +71,23 @@ Sampler) installed on your machine.
     [SourceForge](http://mcmc-jags.sourceforge.net).
 -   **Linux**: `sudo apt-get install jags`.
 
-After installing JAGS, install the because package from GitHub using
-`remotes` or `devtools` and call the library:
+After installing JAGS, you can install `because` from GitHub.
+
+To install the **stable release** (`v0.9.4`):
 
 ```{r}
-# Install from GitHub
-remotes::install_github("achazhardenberg/because"
+remotes::install_github("achazhardenberg/because@v0.9.4", build_vignettes = TRUE)
+```
+
+To install the **latest development version**:
+
+```{r}
+remotes::install_github("achazhardenberg/because", build_vignettes = TRUE)
+```
+
+Finally, load the package:
+
+```{r}
 library(because)
 ```
 
@@ -95,14 +106,14 @@ the basic usage of the package.
 Let's start simulating two variables X and Y where Y is correlated to X:
 
 ```{r}
-#set seed for reproducibility
+# set seed for reproducibility
 set.seed(67)
 
 # Simulate predictor
-X <- rnorm(n=100, mean = 50, sd = 10)
+X <- rnorm(n = 100, mean = 50, sd = 10)
 
 # Generate response with the chosen intercept (alpha) and slope (beta)
-alpha = 20
+alpha <- 20
 Y <- alpha + beta * X + rnorm(n, mean = 0, sd = 10)
 
 # Combine into data frame
@@ -127,7 +138,7 @@ fit <- because(
 )
 
 # View results
-summary(fit) 
+summary(fit)
 ```
 
 To check for convergence of the MCMC chains, you can look at the Rhat
@@ -148,7 +159,8 @@ calling `fit$model` or, before fitting it, using `because_model()`:
 ```{r}
 # Generate JAGS model code
 jags_model_code <- because_model(
-  equations = equations)
+  equations = equations
+)
 
 cat(jags_model_code$model)
 ```
