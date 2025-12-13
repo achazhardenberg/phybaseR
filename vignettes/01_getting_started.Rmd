@@ -35,26 +35,27 @@ autocorrelation, genetic relatedness etc.).
 -   [Phylogenetic Path Analysis](03_phylogenetic_models.html): Using the
     Phylogenetic Bayesian Structural Equation Model appraoch (Because,
     von Hardenberg & Gonzalez-Voyer, 2025).
--   [Alternative Covariance structures](04_covariance_structures.html):
+-   *Alternative Covariance structures:*
     Spatial, genetic, social, or other correlation structures.
--   [Multiple Response Distributions](05_distributions.html): Modeling
+    *Alternative  dustribution families: Modeling
     non-Gaussian data.
     -   Gaussian (continuous data)
     -   Binomial (binary/proportion data)
     -   Multinomial (unordered categorical data)
     -   Ordinal (ordered categorical data)
     -   Poisson (count data)
-    -   Negative Binomial (overdispersed count data)
--   [Advanced Model Specifications](06_advanced_models.html): random
+    -   Negative Binomial (overdispersed count data
+    -   Zero inflated Poissson (ZIP) and negative binomial (ZINB)
+-   *Advanced Model Specifications:* random
     effects (mixed models, nested designs), polynomial terms,
     interaction terms,categorical predictors, measurement error, missing
-    data, phylogenetic uncertainty. \*. [Hierarchical
-    Data](07_hierarchical_data.html): Multi-level data with variables at
+    data, phylogenetic uncertainty. 
+-   *Hierarchical Data:* Multi-level data with variables at
     different hierarchical levels.
--   [Latent Variables and MAG](08_latent_variables.html): Measurement
+-   *Latent Variables and MAG:* Measurement
     error models and causal inference in the presence of latent
     variables using the MAG approach by Shipley & Douda (2021).
--   [Model Diagnostics](09_model_diagnostics.html): Checking
+-   *Model Diagnostics:* Checking
     convergence, comparing models, and interpreting results.
 
 ## Quick Start
@@ -154,8 +155,7 @@ cat(jags_model_code$model)
 
 When specifing the equations you can include multiple predictors as well
 as factors,interaction terms and polynomial terms following the
-conventional R formula syntax. See the [Advanced Model
-Specifications](06_advanced_models.html) vignette for more details.
+conventional R formula syntax. 
 
 ## Next: Causal Inference with D-Separation
 
