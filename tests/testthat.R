@@ -1,4 +1,4 @@
 library(testthat)
-library(becauseR)
+library(because)
 
-test_check("becauseR")
+test_check("because")

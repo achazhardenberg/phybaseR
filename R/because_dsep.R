@@ -354,8 +354,7 @@ dsep_with_latents <- function(
         rhs <- labels(terms(t_eq))
         # d-sep output usually has predictors on RHS
         # Reconstruct: Resp ~ Preds + Random
-        # Actually, mag_basis_to_formulas output is cleaner?
-        # Let's just paste to the formula string representation
+        # Paste to the formula string representation
 
         # Safe approach: deparse
         f_str <- paste(deparse(t_eq), collapse = " ")
@@ -363,9 +362,6 @@ dsep_with_latents <- function(
 
         new_eq <- as.formula(f_str)
 
-        # Preserve attributes? test_var is usually implicit or attached?
-        # mag_basis_to_formulas might attach attributes.
-        # Let's just modify
         new_tests[[t_idx]] <- new_eq
       } else {
         new_tests[[t_idx]] <- t_eq

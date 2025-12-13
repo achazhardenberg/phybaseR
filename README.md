@@ -24,7 +24,13 @@
 
 ## Installation
 
-To install the package from GitHub, run the following command:
+To install the **stable release** (`v0.9.3`), run:
+
+```r
+remotes::install_github("achazhardenberg/because@v0.9.3", build_vignettes = TRUE)
+```
+
+To install the **latest development version** (unstable), run:
 
 ```r
 remotes::install_github("achazhardenberg/because", build_vignettes = TRUE)

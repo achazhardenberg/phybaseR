@@ -21,13 +21,15 @@ test_that("summary.because handles standard output", {
     )
     class(fit) <- "because"
 
-    # Capture output to verify printing
+    # Capture output to verify printing (explicit print required)
+    summ <- summary(fit)
     output <- capture_output({
-        summ <- summary(fit)
+        print(summ)
     })
 
-    # summary.because returns a matrix for standard output
-    expect_true(is.matrix(summ) || is.data.frame(summ))
+    # summary.because returns a summary.because object
+    expect_s3_class(summ, "summary.because")
+    expect_true(is.matrix(summ$results) || is.data.frame(summ$results))
     expect_match(output, "DIC")
     expect_match(output, "WAIC")
 })
@@ -69,13 +71,18 @@ test_that("summary.because handles d-sep output", {
     )
     class(fit) <- "because"
 
+    results <- summary(fit)
     output <- capture_output({
-        results <- summary(fit)
+        print(results)
     })
 
-    expect_match(output, "Because d-separation Tests")
+    # Output matches "d-separation Tests" (updated string)
+    expect_match(output, "d-separation Tests")
     expect_match(output, "Y _\\|\\|_ X")
-    expect_s3_class(results, "data.frame")
-    expect_true(nrow(results) == 1)
-    expect_equal(results$Indep[1], "Yes") # Should be independent as mean is 0
+
+    # Check structure of returned object
+    expect_s3_class(results, "summary.because")
+    expect_true(is.data.frame(results$results))
+    expect_true(nrow(results$results) == 1)
+    expect_equal(results$results$Indep[1], "Yes")
 })

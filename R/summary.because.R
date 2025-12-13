@@ -294,7 +294,6 @@ print.summary.because <- function(x, ...) {
         results <- x$results
         cat("d-separation Tests\n")
         cat("==================\n\n")
-        # Custom printing for readability
         # Print each test on a separate block
         for (i in 1:nrow(results)) {
             cat(paste0("Test: ", results$Test[i]), "\n")

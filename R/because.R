@@ -372,14 +372,14 @@ because <- function(
   }
 
   if (is.data.frame(data)) {
-    # INTEGRATION: Check for long format data requiring matrix conversion
+    # Check for long format data requiring matrix conversion
     # If any variability specified as 'reps', we attempt to auto-format using because_format_data
     has_reps <- any(grepl("reps", variability))
 
     if (has_reps) {
       if (missing(tree) || is.null(tree)) {
         # Cannot auto-format without tree to determine species order
-        # But maybe the user provided pre-formatted matrices in columns? (unlikely for DF)
+
         warning(
           "Variability 'reps' specified but no tree provided. Automatic formatting requires a tree to order species rows. Assuming data is already aggregated or user handles index mapping."
         )
@@ -664,8 +664,7 @@ because <- function(
 
         # Legacy VCV/multiVCV required for some logic?
         # If 'optimise=FALSE', because_model might use VCV.
-        # But we are moving towards requiring optimise=TRUE for multiple structures.
-        # For legacy single multi-tree, we might want to keep 'multiVCV' for safe Measure.
+
         if (length(structures) == 1) {
           multiVCV <- array(0, dim = c(N, N, K_tree))
           for (k in 1:K_tree) {

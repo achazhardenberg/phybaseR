@@ -73,7 +73,7 @@ because_model <- function(
   standardize_latent = TRUE,
   poly_terms = NULL, # Polynomial transformation terms
   latent = NULL,
-  compute_waic = FALSE, # Default to FALSE to force explicit opt-in
+  compute_waic = FALSE,
   fix_residual_variance = NULL
 ) {
   # Helper: returns b if a is NULL or if a is a list element that doesn't exist
