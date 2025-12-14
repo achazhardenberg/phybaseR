@@ -24,10 +24,10 @@
 
 ## Installation
 
-To install the **stable release** (`v0.9.4`), run:
+To install the **stable release** (`v0.9.5`), run:
 
 ```r
-remotes::install_github("achazhardenberg/because@v0.9.4", build_vignettes = TRUE)
+remotes::install_github("achazhardenberg/because@v0.9.5", build_vignettes = TRUE)
 ```
 
 To install the **latest development version** (unstable), run:
