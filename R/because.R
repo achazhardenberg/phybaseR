@@ -310,6 +310,55 @@ because <- function(
   dsep_results <- NULL
   dsep_correlations <- NULL
 
+  # Handle global variability setting (e.g. variability = "reps")
+  # If user provides a single string, apply it to all variables in equations
+  if (
+    !is.null(variability) &&
+      is.character(variability) &&
+      length(variability) == 1 &&
+      is.null(names(variability))
+  ) {
+    global_type <- variability
+    if (global_type %in% c("se", "reps")) {
+      message(sprintf(
+        "Global variability setting detected: applying '%s' to all variables.",
+        global_type
+      ))
+
+      # Extract all variables from equations
+      all_eq_vars <- unique(unlist(lapply(equations, all.vars)))
+
+      # Exclude grouping variables from random effects
+      grouping_vars <- character(0)
+      if (!is.null(random)) {
+        if (inherits(random, "formula")) {
+          random_list <- list(random)
+        } else {
+          random_list <- random
+        }
+
+        for (r in random_list) {
+          vars_in_random <- all.vars(r)
+          grouping_vars <- c(grouping_vars, vars_in_random)
+        }
+      }
+
+      # Also exclude Id col if provided
+      if (!is.null(id_col)) {
+        grouping_vars <- c(grouping_vars, id_col)
+      }
+
+      # Variables to apply variability to
+      target_vars <- setdiff(all_eq_vars, grouping_vars)
+
+      # Create named vector
+      variability <- setNames(
+        rep(global_type, length(target_vars)),
+        target_vars
+      )
+    }
+  }
+
   # --- Data Frame Preprocessing ---
   # If data is a data.frame, convert to list format expected by the model
   original_data <- data
@@ -955,8 +1004,21 @@ because <- function(
     } else {
       # Convert variability to named list if needed
       if (is.null(names(variability))) {
-        variability <- setNames(rep(NA, length(variability)), variability)
+        # This case (unnamed vector but length > 1) is ambiguous or unsupported by global logic
+        # We'll treat as "names missing" warning or error?
+        # For backward compatibility / safety, just set names to values?
+        # Actually, existing code: variability <- setNames(rep(NA, ...)) seems wrong if we passed values like c("reps", "se")
+        # But previous logic (line 958 in original) did: variability <- setNames(rep(NA, length(variability)), variability)
+        # This implied variability was a vector of NAMES.
+        # But wait, the doc says variability is "c(Var = 'type')".
+        # If unnamed, `variability` contains TYPES? Or NAMES?
+        # Original Doc line 11 (approx): "If unnamed, it defaults to 'se' for all specified variables."
+        # Meaning: variability = c("Var1", "Var2") -> Var1="se", Var2="se".
+        # My new global logic handles length==1 separately.
+        # If length > 1 and unnamed, we assume standard behavior (list of vars, default type "se")
+        variability <- setNames(rep("se", length(variability)), variability)
       }
+
       # Merge: manual overrides auto
       for (var in names(auto_variability)) {
         if (!var %in% names(variability)) {

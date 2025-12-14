@@ -130,7 +130,42 @@ because_model <- function(
   # Start model
   model_lines <- c(
     "model {",
-    "  # Structural equations",
+    "  # Structural equations"
+  )
+
+  # --- Handle Exogenous Latent Variables ---
+  # These are variables with variability (latent) but NOT response variables (no equation)
+  # JAGS needs a prior for them (e.g. X[i] ~ dnorm(0, 1.0E-06))
+  # Otherwise we get "Unknown variable" error
+  if (!is.null(variability)) {
+    model_responses <- names(response_counter) # Will be empty here, need to infer from equations
+    # Re-extract all responses from equations strictly
+    all_responses <- unique(sapply(equations, function(eq) {
+      as.character(formula(eq))[2]
+    }))
+
+    vars_with_variability <- names(variability_list)
+    exogenous_vars <- setdiff(vars_with_variability, all_responses)
+
+    if (length(exogenous_vars) > 0) {
+      model_lines <- c(
+        model_lines,
+        "  # Priors for exogenous latent variables (variable with error but no parent)",
+        "  for (i in 1:N) {"
+      )
+      for (ex_var in exogenous_vars) {
+        # Uninformative prior for the latent true value
+        model_lines <- c(
+          model_lines,
+          paste0("    ", ex_var, "[i] ~ dnorm(0, 1.0E-06)")
+        )
+      }
+      model_lines <- c(model_lines, "  }")
+    }
+  }
+
+  model_lines <- c(
+    model_lines,
     "  for (i in 1:N) {"
   )
 
@@ -1767,10 +1802,7 @@ because_model <- function(
           model_lines,
           paste0("  for (i in 1:N) {")
         )
-        model_lines <- c(
-          model_lines,
-          paste0("    log_lik_", var, "_reps[i] <- 0  # Initialize sum")
-        )
+        # Replaced imperative accumulation with declarative summation
         model_lines <- c(
           model_lines,
           paste0("    for (j in 1:N_reps_", var, "[i]) {"),
@@ -1782,30 +1814,32 @@ because_model <- function(
             "[i], ",
             var,
             "_tau)"
-          )
-        )
-        model_lines <- c(
-          model_lines,
-          paste0(
-            "      # Sum pointwise log-likelihoods for this individual"
           ),
           paste0(
-            "      log_lik_",
+            "      lik_matrix_",
             var,
-            "_reps[i] <- log_lik_",
-            var,
-            "_reps[i] + logdensity.norm(",
+            "[i, j] <- logdensity.norm(",
             var,
             "_obs[i, j], ",
             var,
             "[i], ",
             var,
             "_tau)"
+          ),
+          paste0("    }"),
+          # Sum the log-likelihoods for this individual
+          paste0(
+            "    log_lik_",
+            var,
+            "_reps[i] <- sum(lik_matrix_",
+            var,
+            "[i, 1:N_reps_",
+            var,
+            "[i]])"
           )
         )
         model_lines <- c(
           model_lines,
-          paste0("    }"),
           paste0("  }"),
           paste0("  ", var, "_tau ~ dgamma(1, 1)"),
           paste0("  ", var, "_sigma <- 1/sqrt(", var, "_tau)")
