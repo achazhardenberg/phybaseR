@@ -345,19 +345,24 @@ plot_dag <- function(
     if ("edge_type" %in% names(combined_dag_data)) {
         # Deduplicate bidirected edges to prevent double plotting
         # Create a sorted ID for bidirected edges
-        combined_dag_data <- combined_dag_data %>%
-            dplyr::mutate(
-                edge_id = dplyr::case_when(
-                    edge_type == "<->" ~ paste(
-                        pmin(name, to),
-                        pmax(name, to),
-                        sep = "_"
-                    ),
-                    TRUE ~ paste(name, to, sep = "_")
-                )
-            ) %>%
-            dplyr::distinct(edge_id, edge_type, .keep_all = TRUE) %>%
-            dplyr::select(-edge_id)
+        combined_dag_data <- dplyr::mutate(
+            combined_dag_data,
+            edge_id = dplyr::case_when(
+                edge_type == "<->" ~ paste(
+                    pmin(name, to),
+                    pmax(name, to),
+                    sep = "_"
+                ),
+                TRUE ~ paste(name, to, sep = "_")
+            )
+        )
+        combined_dag_data <- dplyr::distinct(
+            combined_dag_data,
+            edge_id,
+            edge_type,
+            .keep_all = TRUE
+        )
+        combined_dag_data <- dplyr::select(combined_dag_data, -edge_id)
 
         # 1. Directed Edges (Solid)
         p <- p +
