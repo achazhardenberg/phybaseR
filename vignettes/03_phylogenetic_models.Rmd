@@ -307,8 +307,7 @@ summary(RhinoMulti_se.bc)
 
 ## Accounting for uncertainity in the phylogenetic tree
 
-In cases where there is uncertainty about the phylogenetic relationships among species, `because` allows users to fit models across a sample of trees as described in von Hardenberg and Gonzalez Voyer, 2025). You just need to provide a list of phylogenetic trees (class `multiPhylo`) to the `structure` argument instead of a single tree. 
-
+In cases where there is uncertainty about the phylogenetic relationships among species, `because` allows users to fit models across a sample of trees as described in von Hardenberg and Gonzalez Voyer, 2025). With `because` this becomes trivial: You just need to provide a list of phylogenetic trees (class `multiPhylo`) to the `structure` argument instead of a single tree; `because` will then randomly sample one tree from the list at each MCMC iteration, effectively integrating over phylogenetic uncertainty when estimating model parameters.
 
 ## References
 
