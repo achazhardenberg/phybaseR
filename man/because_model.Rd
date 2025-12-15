@@ -19,7 +19,6 @@ because_model(
   standardize_latent = TRUE,
   poly_terms = NULL,
   latent = NULL,
-  compute_waic = FALSE,
   fix_residual_variance = NULL
 )
 }

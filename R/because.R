@@ -996,25 +996,25 @@ because <- function(
         ))
       }
 
-
-    # Check for repeated measures pattern (X_obs or matrix)
-    obs_name <- paste0(var, "_obs")
-    if (var %in% names(data) && is.matrix(data[[var]])) {
-      auto_variability[[var]] <- "reps"
-      if (!quiet) {
-        message(sprintf(
-          "Auto-detected: '%s' has repeated measures (matrix format)",
-          var
-        ))
-      }
-    } else if (obs_name %in% names(data)) {
-      auto_variability[[var]] <- "reps"
-      if (!quiet) {
-        message(sprintf(
-          "Auto-detected: '%s' has repeated measures in '%s'",
-          var,
-          obs_name
-        ))
+      # Check for repeated measures pattern (X_obs or matrix)
+      obs_name <- paste0(var, "_obs")
+      if (var %in% names(data) && is.matrix(data[[var]])) {
+        auto_variability[[var]] <- "reps"
+        if (!quiet) {
+          message(sprintf(
+            "Auto-detected: '%s' has repeated measures (matrix format)",
+            var
+          ))
+        }
+      } else if (obs_name %in% names(data)) {
+        auto_variability[[var]] <- "reps"
+        if (!quiet) {
+          message(sprintf(
+            "Auto-detected: '%s' has repeated measures in '%s'",
+            var,
+            obs_name
+          ))
+        }
       }
     }
   }
@@ -1049,7 +1049,6 @@ because <- function(
       }
     }
   }
-
   # Handle variability data
   variability_list <- list()
   if (!is.null(variability)) {
@@ -1169,10 +1168,10 @@ because <- function(
           }
           data[[paste0(var_name, "_obs")]] <- compact_mat
         }
-
-        # Ensure var is removed (latent)
-        if (var %in% names(data)) data[[var]] <- NULL
       }
+
+      # Ensure var is removed (latent)
+      if (var_name %in% names(data)) data[[var_name]] <- NULL
     }
   }
 
@@ -1225,7 +1224,9 @@ because <- function(
 
     if (!quiet) {
       if (!is.null(latent)) {
-        message("Generating m-separation tests (MAG with latent variables)...")
+        message(
+          "Generating m-separation tests (MAG with latent variables)..."
+        )
       } else {
         message("Generating d-separation tests...")
       }
@@ -1469,7 +1470,10 @@ because <- function(
               dummies <- cat_vars[[predictor]]$dummies
               # Monitor all dummy betas
               # For Gaussian: betaPredictor format
-              params_to_monitor <- c(params_to_monitor, paste0("beta", dummies))
+              params_to_monitor <- c(
+                params_to_monitor,
+                paste0("beta", dummies)
+              )
             }
           }
 
@@ -1659,7 +1663,10 @@ because <- function(
         })
 
         # Find variables that need intercept models
-        vars_needing_intercept <- setdiff(vars_with_correlations, response_vars)
+        vars_needing_intercept <- setdiff(
+          vars_with_correlations,
+          response_vars
+        )
 
         if (length(vars_needing_intercept) > 0) {
           # Create intercept-only models: X ~ 1
@@ -1747,18 +1754,16 @@ because <- function(
     induced_correlations = induced_cors,
     latent = latent,
     standardize_latent = standardize_latent,
-
     optimise = optimise,
     structure_names = structure_names,
     random_structure_names = names(random_structures),
     random_terms = random_terms,
-    poly_terms = all_poly_terms # Add polynomial terms
+    poly_terms = all_poly_terms
   )
 
   model_string <- model_output$model
   parameter_map <- model_output$parameter_map
 
-  model_file <- tempfile(fileext = ".jg")
   model_file <- tempfile(fileext = ".jg")
   writeLines(model_string, model_file)
 
@@ -1875,6 +1880,17 @@ because <- function(
     } else {
       # monitor_mode == "all" or NULL: include everything
       monitor <- all_params
+
+      # Also include response variables (for imputation inspection)
+      # We extract them directly from the equations (which include auto-added intercept models)
+      response_vars_all <- unique(sapply(equations, function(eq) {
+        all.vars(formula(eq)[[2]])
+      }))
+
+      # Only add them if they are in the model (obviously)
+      if (length(response_vars_all) > 0) {
+        monitor <- unique(c(monitor, response_vars_all))
+      }
     }
   }
 
@@ -1902,7 +1918,11 @@ because <- function(
   # Use perl=TRUE for robust regex matching of variable names
   matches <- regmatches(
     model_string,
-    gregexpr("\\b([a-zA-Z0-9_]+)\\s*\\[1:N\\]\\s*~", model_string, perl = TRUE)
+    gregexpr(
+      "\\b([a-zA-Z0-9_]+)\\s*\\[1:N\\]\\s*~",
+      model_string,
+      perl = TRUE
+    )
   )[[1]]
 
   response_vars <- unique(gsub("\\s*\\[1:N\\]\\s*~", "", matches))
@@ -2034,7 +2054,9 @@ because <- function(
 
     # Disable DIC/WAIC if only 1 chain (rjags requirement)
     if (n.chains < 2 && (DIC || WAIC)) {
-      warning("DIC and WAIC require at least 2 chains. Disabling calculation.")
+      warning(
+        "DIC and WAIC require at least 2 chains. Disabling calculation."
+      )
       DIC <- FALSE
       WAIC <- FALSE
     }
@@ -2143,7 +2165,11 @@ because <- function(
   if (!is.null(sum_stats)) {
     if (is.matrix(sum_stats$statistics)) {
       rows_to_keep <- !grepl("^log_lik", rownames(sum_stats$statistics))
-      sum_stats$statistics <- sum_stats$statistics[rows_to_keep, , drop = FALSE]
+      sum_stats$statistics <- sum_stats$statistics[
+        rows_to_keep,
+        ,
+        drop = FALSE
+      ]
       sum_stats$quantiles <- sum_stats$quantiles[rows_to_keep, , drop = FALSE]
     } else {
       # Single parameter case (statistics is a vector)
@@ -2173,6 +2199,19 @@ because <- function(
     parameter_map = parameter_map,
     induced_correlations = induced_cors
   )
+
+  # Check if we can store species/unit identifiers for easy reference
+  if (!is.null(tree)) {
+    # If tree used, data is sorted by tip labels
+    if (inherits(tree, "multiPhylo")) {
+      result$species_order <- tree[[1]]$tip.label
+    } else {
+      result$species_order <- tree$tip.label
+    }
+  } else if (!is.null(id_col) && is.data.frame(original_data)) {
+    # If no tree but ID col provided
+    result$species_order <- as.character(original_data[[id_col]])
+  }
 
   # Assign class immediately (needed for print/summary/waic methods)
   class(result) <- "because"

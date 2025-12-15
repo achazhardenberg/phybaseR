@@ -105,15 +105,25 @@ WAIC is generally more appropriate than DIC for hierarchical models with latent 
 \item{dsep}{Logical; if \code{TRUE}, monitor only the first beta in each structural equation (used for d-separation testing).}
 
 \item{variability}{Optional specification for variables with measurement error or within-species variability.
-  **AUTO-DETECTION**: If a variable \code{X} has a corresponding column \code{X_se} (standard errors),
-  \code{X_obs} (repeated measures), or is provided as a matrix, variability is automatically detected.
-
-  **Manual specification** (for non-standard column names):
+  \strong{Global Setting}:
   \itemize{
-    \item Simple: \code{list(X = "se", Y = "reps")} - uses standard \code{X_se}/\code{Y_obs} naming
-    \item Custom columns: \code{list(X = list(type = "se", se_col = "X_SD"))} - specify custom column names
+    \item \code{"reps"}: Applies repeat-measures modeling to \strong{all} continuous variables in the equations (except grouping variables). Expects \code{X_obs} matrix or long-format data.
+    \item \code{"se"}: Applies measurement error modeling to \strong{all} continuous variables. Expects \code{X_se} columns.
+  }
+
+  \strong{Manual Specification} (Named Vector/List):
+  \itemize{
+    \item Simple: \code{c(X = "se", Y = "reps")} - mixed types
+    \item Custom columns: \code{list(X = list(type = "se", se_col = "X_sd"))}
     \item For SE: \code{se_col} (SE column), \code{mean_col} (mean column, optional)
     \item For reps: \code{obs_col} (observations matrix column)
+  }
+
+  \strong{Auto-Detection}:
+  If not specified, the package attempts to detect variability based on column names:
+  \itemize{
+    \item \code{X_se} -> type="se"
+    \item \code{X_obs} or matrix column -> type="reps"
   }}
 
 \item{distribution}{Optional named character vector specifying the distribution for response variables.
