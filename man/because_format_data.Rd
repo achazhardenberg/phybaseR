@@ -15,11 +15,11 @@ because_format_data(data, species_col = "SP", tree)
 }
 \value{
 A named list where each element is either:
-  \itemize{
-    \item A numeric vector (if all species have exactly 1 observation)
-    \item A numeric matrix with species in rows and replicates in columns
-  }
-  Species are ordered to match \code{tree$tip.label}.
+\itemize{
+\item A numeric vector (if all species have exactly 1 observation)
+\item A numeric matrix with species in rows and replicates in columns
+}
+Species are ordered to match \code{tree$tip.label}.
 }
 \description{
 Converts data from long format (one row per observation) to the list format
@@ -28,9 +28,9 @@ required by \code{\link{because}}.
 \details{
 This function handles:
 \itemize{
-  \item Different numbers of replicates per species (creates rectangular matrix with NA padding)
-  \item Missing values (NA)
-  \item Automatic alignment with phylogenetic tree tip labels
+\item Different numbers of replicates per species (creates rectangular matrix with NA padding)
+\item Missing values (NA)
+\item Automatic alignment with phylogenetic tree tip labels
 }
 
 When species have different numbers of replicates, the function creates a matrix

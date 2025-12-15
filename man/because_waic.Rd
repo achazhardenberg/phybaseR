@@ -35,18 +35,18 @@ The Widely Applicable Information Criterion (WAIC) is calculated as:
 \deqn{WAIC = -2 \times (lppd - p_{waic})}
 where:
 \itemize{
-  \item \eqn{lppd = \sum_{i=1}^N \log(\frac{1}{S} \sum_{s=1}^S \exp(log\_lik_{is}))} is the log pointwise predictive density
-  \item \eqn{p_{waic} = \sum_{i=1}^N \text{var}(log\_lik_{is})} is the effective number of parameters
+\item \eqn{lppd = \sum_{i=1}^N \log(\frac{1}{S} \sum_{s=1}^S \exp(log\_lik_{is}))} is the log pointwise predictive density
+\item \eqn{p_{waic} = \sum_{i=1}^N \text{var}(log\_lik_{is})} is the effective number of parameters
 }
 
-**WAIC Algorithm**:
+\strong{WAIC Algorithm}:
 \enumerate{
-  \item \strong{lpd} (log pointwise predictive density): For each observation \eqn{i},
-    compute \eqn{\log(\text{mean}(\exp(\text{log\_lik}_i)))} across MCMC samples
-  \item \strong{p_waic}: For each observation \eqn{i}, compute
-    \eqn{\text{var}(\text{log\_lik}_i)} across MCMC samples
-  \item \strong{elpd_waic}: \eqn{\text{lpd}_i - \text{p\_waic}_i} for each observation
-  \item \strong{waic}: \eqn{-2 \times \sum \text{elpd\_waic}_i}
+\item \strong{lpd} (log pointwise predictive density): For each observation \eqn{i},
+compute \eqn{\log(\text{mean}(\exp(\text{log\_lik}_i)))} across MCMC samples
+\item \strong{p_waic}: For each observation \eqn{i}, compute
+\eqn{\text{var}(\text{log\_lik}_i)} across MCMC samples
+\item \strong{elpd_waic}: \eqn{\text{lpd}_i - \text{p\_waic}_i} for each observation
+\item \strong{waic}: \eqn{-2 \times \sum \text{elpd\_waic}_i}
 }
 }
 

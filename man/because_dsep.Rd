@@ -31,11 +31,11 @@ If TRUE, suppress informational output.}
 }
 \value{
 If \code{latent} is NULL, returns a list of formulas representing
-  conditional independence tests. If \code{latent} is specified, returns a list with:
-  \itemize{
-    \item \code{tests}: List of m-separation test formulas
-    \item \code{correlations}: List of variable pairs with induced correlations
-  }
+conditional independence tests. If \code{latent} is specified, returns a list with:
+\itemize{
+\item \code{tests}: List of m-separation test formulas
+\item \code{correlations}: List of variable pairs with induced correlations
+}
 }
 \description{
 This function takes a set of structural equations defining a causal model

@@ -16,14 +16,14 @@ If provided, this vector must have the same length as the number of observations
 \value{
 A data frame containing:
 \itemize{
-  \item \code{Variable}: Name of the variable with missing data.
-  \item \code{ID}: The identifier (e.g., Species) for the observation (if available).
-  \item \code{RowIndex}: The original row index in the data.
-  \item \code{Mean}: Posterior mean of the imputed value.
-  \item \code{SD}: Posterior standard deviation.
-  \item \code{Q2.5}: 2.5% quantile (lower credible interval).
-  \item \code{Q50}: Median.
-  \item \code{Q97.5}: 97.5% quantile (upper credible interval).
+\item \code{Variable}: Name of the variable with missing data.
+\item \code{ID}: The identifier (e.g., Species) for the observation (if available).
+\item \code{RowIndex}: The original row index in the data.
+\item \code{Mean}: Posterior mean of the imputed value.
+\item \code{SD}: Posterior standard deviation.
+\item \code{Q2.5}: 2.5\% quantile (lower credible interval).
+\item \code{Q50}: Median.
+\item \code{Q97.5}: 97.5\% quantile (upper credible interval).
 }
 }
 \description{

@@ -28,20 +28,20 @@ LOO-CV (Leave-One-Out Cross-Validation) uses Pareto Smoothed Importance Sampling
 leave-one-out predictive performance without refitting the model N times. This is particularly
 useful for:
 \itemize{
-  \item Model comparison when models have different numbers of latent variables
-  \item Identifying influential observations (via Pareto k diagnostics)
-  \item Robust predictive performance assessment
+\item Model comparison when models have different numbers of latent variables
+\item Identifying influential observations (via Pareto k diagnostics)
+\item Robust predictive performance assessment
 }
 
-**Pareto k diagnostics**:
+\strong{Pareto k diagnostics}:
 \itemize{
-  \item k < 0.5: Excellent (all estimates reliable)
-  \item 0.5 < k < 0.7: Good (estimates okay)
-  \item 0.7 < k < 1: Problematic (estimates unreliable)
-  \item k > 1: Very problematic (refit model excluding these observations)
+\item k < 0.5: Excellent (all estimates reliable)
+\item 0.5 < k < 0.7: Good (estimates okay)
+\item 0.7 < k < 1: Problematic (estimates unreliable)
+\item k > 1: Very problematic (refit model excluding these observations)
 }
 
-**Note on implementation**:
+\strong{Note on implementation}:
 This function extracts the pointwise log-likelihoods calculated by the JAGS model
 (monitored as \code{log_lik[i]}) when \code{WAIC = TRUE}. It does not re-compute likelihoods
 from posterior samples in R, ensuring consistency with the fitted model structure.

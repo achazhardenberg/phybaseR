@@ -13,8 +13,8 @@
 }
 \value{
 A summary object containing statistics for the monitored parameters.
-  If \code{dsep = TRUE} was used in \code{because}, the summary focuses on
-  the conditional independence tests.
+If \code{dsep = TRUE} was used in \code{because}, the summary focuses on
+the conditional independence tests.
 }
 \description{
 Summarizes the output of a Because model run.

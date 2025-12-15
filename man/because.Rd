@@ -40,33 +40,33 @@ because(
 \arguments{
 \item{data}{Data for the model. Accepts:
 \itemize{
-  \item \code{data.frame}: A data frame with variables as columns. Variables needed
-        for the model are automatically extracted from the equations. Extra columns
-        are ignored.
-  \item \code{list}: A named list where each element is a vector of values
-        (traditional format for backward compatibility).
+\item \code{data.frame}: A data frame with variables as columns. Variables needed
+for the model are automatically extracted from the equations. Extra columns
+are ignored.
+\item \code{list}: A named list where each element is a vector of values
+(traditional format for backward compatibility).
 }}
 
 \item{equations}{A list of model formulas describing the structural equation model.}
 
 \item{id_col}{Character string specifying the column name in a data.frame containing
-  unit identifiers (species, individuals, sites, etc.). This is used to:
-  \itemize{
-    \item Match data rows to tree tip labels (for phylogenetic models)
-    \item Link data to external spatial or custom covariance matrices.
-  }
-  **Note**: For standard random effects models (e.g. \code{random = ~(1|species)}) where no external structure
-  (like a tree) is provided, this argument is **not required**. The grouping column is read directly from the data.
+unit identifiers (species, individuals, sites, etc.). This is used to:
+\itemize{
+\item Match data rows to tree tip labels (for phylogenetic models)
+\item Link data to external spatial or custom covariance matrices.
+}
+\strong{Note}: For standard random effects models (e.g. \code{random = ~(1|species)}) where no external structure
+(like a tree) is provided, this argument is \strong{not required}. The grouping column is read directly from the data.
 
-  If \code{NULL} (default): uses meaningful row names if available.
-  Ignored when \code{data} is already a list.}
+If \code{NULL} (default): uses meaningful row names if available.
+Ignored when \code{data} is already a list.}
 
 \item{structure}{The covariance structure for the model. Accepts:
 \itemize{
-  \item \code{"phylo"} object: Phylogenetic tree (Standard PGLS/PhyloSEM).
-  \item \code{"multiPhylo"} object: List of trees (incorporates phylogenetic uncertainty).
-  \item \code{NULL}: Independent model (Standard SEM, no covariance structure).
-  \item \code{matrix}: Custom covariance or precision matrix (e.g., spatial connectivity, kinship).
+\item \code{"phylo"} object: Phylogenetic tree (Standard PGLS/PhyloSEM).
+\item \code{"multiPhylo"} object: List of trees (incorporates phylogenetic uncertainty).
+\item \code{NULL}: Independent model (Standard SEM, no covariance structure).
+\item \code{matrix}: Custom covariance or precision matrix (e.g., spatial connectivity, kinship).
 }}
 
 \item{tree}{(Deprecated alias for \code{structure}). A single phylogenetic tree of class
@@ -74,12 +74,12 @@ because(
 
 \item{monitor}{Parameter monitoring mode. Options:
 \itemize{
-  \item \code{"interpretable"} (default): Monitor only scientifically meaningful parameters:
-        intercepts (alpha), regression coefficients (beta), phylogenetic signals (lambda) for
-       responses, and WAIC terms. Excludes variance components (tau) and auxiliary predictor parameters.
-  \item \code{"all"}: Monitor all model parameters including variance components and implicit equation parameters.
-  \item Custom vector: Provide a character vector of specific parameter names to monitor.
-  \item \code{NULL}: Auto-detect based on model structure (equivalent to "interpretable").
+\item \code{"interpretable"} (default): Monitor only scientifically meaningful parameters:
+intercepts (alpha), regression coefficients (beta), phylogenetic signals (lambda) for
+responses, and WAIC terms. Excludes variance components (tau) and auxiliary predictor parameters.
+\item \code{"all"}: Monitor all model parameters including variance components and implicit equation parameters.
+\item Custom vector: Provide a character vector of specific parameter names to monitor.
+\item \code{NULL}: Auto-detect based on model structure (equivalent to "interpretable").
 }}
 
 \item{n.chains}{Number of MCMC chains (default = 3).}
@@ -91,7 +91,7 @@ because(
 \item{n.thin}{Thinning rate (default = 10).}
 
 \item{DIC}{Logical; whether to compute DIC using \code{dic.samples()} (default = TRUE).
-**Note**: DIC penalty will be inflated for models with measurement error or repeated measures
+\strong{Note}: DIC penalty will be inflated for models with measurement error or repeated measures
 because latent variables are counted as parameters (penalty ~ structural parameters + N).
 For model comparison, use WAIC or compare mean deviance across models with similar structure.}
 
@@ -105,38 +105,38 @@ WAIC is generally more appropriate than DIC for hierarchical models with latent 
 \item{dsep}{Logical; if \code{TRUE}, monitor only the first beta in each structural equation (used for d-separation testing).}
 
 \item{variability}{Optional specification for variables with measurement error or within-species variability.
-  \strong{Global Setting}:
-  \itemize{
-    \item \code{"reps"}: Applies repeat-measures modeling to \strong{all} continuous variables in the equations (except grouping variables). Expects \code{X_obs} matrix or long-format data.
-    \item \code{"se"}: Applies measurement error modeling to \strong{all} continuous variables. Expects \code{X_se} columns.
-  }
+\strong{Global Setting}:
+\itemize{
+\item \code{"reps"}: Applies repeat-measures modeling to \strong{all} continuous variables in the equations (except grouping variables). Expects \code{X_obs} matrix or long-format data.
+\item \code{"se"}: Applies measurement error modeling to \strong{all} continuous variables. Expects \code{X_se} columns.
+}
 
-  \strong{Manual Specification} (Named Vector/List):
-  \itemize{
-    \item Simple: \code{c(X = "se", Y = "reps")} - mixed types
-    \item Custom columns: \code{list(X = list(type = "se", se_col = "X_sd"))}
-    \item For SE: \code{se_col} (SE column), \code{mean_col} (mean column, optional)
-    \item For reps: \code{obs_col} (observations matrix column)
-  }
+\strong{Manual Specification} (Named Vector/List):
+\itemize{
+\item Simple: \code{c(X = "se", Y = "reps")} - mixed types
+\item Custom columns: \code{list(X = list(type = "se", se_col = "X_sd"))}
+\item For SE: \code{se_col} (SE column), \code{mean_col} (mean column, optional)
+\item For reps: \code{obs_col} (observations matrix column)
+}
 
-  \strong{Auto-Detection}:
-  If not specified, the package attempts to detect variability based on column names:
-  \itemize{
-    \item \code{X_se} -> type="se"
-    \item \code{X_obs} or matrix column -> type="reps"
-  }}
+\strong{Auto-Detection}:
+If not specified, the package attempts to detect variability based on column names:
+\itemize{
+\item \code{X_se} -> type="se"
+\item \code{X_obs} or matrix column -> type="reps"
+}}
 
 \item{distribution}{Optional named character vector specifying the distribution for response variables.
 Default is "gaussian" for all variables. Supported values:
 \itemize{
-  \item "gaussian" (default)
-  \item "binomial" (binary data)
-  \item "multinomial" (unordered categorical > 2 levels)
-  \item "ordinal" (ordered categorical > 2 levels)
-  \item "poisson" (count data)
-  \item "negbinomial" (overdispersed count data)
-  \item "zip" (zero-inflated poisson): Models excess zeros with probability \code{psi} and counts with mean \code{lambda}.
-  \item "zinb" (zero-inflated negative binomial): Models excess zeros with probability \code{psi} and overdispersed counts with mean \code{mu} and size \code{r}.
+\item "gaussian" (default)
+\item "binomial" (binary data)
+\item "multinomial" (unordered categorical > 2 levels)
+\item "ordinal" (ordered categorical > 2 levels)
+\item "poisson" (count data)
+\item "negbinomial" (overdispersed count data)
+\item "zip" (zero-inflated poisson): Models excess zeros with probability \code{psi} and counts with mean \code{lambda}.
+\item "zinb" (zero-inflated negative binomial): Models excess zeros with probability \code{psi} and overdispersed counts with mean \code{mu} and size \code{r}.
 }
 The model will estimate a zero-inflation probability parameter \code{psi_Response} for these distributions.
 Example: \code{distribution = c(Gregarious = "binomial")}.}
@@ -147,10 +147,10 @@ variables that share these latent common causes.}
 
 \item{latent_method}{Method for handling latent variables (default = "correlations").
 \itemize{
-  \item \code{"correlations"}: MAG approach - marginalize latent variables and estimate
-        induced correlations (\code{rho}) between observed variables that share latent parents.
-  \item \code{"explicit"}: Model latent variables as JAGS nodes and estimate structural
-        paths from latents to observed variables.
+\item \code{"correlations"}: MAG approach - marginalize latent variables and estimate
+induced correlations (\code{rho}) between observed variables that share latent parents.
+\item \code{"explicit"}: Model latent variables as JAGS nodes and estimate structural
+paths from latents to observed variables.
 }}
 
 \item{standardize_latent}{Logical; if \code{TRUE} and \code{latent_method = "explicit"},

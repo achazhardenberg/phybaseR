@@ -7,11 +7,11 @@
 \format{
 A data frame with 17 rows and 5 variables:
 \describe{
-  \item{Country}{Name of the country}
-  \item{Area}{Area of the country in square kilometers}
-  \item{Storks}{Number of breeding stork pairs}
-  \item{Humans}{Human population size (in millions)}
-  \item{Birth}{Human birth rate (1000s per year)}
+\item{Country}{Name of the country}
+\item{Area}{Area of the country in square kilometers}
+\item{Storks}{Number of breeding stork pairs}
+\item{Humans}{Human population size (in millions)}
+\item{Birth}{Human birth rate (1000s per year)}
 }
 }
 \source{

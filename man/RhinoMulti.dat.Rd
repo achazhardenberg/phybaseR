@@ -7,12 +7,12 @@
 \format{
 A data frame with 1000 rows (10 replicates x 100 species) and 6 columns:
 \describe{
-  \item{SP}{Character. Species names matching the tip labels in `rhino.tree`. Each species appears 10 times.}
-  \item{BM}{Numeric. Body mass (repeated measurements)}
-  \item{LS}{Numeric. Litter size (repeated measurements)}
-  \item{NL}{Numeric. Nose length (repeated measurements)}
-  \item{DD}{Numeric. Dispersal distance (repeated measurements)}
-  \item{RS}{Numeric. Range size (repeated measurements)}
+\item{SP}{Character. Species names matching the tip labels in \code{rhino.tree}. Each species appears 10 times.}
+\item{BM}{Numeric. Body mass (repeated measurements)}
+\item{LS}{Numeric. Litter size (repeated measurements)}
+\item{NL}{Numeric. Nose length (repeated measurements)}
+\item{DD}{Numeric. Dispersal distance (repeated measurements)}
+\item{RS}{Numeric. Range size (repeated measurements)}
 }
 }
 \source{
@@ -24,14 +24,14 @@ RhinoMulti.dat
 \description{
 A simulated dataset containing repeated measurements of life-history traits for 100 Rhinograd species.
 This dataset is in "long" format, with 10 observations per species, suitable for testing
-measurement error models using `variability = "reps"`.
+measurement error models using \code{variability = "reps"}.
 }
 \details{
-This dataset was simulated by adding white noise to the original `rhino.dat` species values.
+This dataset was simulated by adding white noise to the original \code{rhino.dat} species values.
 It represents a scenario where each species has 10 independent observations for each trait.
-This allows using the `variability = "reps"` option in `because()` to explicitly model measurement error.
+This allows using the \code{variability = "reps"} option in \code{because()} to explicitly model measurement error.
 
-The underlying causal model is the same as for `rhino.dat`.
+The underlying causal model is the same as for \code{rhino.dat}.
 }
 \seealso{
 \code{\link{rhino.dat}}, \code{\link{RhinoMulti_se.dat}}

@@ -7,12 +7,12 @@
 \format{
 A data frame with 100 rows (one per species) and 6 columns:
 \describe{
-  \item{SP}{Character. Species names matching the tip labels in rhino.tree}
-  \item{BM}{Numeric. Body mass (standardised)}
-  \item{LS}{Numeric. Litter size (standardised)}
-  \item{NL}{Numeric. Nose length (standardised)}
-  \item{DD}{Numeric. Dispersal distance (standardised)}
-  \item{RS}{Numeric. Range size (standardised)}
+\item{SP}{Character. Species names matching the tip labels in rhino.tree}
+\item{BM}{Numeric. Body mass (standardised)}
+\item{LS}{Numeric. Litter size (standardised)}
+\item{NL}{Numeric. Nose length (standardised)}
+\item{DD}{Numeric. Dispersal distance (standardised)}
+\item{RS}{Numeric. Range size (standardised)}
 }
 }
 \source{
@@ -33,9 +33,9 @@ life-history evolution using phylogenetic structural equation models.
 
 Example causal model (Model 8 from Gonzalez-Voyer and von Hardenberg (2014)):
 \itemize{
-  \item Body mass (BM) affects litter size (LS)
-  \item Body mass (BM) and range size (RS) affect nose length (NL)
-  \item Nose length (NL) affects dispersal distance (DD)
+\item Body mass (BM) affects litter size (LS)
+\item Body mass (BM) and range size (RS) affect nose length (NL)
+\item Nose length (NL) affects dispersal distance (DD)
 }
 }
 \examples{

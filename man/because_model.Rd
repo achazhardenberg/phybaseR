@@ -40,8 +40,8 @@ the pair of variables that share a latent common cause.}
 If named, the names should be the variable names and the values should be the type of variability: "se" (for mean and standard error) or "reps" (for repeated measures).
 If unnamed, it defaults to "se" for all specified variables.
 \itemize{
-  \item "se": Expects \code{Var_mean} and \code{Var_se} in the data. The model fixes observation error: \code{Var_mean ~ dnorm(Var, 1/Var_se^2)}.
-  \item "reps": Expects \code{Var_obs} (matrix) and \code{N_reps_Var} (vector) in the data. The model estimates observation error: \code{Var_obs[i,j] ~ dnorm(Var[i], Var_tau)}.
+\item "se": Expects \code{Var_mean} and \code{Var_se} in the data. The model fixes observation error: \code{Var_mean ~ dnorm(Var, 1/Var_se^2)}.
+\item "reps": Expects \code{Var_obs} (matrix) and \code{N_reps_Var} (vector) in the data. The model estimates observation error: \code{Var_obs[i,j] ~ dnorm(Var[i], Var_tau)}.
 }}
 
 \item{distribution}{Optional named character vector specifying the distribution for response variables.
@@ -62,8 +62,8 @@ If FALSE, use original marginal covariance formulation.}
 \value{
 A list with two elements:
 \itemize{
-  \item \code{model}: A character string containing the JAGS model code.
-  \item \code{parameter_map}: A data frame mapping response variables to their predictors and parameter names.
+\item \code{model}: A character string containing the JAGS model code.
+\item \code{parameter_map}: A data frame mapping response variables to their predictors and parameter names.
 }
 }
 \description{
@@ -74,16 +74,16 @@ Missing values are handled both in the response and predictor variables treating
 \details{
 The generated model includes:
 \itemize{
-  \item Linear predictors and multivariate normal likelihoods for each response variable.
-  \item Priors for intercepts (\code{alpha}), slopes (\code{beta}), lambda parameters (\code{lambda}), and residual precisions (\code{tau}).
-  \item Phylogenetic covariance modeled via a single \code{VCV} matrix (when \code{multi.tree = FALSE}) or a 3D array \code{multiVCV[,,K]} with categorical sampling across trees (when \code{multi.tree = TRUE}).
-  \item (Optional) Observation models for variables with measurement error:
-    \itemize{
-      \item Type "se": \code{Var_mean ~ dnorm(Var, 1/Var_se^2)}
-      \item Type "reps": \code{Var_obs[i,j] ~ dnorm(Var[i], Var_tau)}
-    }
-  \item (Optional) Generalized linear mixed models for non-Gaussian responses (e.g., binomial).
-  \item (Optional) Element-wise likelihoods for response variables with missing data.
+\item Linear predictors and multivariate normal likelihoods for each response variable.
+\item Priors for intercepts (\code{alpha}), slopes (\code{beta}), lambda parameters (\code{lambda}), and residual precisions (\code{tau}).
+\item Phylogenetic covariance modeled via a single \code{VCV} matrix (when \code{multi.tree = FALSE}) or a 3D array \code{multiVCV[,,K]} with categorical sampling across trees (when \code{multi.tree = TRUE}).
+\item (Optional) Observation models for variables with measurement error:
+\itemize{
+\item Type "se": \code{Var_mean ~ dnorm(Var, 1/Var_se^2)}
+\item Type "reps": \code{Var_obs[i,j] ~ dnorm(Var[i], Var_tau)}
+}
+\item (Optional) Generalized linear mixed models for non-Gaussian responses (e.g., binomial).
+\item (Optional) Element-wise likelihoods for response variables with missing data.
 }
 }
 \examples{

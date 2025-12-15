@@ -11,14 +11,16 @@ plot_dag(
   node_size = 14,
   node_color = "black",
   node_fill = "white",
+  node_stroke = 1.5,
   text_size = 4,
   edge_width_range = c(0.5, 2),
+  edge_color_scheme = c("directional", "binary", "monochrome"),
   show_coefficients = TRUE,
-  ...
+  coords = NULL
 )
 }
 \arguments{
-\item{x}{A list of formulas (equations), a `because` model object, or a list of these.}
+\item{x}{A list of formulas (equations), a \code{because} model object, or a list of these.}
 
 \item{layout}{The layout algorithm to use (default "nicely"). See \code{\link[ggdag]{ggdag}}.}
 
@@ -30,21 +32,47 @@ plot_dag(
 
 \item{node_fill}{Color of the node interior (default "white").}
 
+\item{node_stroke}{Thickness of the node border (default 1.5).}
+
 \item{text_size}{Size of the labels (default 4).}
 
 \item{edge_width_range}{Vector of length 2 defining the range of arrow widths (min, max) based on effect size.}
 
+\item{edge_color_scheme}{Character; one of "directional" (default), "binary", or "monochrome".
+"directional" colors edges red/blue/grey based on effect direction and whether the 95\\% CI excludes zero.
+"binary" colors edges black/grey based on whether the 95\\% CI excludes zero (black) or includes it (grey).
+"monochrome" colors all edges black.}
+
 \item{show_coefficients}{Logical; whether to print coefficient values on edges (only for fitted models).}
 
-\item{...}{Additional arguments passed to \code{\link[ggdag]{expand_plot}}.}
+\item{coords}{Optional named list of coordinates for the nodes, e.g. \code{list(A = c(1, 1), B = c(2, 2))}.
+If provided, these will override the \code{layout} algorithm.}
 }
 \value{
-A `ggplot` object.
+A \code{ggplot} object that can be further customized with standard ggplot2 functions (e.g., \code{+ theme_...()}, \code{+ ggtitle(...)}).
 }
 \description{
 Visualizes the Directed Acyclic Graph (DAG) implied by a set of equations
-or a fitted `because` model. If a fitted model is provided:
-* Path coefficients are displayed on the edges.
-* Edges are colored black if the parameter's 95% Credible Interval excludes zero, and grey otherwise.
-* Edge thickness scales with the absolute effect size.
+or a fitted \code{because} model. If a fitted model is provided:
+\itemize{
+\item Path coefficients are displayed on the edges.
+\item Edge colors are determined by the \code{edge_color_scheme} argument (e.g., Red/Blue for directional, Black/Grey for binary).
+\item Structural edges (without fitted data) are colored black.
+\item Edge thickness scales with the absolute effect size.
+}
+}
+\examples{
+\dontrun{
+# Basic plotting
+eq <- list(y ~ x + z, x ~ z)
+plot_dag(eq)
+
+# Custom Layout
+my_coords <- list(
+  y = c(1, 1),
+  x = c(0, 0),
+  z = c(2, 0)
+)
+plot_dag(eq, coords = my_coords)
+}
 }
