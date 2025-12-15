@@ -315,12 +315,46 @@ plot_dag <- function(
         levels = c("Observed", "Latent")
     )
 
-    # Build Plot Structure
+    # Calculate uniform node size for plotting and caps
+    # Handle case where combined_dag_data might be missing final_node_size or empty
+    if (is.null(combined_dag_data$final_node_size)) {
+        uniform_node_size <- node_size
+    } else {
+        uniform_node_size <- max(
+            combined_dag_data$final_node_size,
+            na.rm = TRUE
+        )
+        # Fallback if max is -Inf
+        if (!is.finite(uniform_node_size)) uniform_node_size <- node_size
+    }
+
+    # Define Caps based on node size
+    # node_size in geom_point is roughly diameter in mm?
+    # ggraph caps use units.
+    # Heuristic: convert size to unit.
+    # geom_point size 1 is 1/72 inch * 1.5? roughly.
+    # Let's try circle(size, "pt") but scaled properly.
+    # Actually, a safe bet is to use the same value as "mm" if it's large (14),
+    # but 14mm is huge. node_size=14 in ggplot is big.
+    # Let's use circle(uniform_node_size / 2 + 1, "mm") as a starting guess or just use "pt" * scaling.
+    # Standard ggplot point size 1 = 0.75mm?
+    # Let's use ggraph::circle(uniform_node_size * 1.5, "pt") + a small buffer.
+    node_radius_pt <- uniform_node_size * 2 # Approximate radius coverage in points including text?
+    # No, let's just use a generous cap.
+    cap_size <- ggraph::circle(uniform_node_size * 1.5, "pt")
+
     p <- ggplot2::ggplot(
         combined_dag_data,
         ggplot2::aes(x = x, y = y, xend = xend, yend = yend)
     ) +
-        ggdag::theme_dag()
+        ggdag::theme_dag() +
+        # Add margins back (ggdag removes them)
+        ggplot2::theme(plot.margin = ggplot2::margin(10, 10, 10, 10, "mm")) +
+        # prevent clipping of large nodes
+        ggplot2::coord_cartesian(clip = "off") +
+        # Expand axes to give space for nodes
+        ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = 0.2)) +
+        ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = 0.2))
 
     if (length(unique(combined_dag_data$model_label)) > 1) {
         p <- p + ggplot2::facet_wrap(~model_label)
@@ -328,12 +362,84 @@ plot_dag <- function(
 
     # Edges Layer: Split into Directed and Bidirected
     if ("edge_type" %in% names(combined_dag_data)) {
+        # Normalize bidirected edges to curve AWAY from the graph center.
+        # Heuristic:
+        # 1. Calculate Graph Centroid.
+        # 2. For each edge, check if the "Right" side (curvature > 0) points towards or away from centroid.
+        # 3. Swap direction if it points towards center.
+
+        is_bidirected <- combined_dag_data$edge_type == "<->" &
+            !is.na(combined_dag_data$edge_type)
+        if (any(is_bidirected)) {
+            # Calculate Centroid of the graph layout
+            # Use unique node positions to avoid weighting by edge count
+            unique_nodes <- unique(combined_dag_data[, c("name", "x", "y")])
+            centroid_x <- mean(unique_nodes$x, na.rm = TRUE)
+            centroid_y <- mean(unique_nodes$y, na.rm = TRUE)
+
+            # Vectorized check
+            # Current Vector P1 -> P2
+            v_x <- combined_dag_data$xend - combined_dag_data$x
+            v_y <- combined_dag_data$yend - combined_dag_data$y
+
+            # Midpoint
+            m_x <- (combined_dag_data$x + combined_dag_data$xend) / 2
+            m_y <- (combined_dag_data$y + combined_dag_data$yend) / 2
+
+            # Normal Vector pointing "Right" (Curvature direction)
+            # R = (dy, -dx)
+            r_x <- v_y
+            r_y <- -v_x
+
+            # Test Point: Midpoint + Normal
+            t_x <- m_x + r_x
+            t_y <- m_y + r_y
+
+            # Distances to Centroid
+            # dist_current: distance from (Midpoint + Right) to Centroid
+            dist_current <- (t_x - centroid_x)^2 + (t_y - centroid_y)^2
+
+            # dist_swapped: distance from (Midpoint - Right) to Centroid
+            # (Midpoint - Right) coincides with the curve apex if we swapped direction
+            t_swapped_x <- m_x - r_x
+            t_swapped_y <- m_y - r_y
+            dist_swapped <- (t_swapped_x - centroid_x)^2 +
+                (t_swapped_y - centroid_y)^2
+
+            # If swapped distance is GREATER (farther from center), we should swap
+            # to make the curve point that way.
+            needs_swap <- is_bidirected & (dist_swapped > dist_current)
+
+            if (any(needs_swap, na.rm = TRUE)) {
+                swap_idx <- which(needs_swap)
+
+                # Temporary storage to enable swapping
+                tmp_name <- combined_dag_data$name[swap_idx]
+                tmp_x <- combined_dag_data$x[swap_idx]
+                tmp_y <- combined_dag_data$y[swap_idx]
+
+                combined_dag_data$name[swap_idx] <- combined_dag_data$to[
+                    swap_idx
+                ]
+                combined_dag_data$x[swap_idx] <- combined_dag_data$xend[
+                    swap_idx
+                ]
+                combined_dag_data$y[swap_idx] <- combined_dag_data$yend[
+                    swap_idx
+                ]
+
+                combined_dag_data$to[swap_idx] <- tmp_name
+                combined_dag_data$xend[swap_idx] <- tmp_x
+                combined_dag_data$yend[swap_idx] <- tmp_y
+            }
+        }
+
         # Deduplicate bidirected edges to prevent double plotting
         combined_dag_data <- dplyr::mutate(
             combined_dag_data,
             edge_id = dplyr::case_when(
                 edge_type == "<->" ~ paste(
-                    pmin(name, to),
+                    pmin(name, to), # Use sorting for ID just to be robust/safe
                     pmax(name, to),
                     sep = "_"
                 ),
@@ -358,27 +464,31 @@ plot_dag <- function(
                     label = edge_label
                 ),
                 angle_calc = "along",
-                label_dodge = ggplot2::unit(3, "mm")
+                label_dodge = ggplot2::unit(3, "mm"),
+                start_cap = cap_size,
+                end_cap = cap_size
             )
 
-        # 2. Bidirected Edges (Dotted, Curved, Double Arrow)
+        # 2. Bidirected Edges (Solid Grey, Curved, Double Arrow)
         p <- p +
             ggdag::geom_dag_edges_arc(
                 data = function(x) dplyr::filter(x, edge_type == "<->"),
                 mapping = ggplot2::aes(
-                    edge_width = weight_abs,
-                    edge_colour = significant, # Map color to significance category
-                    label = edge_label
+                    label = edge_label # Keep label
                 ),
-                curvature = 0.3,
-                edge_linetype = "dotted", # Changed to dotted for clarity
+                edge_width = 0.3, # Constant thin width
+                curvature = 0.5, # Sharper curve to avoid corners/overlap
+                edge_colour = "grey60", # Fixed grey color
+                edge_linetype = "solid", # Continuous line
                 angle_calc = "along",
                 label_dodge = ggplot2::unit(3, "mm"),
                 arrow = ggplot2::arrow(
                     length = ggplot2::unit(2.5, "mm"),
                     type = "closed",
                     ends = "both"
-                )
+                ),
+                start_cap = cap_size,
+                end_cap = cap_size
             )
 
         # Scales
@@ -398,25 +508,16 @@ plot_dag <- function(
                 guide = "none"
             )
     } else {
-        p <- p + ggdag::geom_dag_edges()
-    }
-
-    # Calculate uniform node size
-    # Handle case where combined_dag_data might be missing final_node_size or empty
-    if (is.null(combined_dag_data$final_node_size)) {
-        uniform_node_size <- node_size
-    } else {
-        uniform_node_size <- max(
-            combined_dag_data$final_node_size,
-            na.rm = TRUE
-        )
-        # Fallback if max is -Inf
-        if (!is.finite(uniform_node_size)) uniform_node_size <- node_size
+        p <- p +
+            ggdag::geom_dag_edges(
+                start_cap = cap_size,
+                end_cap = cap_size
+            )
     }
 
     # Nodes Layer (Final, Single Layer)
     p <- p +
-        ggdag::geom_dag_node(
+        ggplot2::geom_point(
             ggplot2::aes(shape = type), # Map shape to observed/latent
             size = uniform_node_size,
             color = node_color,
