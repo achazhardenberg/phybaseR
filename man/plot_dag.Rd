@@ -30,7 +30,7 @@ plot_dag(
 
 \item{node_fill}{Color of the node interior (default "white").}
 
-\item{text_size}{Size of the labels (default 5).}
+\item{text_size}{Size of the labels (default 4).}
 
 \item{edge_width_range}{Vector of length 2 defining the range of arrow widths (min, max) based on effect size.}
 
@@ -43,6 +43,8 @@ A `ggplot` object.
 }
 \description{
 Visualizes the Directed Acyclic Graph (DAG) implied by a set of equations
-or a fitted `because` model. If a fitted model is provided, it can display
-path coefficients (standardized if available) on the edges.
+or a fitted `because` model. If a fitted model is provided:
+* Path coefficients are displayed on the edges.
+* Edges are colored black if the parameter's 95% Credible Interval excludes zero, and grey otherwise.
+* Edge thickness scales with the absolute effect size.
 }
