@@ -315,27 +315,12 @@ plot_dag <- function(
         levels = c("Observed", "Latent")
     )
 
-    # Build Plot
+    # Build Plot Structure
     p <- ggplot2::ggplot(
         combined_dag_data,
         ggplot2::aes(x = x, y = y, xend = xend, yend = yend)
     ) +
-        # Nodes using standard geom_point to ensure single border
-        ggplot2::geom_point(
-            ggplot2::aes(shape = type),
-            size = node_size,
-            color = node_color,
-            fill = node_fill,
-            stroke = node_stroke,
-            show.legend = FALSE
-        ) +
-        ggdag::geom_dag_text(size = text_size, color = node_color) +
-        ggdag::theme_dag() +
-        # Map shapes: Square (22) for Observed, Circle (21) for Latent
-        ggplot2::scale_shape_manual(
-            values = c(Observed = 22, Latent = 21),
-            guide = "none" # Remove legend
-        )
+        ggdag::theme_dag()
 
     if (length(unique(combined_dag_data$model_label)) > 1) {
         p <- p + ggplot2::facet_wrap(~model_label)
@@ -344,7 +329,6 @@ plot_dag <- function(
     # Edges Layer: Split into Directed and Bidirected
     if ("edge_type" %in% names(combined_dag_data)) {
         # Deduplicate bidirected edges to prevent double plotting
-        # Create a sorted ID for bidirected edges
         combined_dag_data <- dplyr::mutate(
             combined_dag_data,
             edge_id = dplyr::case_when(
@@ -430,11 +414,11 @@ plot_dag <- function(
         if (!is.finite(uniform_node_size)) uniform_node_size <- node_size
     }
 
-    # Nodes Layer
+    # Nodes Layer (Final, Single Layer)
     p <- p +
         ggdag::geom_dag_node(
+            ggplot2::aes(shape = type), # Map shape to observed/latent
             size = uniform_node_size,
-            shape = 21, # Circle with border
             color = node_color,
             fill = node_fill,
             stroke = node_stroke
@@ -443,6 +427,11 @@ plot_dag <- function(
             ggplot2::aes(label = label_display),
             size = text_size,
             colour = "black" # Text color
+        ) +
+        # Map shapes: Square (22) for Observed, Circle (21) for Latent
+        ggplot2::scale_shape_manual(
+            values = c(Observed = 22, Latent = 21),
+            guide = "none" # Remove legend
         )
 
     return(p)
