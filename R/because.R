@@ -2188,6 +2188,13 @@ because <- function(
     model = model,
     model_code = model_output$model,
     data = data, # Store data for recompilation if needed
+    input = list(
+      equations = equations,
+      random = random,
+      structure = structure,
+      data = original_data, # Store original data too for safety
+      latent = latent
+    ),
     samples = samples,
     summary = sum_stats,
     monitor = monitor,
@@ -2195,7 +2202,6 @@ because <- function(
     dsep = dsep,
     dsep_tests = dsep_tests,
     dsep_results = dsep_results,
-    parameter_map = parameter_map,
     parameter_map = parameter_map,
     induced_correlations = induced_cors
   )

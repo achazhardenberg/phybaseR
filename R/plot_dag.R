@@ -6,6 +6,7 @@
 #'
 #' @param x A list of formulas (equations), a `because` model object, or a list of these.
 #' @param layout The layout algorithm to use (default "nicely"). See \code{\link[ggdag]{ggdag}}.
+#' @param latent Character vector of latent variable names. Overrides the model's latent variables if provided.
 #' @param node_size Size of the nodes (default 10).
 #' @param text_size Size of the labels (default 5).
 #' @param edge_width_range Vector of length 2 defining the range of arrow widths (min, max) based on effect size.
@@ -18,6 +19,7 @@
 plot_dag <- function(
     x,
     layout = "nicely",
+    latent = NULL,
     node_size = 12,
     text_size = 4,
     edge_width_range = c(0.5, 2),
@@ -28,7 +30,7 @@ plot_dag <- function(
     if (
         !requireNamespace("dagitty", quietly = TRUE) ||
             !requireNamespace("ggdag", quietly = TRUE) ||
-            !requireNamespace("ggraph", quietly = TRUE) || # Explicitly check ggraph
+            !requireNamespace("ggraph", quietly = TRUE) ||
             !requireNamespace("ggplot2", quietly = TRUE) ||
             !requireNamespace("dplyr", quietly = TRUE)
     ) {
@@ -55,11 +57,21 @@ plot_dag <- function(
             label <- paste("Model", i)
         }
 
-        # 1. Extract Equations
+        # 1. Extract Equations and Latent Info
+        current_latent <- latent
+
         if (inherits(obj, "because")) {
-            eqs <- obj$parameter_map$equations %||% obj$input$equations # Fallback if map missing
+            eqs <- obj$parameter_map$equations %||%
+                obj$input$equations %||%
+                obj$parameter_map$equations # Fallback
             if (is.null(eqs)) {
-                stop("Could not find equations in 'because' object.")
+                stop(
+                    "Could not find equations in 'because' object. Please refit the model or manually pass equations."
+                )
+            }
+            # Use object's latent vars if not overridden
+            if (is.null(current_latent)) {
+                current_latent <- obj$input$latent
             }
         } else {
             # List of formulas
@@ -67,7 +79,13 @@ plot_dag <- function(
         }
 
         # 2. Convert to dagitty syntax
-        dag_str <- equations_to_dag_string(eqs)
+        induced_cors <- NULL
+        if (inherits(obj, "because")) {
+            induced_cors <- obj$induced_correlations %||%
+                obj$input$induced_correlations
+        }
+
+        dag_str <- equations_to_dag_string(eqs, induced_cors)
         dag_obj <- dagitty::dagitty(dag_str)
 
         # 3. Tidy it up using ggdag
@@ -76,55 +94,85 @@ plot_dag <- function(
         # Extract data frame for plotting (nodes + edges flattened)
         dag_data <- dplyr::as_tibble(tidy_dag)
 
-        # 4. If fitted model, extract coefficients
+        # Mark node types (Observed vs Latent)
+        dag_data$type <- "Observed"
+        if (!is.null(current_latent)) {
+            dag_data$type[dag_data$name %in% current_latent] <- "Latent"
+        }
+
+        # Initialize columns for ALL edges
+        dag_data$edge_type <- NA # "->", "<->"
+        dag_data$weight_abs <- 0.5
+        dag_data$edge_label <- NA
+        dag_data$val <- NA
+
+        # Get edges metadata from dagitty
+        edges_meta <- dagitty::edges(dag_obj) # v, w, e
+
+        # 4. If fitted model, extract coefficients/correlations
+        stats <- NULL
         if (inherits(obj, "because") && !is.null(obj$summary)) {
             stats <- obj$summary$statistics
-            edges <- dagitty::edges(dag_obj) # v, w
+        }
 
-            edges$beta <- NA
-            edges$label <- NA
-            edges$val <- NA # Initialize
+        # Process edges to find parameters
+        if ("to" %in% names(dag_data) && nrow(edges_meta) > 0) {
+            edge_rows <- which(!is.na(dag_data$to))
 
-            for (r in seq_len(nrow(edges))) {
-                predictor <- edges$v[r]
-                response <- edges$w[r]
+            for (idx in edge_rows) {
+                v <- dag_data$name[idx]
+                w <- dag_data$to[idx]
 
-                # Try both beta_Y_X and other patterns?
-                # Standard in because: beta_Response_Predictor
-                param_name <- paste0("beta_", response, "_", predictor)
+                # Find corresponding edge via match
+                meta_match <- which(
+                    (edges_meta$v == v & edges_meta$w == w) |
+                        (edges_meta$e == "<->" &
+                            edges_meta$v == w &
+                            edges_meta$w == v)
+                )
 
-                if (param_name %in% rownames(stats)) {
-                    val <- stats[param_name, "Mean"]
-                    edges$beta[r] <- abs(val)
-                    edges$val[r] <- val
-                    edges$label[r] <- round(val, 2)
-                }
-            }
+                if (length(meta_match) > 0) {
+                    m_idx <- meta_match[1]
+                    e_type <- edges_meta$e[m_idx]
+                    dag_data$edge_type[idx] <- e_type
 
-            # Join to dag_data
-            # dag_data has 'name' (start) and 'to' (end)
-            if ("to" %in% names(dag_data)) {
-                dag_data$beta_abs <- 0.5
-                dag_data$edge_label <- NA
-                dag_data$val <- NA
+                    if (!is.null(stats)) {
+                        val <- NA
+                        if (e_type == "->") {
+                            # Beta: beta_w_v
+                            pname <- paste0("beta_", w, "_", v)
+                            if (pname %in% rownames(stats)) {
+                                val <- stats[pname, "Mean"]
+                            }
+                        } else if (e_type == "<->") {
+                            # Rho: rho_v_w or rho_w_v
+                            pname1 <- paste0("rho_", v, "_", w)
+                            pname2 <- paste0("rho_", w, "_", v)
+                            if (pname1 %in% rownames(stats)) {
+                                val <- stats[pname1, "Mean"]
+                            } else if (pname2 %in% rownames(stats)) {
+                                val <- stats[pname2, "Mean"]
+                            }
+                        }
 
-                edge_rows <- which(!is.na(dag_data$to))
-                for (idx in edge_rows) {
-                    v <- dag_data$name[idx]
-                    w <- dag_data$to[idx]
-                    match <- which(edges$v == v & edges$w == w)
-                    if (length(match) > 0) {
-                        dag_data$beta_abs[idx] <- edges$beta[match]
-                        dag_data$edge_label[idx] <- edges$label[match]
-                        dag_data$val[idx] <- edges$val[match]
+                        if (!is.na(val)) {
+                            dag_data$val[idx] <- val
+                            dag_data$weight_abs[idx] <- abs(val)
+                            dag_data$edge_label[idx] <- round(val, 2)
+                        }
                     }
                 }
-                # Replace NA betas/alphas for plotting
-                dag_data$beta_abs[
-                    is.na(dag_data$beta_abs) & !is.na(dag_data$to)
-                ] <- 0.2
             }
         }
+
+        # Fill defaults for plotting if missing
+        dag_data$weight_abs[
+            is.na(dag_data$weight_abs) & !is.na(dag_data$to)
+        ] <- 0.2
+        # Default edge type to -> if not found (robustness)
+        dag_data$edge_type[
+            is.na(dag_data$edge_type) & !is.na(dag_data$to)
+        ] <- "->"
 
         dag_data$model_label <- label
 
@@ -135,31 +183,65 @@ plot_dag <- function(
         }
     }
 
+    # Ensure type is a factor
+    combined_dag_data$type <- factor(
+        combined_dag_data$type,
+        levels = c("Observed", "Latent")
+    )
+
     # Build Plot
     p <- ggplot2::ggplot(
         combined_dag_data,
         ggplot2::aes(x = x, y = y, xend = xend, yend = yend)
     ) +
-        ggdag::geom_dag_node(size = node_size, color = "grey85") +
+        # Nodes with shape mapping
+        ggdag::geom_dag_node(
+            ggplot2::aes(shape = type),
+            size = node_size,
+            color = "grey85"
+        ) +
         ggdag::geom_dag_text(size = text_size) +
-        ggdag::theme_dag()
+        ggdag::theme_dag() +
+        # Manual shape scale: Square (15) for Observed, Circle (16) for Latent
+        ggplot2::scale_shape_manual(values = c(Observed = 15, Latent = 16))
 
     if (length(unique(combined_dag_data$model_label)) > 1) {
         p <- p + ggplot2::facet_wrap(~model_label)
     }
 
-    if (show_coefficients && "val" %in% names(combined_dag_data)) {
+    # Edges Layer: Split into Directed and Bidirected
+    if ("edge_type" %in% names(combined_dag_data)) {
+        # 1. Directed Edges (Solid)
         p <- p +
-            ggdag::geom_dag_edges(
-                ggplot2::aes(
-                    edge_width = beta_abs,
-                    edge_alpha = beta_abs,
+            ggdag::geom_dag_edges_link(
+                data = function(x) dplyr::filter(x, edge_type == "->"),
+                mapping = ggplot2::aes(
+                    edge_width = weight_abs,
+                    edge_alpha = weight_abs,
                     label = edge_label
                 )
-            ) +
-            # Note: geom_dag_edges typically handles arrows automatically.
-            # If label positioning is poor, consider geom_dag_edge_text separately,
-            # but direct label mapping is supported in ggraph/ggdag for edges.
+            )
+
+        # 2. Bidirected Edges (Dashed, Curved, Double Arrow)
+        p <- p +
+            ggdag::geom_dag_edges_arc(
+                data = function(x) dplyr::filter(x, edge_type == "<->"),
+                mapping = ggplot2::aes(
+                    edge_width = weight_abs,
+                    edge_alpha = weight_abs, # Or keep constant? User asked for rho on top.
+                    label = edge_label
+                ),
+                curvature = 0.3,
+                edge_linetype = "dashed",
+                arrow = ggplot2::arrow(
+                    length = ggplot2::unit(2.5, "mm"),
+                    type = "closed",
+                    ends = "both"
+                )
+            )
+
+        # Scales
+        p <- p +
             ggraph::scale_edge_width_continuous(
                 range = edge_width_range,
                 guide = "none"
@@ -177,22 +259,27 @@ plot_dag <- function(
 
 
 #' Convert Equations List to DAGitty String
+#' @param equations List of formulas
+#' @param induced_cors List of character vectors (pairs) for bidirected edges
 #' @noRd
-equations_to_dag_string <- function(equations) {
+equations_to_dag_string <- function(equations, induced_cors = NULL) {
     edges <- c()
     for (eq in equations) {
         resp <- all.vars(eq)[1]
         predictors <- all.vars(eq)[-1]
-
-        # Check for random effects or special terms and stripping them might be needed
-        # but all.vars() usually gets basic variables.
-        # Note: If intercept only (Y~1), predictors is empty.
-
         for (pred in predictors) {
-            # Check against pure numbers (intercepts)
-            # all.vars shouldn't capture "1".
             edges <- c(edges, paste(resp, "<-", pred))
         }
     }
+
+    if (!is.null(induced_cors)) {
+        for (pair in induced_cors) {
+            if (length(pair) == 2) {
+                # Add bidirected edge A <-> B
+                edges <- c(edges, paste(pair[1], "<->", pair[2]))
+            }
+        }
+    }
+
     return(paste("dag {", paste(edges, collapse = "; "), "}"))
 }

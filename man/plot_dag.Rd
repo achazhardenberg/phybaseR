@@ -7,6 +7,7 @@
 plot_dag(
   x,
   layout = "nicely",
+  latent = NULL,
   node_size = 12,
   text_size = 4,
   edge_width_range = c(0.5, 2),
@@ -18,6 +19,8 @@ plot_dag(
 \item{x}{A list of formulas (equations), a `because` model object, or a list of these.}
 
 \item{layout}{The layout algorithm to use (default "nicely"). See \code{\link[ggdag]{ggdag}}.}
+
+\item{latent}{Character vector of latent variable names. Overrides the model's latent variables if provided.}
 
 \item{node_size}{Size of the nodes (default 10).}
 
