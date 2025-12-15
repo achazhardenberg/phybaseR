@@ -25,7 +25,6 @@ Once again we will use the Rhinogradentia dataset and tree previously analysed i
 
 ```{r}
 library(because)
-library(ape)
 
 data(rhino.dat)
 data(rhino.tree)
@@ -41,6 +40,8 @@ sem8_eq <- list(
     NL ~ BM + RS,
     DD ~ NL
 )
+
+
 ```
 
 Now we can fit the model with `because()` including the phylogenetic tree with the `structure` argument. Also, as this is a more complex model than in the previous examples, to speed up the model fitting we will run 3 chains in parallel using the `parallel = TRUE` and `n.cores = 3` arguments. Also we will request the WAIC information criterion to be computed by setting `WAIC = TRUE`:
@@ -55,8 +56,6 @@ fit_sem8 <- because(
     parallel = TRUE,
     n.cores = 3
 )
-
-summary(fit_sem8)
 
 summary(fit_sem8)
 
@@ -151,6 +150,8 @@ test_sem8_dsep <- because(
     n.cores = 3
 )
 
+summary(test_sem8_dsep)
+
 # d-separation Tests
 # ==================
 # 
@@ -212,7 +213,8 @@ RhinoMulti.bc <- because(
   n.cores = 3
 )
 
-# summary(RhinoMulti.bc)
+
+summary(RhinoMulti.bc)
 
 #                  Mean    SD Naive SE Time-series SE   2.5%    50%
 # alphaDD         0.593 0.291    0.005          0.008  0.043  0.588
