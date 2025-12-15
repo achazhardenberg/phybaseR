@@ -198,12 +198,13 @@ plot_dag <- function(
         combined_dag_data,
         ggplot2::aes(x = x, y = y, xend = xend, yend = yend)
     ) +
-        # Nodes with shape mapping (21=Circle, 22=Square support fill+color)
-        ggdag::geom_dag_node(
+        # Nodes using standard geom_point to ensure single border
+        ggplot2::geom_point(
             ggplot2::aes(shape = type),
             size = node_size,
             color = node_color,
             fill = node_fill,
+            stroke = 1.5,
             show.legend = FALSE
         ) +
         ggdag::geom_dag_text(size = text_size, color = node_color) +
