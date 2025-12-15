@@ -147,6 +147,17 @@ because_model <- function(
     vars_with_variability <- names(variability_list)
     exogenous_vars <- setdiff(vars_with_variability, all_responses)
 
+    if (multi.tree) {
+      model_lines <- c(
+        model_lines,
+        "  # Multi-tree sampling",
+        "  K ~ dcat(p_tree[])",
+        "  for (k in 1:Ntree) {",
+        "    p_tree[k] <- 1/Ntree",
+        "  }"
+      )
+    }
+
     if (length(exogenous_vars) > 0) {
       model_lines <- c(
         model_lines,
