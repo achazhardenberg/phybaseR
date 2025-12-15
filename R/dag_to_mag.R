@@ -8,7 +8,7 @@
 #            Causal Inference (2nd ed.). Cambridge University Press.
 #
 # These functions convert a DAG with latent variables into a MAG
-# (Maximal Ancestral Graph) and generate the appropriate m-separation
+# (Mixed Acyclic Graph) and generate the appropriate m-separation
 # basis set for testing.
 
 # Functions to accompany:

@@ -41,7 +41,7 @@ If \code{latent} is NULL, returns a list of formulas representing
 This function takes a set of structural equations defining a causal model
 and returns the conditional independence statements (d-separation or m-separation tests)
 implied by the model structure. If latent variables are specified, the function
-uses the MAG (Maximal Ancestral Graph) approach by Shipley and Douma (2021)
+uses the MAG (Mixed Acyclic Graph) approach by Shipley and Douma (2021)
 to account for unmeasured latent variables.
 }
 \details{
