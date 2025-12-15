@@ -8,7 +8,9 @@ plot_dag(
   x,
   layout = "nicely",
   latent = NULL,
-  node_size = 12,
+  node_size = 14,
+  node_color = "black",
+  node_fill = "white",
   text_size = 4,
   edge_width_range = c(0.5, 2),
   show_coefficients = TRUE,
@@ -22,7 +24,11 @@ plot_dag(
 
 \item{latent}{Character vector of latent variable names. Overrides the model's latent variables if provided.}
 
-\item{node_size}{Size of the nodes (default 10).}
+\item{node_size}{Size of the nodes (default 14).}
+
+\item{node_color}{Color of the node border (default "black").}
+
+\item{node_fill}{Color of the node interior (default "white").}
 
 \item{text_size}{Size of the labels (default 5).}
 

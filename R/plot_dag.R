@@ -7,7 +7,9 @@
 #' @param x A list of formulas (equations), a `because` model object, or a list of these.
 #' @param layout The layout algorithm to use (default "nicely"). See \code{\link[ggdag]{ggdag}}.
 #' @param latent Character vector of latent variable names. Overrides the model's latent variables if provided.
-#' @param node_size Size of the nodes (default 10).
+#' @param node_size Size of the nodes (default 14).
+#' @param node_color Color of the node border (default "black").
+#' @param node_fill Color of the node interior (default "white").
 #' @param text_size Size of the labels (default 5).
 #' @param edge_width_range Vector of length 2 defining the range of arrow widths (min, max) based on effect size.
 #' @param show_coefficients Logical; whether to print coefficient values on edges (only for fitted models).
@@ -20,7 +22,9 @@ plot_dag <- function(
     x,
     layout = "nicely",
     latent = NULL,
-    node_size = 12,
+    node_size = 14,
+    node_color = "black",
+    node_fill = "white",
     text_size = 4,
     edge_width_range = c(0.5, 2),
     show_coefficients = TRUE,
@@ -194,16 +198,21 @@ plot_dag <- function(
         combined_dag_data,
         ggplot2::aes(x = x, y = y, xend = xend, yend = yend)
     ) +
-        # Nodes with shape mapping
+        # Nodes with shape mapping (21=Circle, 22=Square support fill+color)
         ggdag::geom_dag_node(
             ggplot2::aes(shape = type),
             size = node_size,
-            color = "grey85"
+            color = node_color,
+            fill = node_fill,
+            show.legend = FALSE
         ) +
-        ggdag::geom_dag_text(size = text_size) +
+        ggdag::geom_dag_text(size = text_size, color = node_color) +
         ggdag::theme_dag() +
-        # Manual shape scale: Square (15) for Observed, Circle (16) for Latent
-        ggplot2::scale_shape_manual(values = c(Observed = 15, Latent = 16))
+        # Map shapes: Square (22) for Observed, Circle (21) for Latent
+        ggplot2::scale_shape_manual(
+            values = c(Observed = 22, Latent = 21),
+            guide = "none" # Remove legend
+        )
 
     if (length(unique(combined_dag_data$model_label)) > 1) {
         p <- p + ggplot2::facet_wrap(~model_label)
