@@ -52,15 +52,25 @@
 #' @param quiet Logical; suppress JAGS output (default = FALSE).
 #' @param dsep Logical; if \code{TRUE}, monitor only the first beta in each structural equation (used for d-separation testing).
 #' @param variability Optional specification for variables with measurement error or within-species variability.
-#'   **AUTO-DETECTION**: If a variable \code{X} has a corresponding column \code{X_se} (standard errors),
-#'   \code{X_obs} (repeated measures), or is provided as a matrix, variability is automatically detected.
-#'
-#'   **Manual specification** (for non-standard column names):
+#'   \strong{Global Setting}:
 #'   \itemize{
-#'     \item Simple: \code{list(X = "se", Y = "reps")} - uses standard \code{X_se}/\code{Y_obs} naming
-#'     \item Custom columns: \code{list(X = list(type = "se", se_col = "X_SD"))} - specify custom column names
+#'     \item \code{"reps"}: Applies repeat-measures modeling to \strong{all} continuous variables in the equations (except grouping variables). Expects \code{X_obs} matrix or long-format data.
+#'     \item \code{"se"}: Applies measurement error modeling to \strong{all} continuous variables. Expects \code{X_se} columns.
+#'   }
+#'
+#'   \strong{Manual Specification} (Named Vector/List):
+#'   \itemize{
+#'     \item Simple: \code{c(X = "se", Y = "reps")} - mixed types
+#'     \item Custom columns: \code{list(X = list(type = "se", se_col = "X_sd"))}
 #'     \item For SE: \code{se_col} (SE column), \code{mean_col} (mean column, optional)
 #'     \item For reps: \code{obs_col} (observations matrix column)
+#'   }
+#'
+#'   \strong{Auto-Detection}:
+#'   If not specified, the package attempts to detect variability based on column names:
+#'   \itemize{
+#'     \item \code{X_se} -> type="se"
+#'     \item \code{X_obs} or matrix column -> type="reps"
 #'   }
 #' @param distribution Optional named character vector specifying the distribution for response variables.
 #'   Default is "gaussian" for all variables. Supported values:
@@ -469,9 +479,19 @@ because <- function(
         if (!quiet) {
           message(
             "  Formatted ",
-            length(reps_vars),
+            length(names(formatted_list)),
             " variables as replicate matrices."
           )
+        }
+
+        # Check for missing variables that were expected to be formatted
+        missing_reps <- setdiff(reps_vars, names(formatted_list))
+        if (length(missing_reps) > 0) {
+          stop(paste(
+            "The following variables were identified for 'reps' processing (from equations) but were NOT found in the data:",
+            paste(missing_reps, collapse = ", "),
+            "\nPlease check your column names."
+          ))
         }
       } else {
         warning(
@@ -964,6 +984,8 @@ because <- function(
 
     # Check for SE pattern (X_se)
     se_name <- paste0(var, "_se")
+    sd_name <- paste0(var, "_sd")
+
     if (se_name %in% names(data)) {
       auto_variability[[var]] <- "se"
       if (!quiet) {
@@ -973,7 +995,7 @@ because <- function(
           se_name
         ))
       }
-    }
+
 
     # Check for repeated measures pattern (X_obs or matrix)
     obs_name <- paste0(var, "_obs")

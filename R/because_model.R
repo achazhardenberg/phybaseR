@@ -2441,7 +2441,7 @@ because_model <- function(
   }
 
   # Covariance structures for responses
-  model_lines <- c(model_lines, "  # Covariance structure for responses")
+
   for (response in names(response_counter)) {
     # Skip correlated vars (handled above)
     if (response %in% correlated_vars) {
