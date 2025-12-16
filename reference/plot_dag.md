@@ -17,7 +17,7 @@ equations or a fitted `because` model. If a fitted model is provided:
 ``` r
 plot_dag(
   x,
-  layout = "nicely",
+  layout = "sugiyama",
   latent = NULL,
   node_size = 14,
   node_color = "black",
@@ -40,7 +40,7 @@ plot_dag(
 
 - layout:
 
-  The layout algorithm to use (default "nicely"). See
+  The layout algorithm to use (default "sugiyama"). See
   [`ggdag`](https://r-causal.github.io/ggdag/reference/ggdag.html).
 
 - latent:
