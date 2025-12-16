@@ -43,4 +43,5 @@ Suggests:
     ggplot2,
     dplyr
 VignetteBuilder: knitr, rmarkdown
-URL: https://achazhardenberg.github.io/because/
+URL: https://achazhardenberg.github.io/because/, https://github.com/achazhardenberg/because
+BugReports: https://github.com/achazhardenberg/because/issues
