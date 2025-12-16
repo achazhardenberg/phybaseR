@@ -27,13 +27,13 @@
 To install the **stable release** (`v0.9.6`), run:
 
 ```r
-remotes::install_github("achazhardenberg/because@v0.9.6", build_vignettes = TRUE)
+remotes::install_github("because-pkg/because@v0.9.6", build_vignettes = TRUE)
 ```
 
 To install the **latest development version** (unstable), run:
 
 ```r
-remotes::install_github("achazhardenberg/because", build_vignettes = TRUE)
+remotes::install_github("because-pkg/because", build_vignettes = TRUE)
 ```
 
 ## Prerequisites
