@@ -8,3 +8,5 @@
   d-separation](https://achazhardenberg.github.io/because/articles/02_dseparation.md):
 - [Phylogenetic
   Models](https://achazhardenberg.github.io/because/articles/03_phylogenetic_models.md):
+- [Missing Data Imputation in
+  because](https://achazhardenberg.github.io/because/articles/04_missing_data.md):

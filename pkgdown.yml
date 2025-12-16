@@ -5,7 +5,8 @@ articles:
   01_getting_started: 01_getting_started.html
   02_dseparation: 02_dseparation.html
   03_phylogenetic_models: 03_phylogenetic_models.html
-last_built: 2025-12-16T19:32Z
+  04_missing_data: 04_missing_data.html
+last_built: 2025-12-16T20:00Z
 urls:
   reference: https://achazhardenberg.github.io/because/reference
   article: https://achazhardenberg.github.io/because/articles
