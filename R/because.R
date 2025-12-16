@@ -1,4 +1,4 @@
-#' Run a Phylogenetic Bayesian Structural Equation model (Because)
+#' Run a Bayesian Structural Equation Model
 #'
 #' @param data Data for the model. Accepts:
 #'   \itemize{
