@@ -72,7 +72,7 @@ Sampler) installed on your machine.
 - [`RhinoMulti_se.dat`](https://achazhardenberg.github.io/because/reference/RhinoMulti_se.dat.md)
   : Rhinograd Means and Standard Errors
 - [`because()`](https://achazhardenberg.github.io/because/reference/because.md)
-  : Run a Phylogenetic Bayesian Structural Equation model (Because)
+  : Run a Bayesian Structural Equation Model
 - [`because_compare()`](https://achazhardenberg.github.io/because/reference/because_compare.md)
   : Compare Because Models
 - [`because_dsep()`](https://achazhardenberg.github.io/because/reference/because_dsep.md)

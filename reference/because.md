@@ -1,6 +1,6 @@
-# Run a Phylogenetic Bayesian Structural Equation model (Because)
+# Run a Bayesian Structural Equation Model
 
-Run a Phylogenetic Bayesian Structural Equation model (Because)
+Run a Bayesian Structural Equation Model
 
 ## Usage
 
