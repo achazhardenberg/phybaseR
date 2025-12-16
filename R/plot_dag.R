@@ -8,7 +8,7 @@
 #' * Edge thickness scales with the absolute effect size.
 #'
 #' @param x A list of formulas (equations), a `because` model object, or a list of these.
-#' @param layout The layout algorithm to use (default "nicely"). See \code{\link[ggdag]{ggdag}}.
+#' @param layout The layout algorithm to use (default "sugiyama"). See \code{\link[ggdag]{ggdag}}.
 #' @param latent Character vector of latent variable names. Overrides the model's latent variables if provided.
 #' @param node_size Size of the nodes (default 14).
 #' @param node_color Color of the node border (default "black").
@@ -42,9 +42,10 @@
 #' )
 #' plot_dag(eq, coords = my_coords)
 #' }
+#'
 plot_dag <- function(
     x,
-    layout = "nicely",
+    layout = "sugiyama",
     latent = NULL,
     node_size = 14,
     node_color = "black",
