@@ -14,6 +14,7 @@ Description: Provides tools for specifying and fitting Bayesian Structural Equat
     evolutionary analyses, accounting for phylogenetic uncertainty, spatial autocorrelation, 
     and other covariance structures. Implements and expands on the methods described in
     von Hardenberg and Gonzalez-Voyer (2025) <doi:10.1111/2041-210X.70044>.
+SystemRequirements: JAGS (>= 4.0.0)
 License: AGPL-3
 Encoding: UTF-8
 LazyData: true
