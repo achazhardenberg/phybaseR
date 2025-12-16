@@ -1,0 +1,169 @@
+# Getting Started with because
+
+## Getting started
+
+**because** is an R package designed to easily perform causal inference
+with Bayesian Structural Equation Models in JAGS. The package integrates
+the methods proposed by von Hardenberg & Gonzalez-Voyer (2025) to fit
+Phylogenetic Bayesian Structural Equation Models (Because) and extends
+them to other types of covariance structures (eg. spatial
+autocorrelation, genetic relatedness etc.).
+
+**because** main features:
+
+- [Causal Inference with
+  D-Separation](https://achazhardenberg.github.io/because/articles/02_dseparation.md):
+  Testing conditional independencies implied by your causal model.
+- [Phylogenetic Path
+  Analysis](https://achazhardenberg.github.io/because/articles/03_phylogenetic_models.md):
+  Using the Phylogenetic Bayesian Structural Equation Model appraoch
+  (Because, von Hardenberg & Gonzalez-Voyer, 2025).
+- *Alternative Covariance structures:* Spatial, genetic, social, or
+  other correlation structures. \*Alternative dustribution families:
+  Modeling non-Gaussian data.
+  - Gaussian (continuous data)
+  - Binomial (binary/proportion data)
+  - Multinomial (unordered categorical data)
+  - Ordinal (ordered categorical data)
+  - Poisson (count data)
+  - Negative Binomial (overdispersed count data
+  - Zero inflated Poissson (ZIP) and negative binomial (ZINB)
+- *Advanced Model Specifications:* random effects (mixed models, nested
+  designs), polynomial terms, interaction terms,categorical predictors,
+  measurement error, missing data, phylogenetic uncertainty.
+- *Hierarchical Data:* Multi-level data with variables at different
+  hierarchical levels.
+- *Latent Variables and MAG:* Measurement error models and causal
+  inference in the presence of latent variables using the MAG approach
+  by Shipley & Douda (2021).
+- *Model Diagnostics:* Checking convergence, comparing models, and
+  interpreting results.
+
+### Quick Start
+
+#### Installation
+
+Before using **because**, you need to have **JAGS** (Just Another Gibbs
+Sampler) installed on your machine.
+
+- **macOS**: `brew install jags` or download from
+  [SourceForge](http://mcmc-jags.sourceforge.net).
+- **Windows**: Download installer from
+  [SourceForge](http://mcmc-jags.sourceforge.net).
+- **Linux**: `sudo apt-get install jags`.
+
+After installing JAGS, you can install `because` from GitHub.
+
+To install the **stable release** (`v0.9.4`):
+
+``` r
+remotes::install_github("achazhardenberg/because@v0.9.4", build_vignettes = TRUE)
+```
+
+To install the **latest development version**:
+
+``` r
+remotes::install_github("achazhardenberg/because", build_vignettes = TRUE)
+```
+
+Finally, load the package:
+
+``` r
+library(because)
+```
+
+#### Your First Model
+
+The main function in because is
+[`because()`](https://achazhardenberg.github.io/because/reference/because.md),
+which compiles and fits your specified Structural Equation Model in
+JAGS. The function is very rich with functionalities allowing to model
+complex models with different error structures and hierarchically
+structured data. However, here, to show the basic workflow, we will use
+because() to fit a simple linear model involving only two variables.
+Having only two variables this is not a typical SEM being equivalent to
+a simple linear regression which can not be used to infer causality, but
+it serves to illustrate the basic usage of the package.
+
+Let’s start simulating two variables X and Y where Y is correlated to X:
+
+``` r
+# set seed for reproducibility
+set.seed(67)
+
+# Simulate predictor
+X <- rnorm(n = 100, mean = 50, sd = 10)
+
+# Generate response with the chosen intercept (alpha) and slope (beta)
+alpha <- 20
+Y <- alpha + beta * X + rnorm(n, mean = 0, sd = 10)
+
+# Combine into data frame
+sim.dat <- data.frame(X, Y)
+
+# Fit linear model with lm() function for comparison
+summary(lm(Y ~ X, data = sim.dat))
+```
+
+Now we can fit the same model using because. We need to specify the
+structural equations (in this case only one) using R’s formula syntax
+and then call
+[`because()`](https://achazhardenberg.github.io/because/reference/because.md)
+passing the equation and the data frame:
+
+``` r
+# Define the equations
+equations <- list(Y ~ X)
+
+# Fit the model
+fit <- because(
+  equations = equations,
+  data = sim.dat
+)
+
+# View results
+summary(fit)
+```
+
+To check for convergence of the MCMC chains, you can look at the Rhat
+values in the summary output (should be \< 1.1). You can also plot the
+trace plots of the MCMC samples:
+
+``` r
+# Plot trace plots
+plot(fit$samples)
+```
+
+`fit$samples` is an MCMC object, so you can use all coda functions to
+analyze and plot the MCMC samples.
+
+You can see how
+[`because()`](https://achazhardenberg.github.io/because/reference/because.md)
+translates your model into JAGS syntax calling `fit$model` or, before
+fitting it, using
+[`because_model()`](https://achazhardenberg.github.io/because/reference/because_model.md):
+
+``` r
+# Generate JAGS model code
+jags_model_code <- because_model(
+  equations = equations
+)
+
+cat(jags_model_code$model)
+```
+
+When specifing the equations you can include multiple predictors as well
+as factors,interaction terms and polynomial terms following the
+conventional R formula syntax.
+
+### Next: Causal Inference with D-Separation
+
+One of the main features of because is the ability to test your causal
+model’s fit to the data using d-separation tests. D-separation tests
+evaluate whether the conditional independencies implied by your causal
+model hold in the data (Shipley, 2016). If they do not, this suggests
+that your model may be misspecified and that you may need to add or
+remove paths. More details on d-separation tests, how to interpret them
+and a full tutorial can be found in the [D-Separation
+Tests](https://achazhardenberg.github.io/because/articles/02_dseparation.md)
+vignette.

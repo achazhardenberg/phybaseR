@@ -1,0 +1,302 @@
+# Run a Phylogenetic Bayesian Structural Equation model (Because)
+
+Run a Phylogenetic Bayesian Structural Equation model (Because)
+
+## Usage
+
+``` r
+because(
+  data,
+  equations,
+  id_col = NULL,
+  structure = NULL,
+  tree = NULL,
+  monitor = NULL,
+  n.chains = 3,
+  n.iter = 12500,
+  n.burnin = n.iter/5,
+  n.thin = 10,
+  DIC = TRUE,
+  WAIC = FALSE,
+  n.adapt = n.iter/5,
+  quiet = FALSE,
+  dsep = FALSE,
+  variability = NULL,
+  distribution = NULL,
+  latent = NULL,
+  latent_method = c("correlations", "explicit"),
+  standardize_latent = TRUE,
+  parallel = FALSE,
+  n.cores = 1,
+  cl = NULL,
+  ic_recompile = TRUE,
+  optimise = TRUE,
+  random = NULL,
+  levels = NULL,
+  hierarchy = NULL,
+  link_vars = NULL,
+  fix_residual_variance = NULL
+)
+```
+
+## Arguments
+
+- data:
+
+  Data for the model. Accepts:
+
+  - `data.frame`: A data frame with variables as columns. Variables
+    needed for the model are automatically extracted from the equations.
+    Extra columns are ignored.
+
+  - `list`: A named list where each element is a vector of values
+    (traditional format for backward compatibility).
+
+- equations:
+
+  A list of model formulas describing the structural equation model.
+
+- id_col:
+
+  Character string specifying the column name in a data.frame containing
+  unit identifiers (species, individuals, sites, etc.). This is used to:
+
+  - Match data rows to tree tip labels (for phylogenetic models)
+
+  - Link data to external spatial or custom covariance matrices.
+
+  **Note**: For standard random effects models (e.g.
+  `random = ~(1|species)`) where no external structure (like a tree) is
+  provided, this argument is **not required**. The grouping column is
+  read directly from the data.
+
+  If `NULL` (default): uses meaningful row names if available. Ignored
+  when `data` is already a list.
+
+- structure:
+
+  The covariance structure for the model. Accepts:
+
+  - `"phylo"` object: Phylogenetic tree (Standard PGLS/PhyloSEM).
+
+  - `"multiPhylo"` object: List of trees (incorporates phylogenetic
+    uncertainty).
+
+  - `NULL`: Independent model (Standard SEM, no covariance structure).
+
+  - `matrix`: Custom covariance or precision matrix (e.g., spatial
+    connectivity, kinship).
+
+- tree:
+
+  (Deprecated alias for `structure`). A single phylogenetic tree of
+  class `"phylo"` or a list of trees. Use `structure` instead for new
+  code.
+
+- monitor:
+
+  Parameter monitoring mode. Options:
+
+  - `"interpretable"` (default): Monitor only scientifically meaningful
+    parameters: intercepts (alpha), regression coefficients (beta),
+    phylogenetic signals (lambda) for responses, and WAIC terms.
+    Excludes variance components (tau) and auxiliary predictor
+    parameters.
+
+  - `"all"`: Monitor all model parameters including variance components
+    and implicit equation parameters.
+
+  - Custom vector: Provide a character vector of specific parameter
+    names to monitor.
+
+  - `NULL`: Auto-detect based on model structure (equivalent to
+    "interpretable").
+
+- n.chains:
+
+  Number of MCMC chains (default = 3).
+
+- n.iter:
+
+  Total number of MCMC iterations (default = 12500).
+
+- n.burnin:
+
+  Number of burn-in iterations (default = n.iter / 5).
+
+- n.thin:
+
+  Thinning rate (default = 10).
+
+- DIC:
+
+  Logical; whether to compute DIC using `dic.samples()` (default =
+  TRUE). **Note**: DIC penalty will be inflated for models with
+  measurement error or repeated measures because latent variables are
+  counted as parameters (penalty ~ structural parameters + N). For model
+  comparison, use WAIC or compare mean deviance across models with
+  similar structure.
+
+- WAIC:
+
+  Logical; whether to sample values for WAIC and deviance (default =
+  FALSE). WAIC is generally more appropriate than DIC for hierarchical
+  models with latent variables.
+
+- n.adapt:
+
+  Number of adaptation iterations (default = n.iter / 5).
+
+- quiet:
+
+  Logical; suppress JAGS output (default = FALSE).
+
+- dsep:
+
+  Logical; if `TRUE`, monitor only the first beta in each structural
+  equation (used for d-separation testing).
+
+- variability:
+
+  Optional specification for variables with measurement error or
+  within-species variability. **Global Setting**:
+
+  - `"reps"`: Applies repeat-measures modeling to **all** continuous
+    variables in the equations (except grouping variables). Expects
+    `X_obs` matrix or long-format data.
+
+  - `"se"`: Applies measurement error modeling to **all** continuous
+    variables. Expects `X_se` columns.
+
+  **Manual Specification** (Named Vector/List):
+
+  - Simple: `c(X = "se", Y = "reps")` - mixed types
+
+  - Custom columns: `list(X = list(type = "se", se_col = "X_sd"))`
+
+  - For SE: `se_col` (SE column), `mean_col` (mean column, optional)
+
+  - For reps: `obs_col` (observations matrix column)
+
+  **Auto-Detection**: If not specified, the package attempts to detect
+  variability based on column names:
+
+  - `X_se` -\> type="se"
+
+  - `X_obs` or matrix column -\> type="reps"
+
+- distribution:
+
+  Optional named character vector specifying the distribution for
+  response variables. Default is "gaussian" for all variables. Supported
+  values:
+
+  - "gaussian" (default)
+
+  - "binomial" (binary data)
+
+  - "multinomial" (unordered categorical \> 2 levels)
+
+  - "ordinal" (ordered categorical \> 2 levels)
+
+  - "poisson" (count data)
+
+  - "negbinomial" (overdispersed count data)
+
+  - "zip" (zero-inflated poisson): Models excess zeros with probability
+    `psi` and counts with mean `lambda`.
+
+  - "zinb" (zero-inflated negative binomial): Models excess zeros with
+    probability `psi` and overdispersed counts with mean `mu` and size
+    `r`.
+
+  The model will estimate a zero-inflation probability parameter
+  `psi_Response` for these distributions. Example:
+  `distribution = c(Gregarious = "binomial")`.
+
+- latent:
+
+  Optional character vector of latent (unmeasured) variable names. If
+  specified, the model will account for induced correlations among
+  observed variables that share these latent common causes.
+
+- latent_method:
+
+  Method for handling latent variables (default = "correlations").
+
+  - `"correlations"`: MAG approach - marginalize latent variables and
+    estimate induced correlations (`rho`) between observed variables
+    that share latent parents.
+
+  - `"explicit"`: Model latent variables as JAGS nodes and estimate
+    structural paths from latents to observed variables.
+
+- standardize_latent:
+
+  Logical; if `TRUE` and `latent_method = "explicit"`, adds standardized
+  priors (`N(0,1)`) to latent variables to identify scale and location.
+  This improves convergence and makes regression coefficients
+  interpretable as standardized effects. Only applicable when using
+  explicit latent variable modeling (default = TRUE).
+
+- parallel:
+
+  Logical; if `TRUE`, run MCMC chains in parallel (default = FALSE).
+  Note: Requires `n.cores > 1` to take effect.
+
+- n.cores:
+
+  Integer; number of CPU cores to use for parallel chains (default = 1).
+  Only used when `parallel = TRUE`.
+
+- cl:
+
+  Optional; a cluster object created by
+  [`parallel::makeCluster()`](https://rdrr.io/r/parallel/makeCluster.html).
+  If `NULL`, a cluster will be created and destroyed automatically.
+
+- ic_recompile:
+
+  Logical; if `TRUE` and `parallel = TRUE`, recompile the model after
+  parallel chains to compute DIC/WAIC (default = TRUE). This adds a
+  small sequential overhead but enables information criteria
+  calculation.
+
+- optimise:
+
+  Logical; if `TRUE` (default), use the optimized random effects
+  formulation for phylogenetic models. This is significantly faster
+  (5-10x) and more numerically stable. If `FALSE`, use the traditional
+  marginal formulation (slower, but provided for comparison).
+
+- random:
+
+  Optional formula or list of formulas specifying global random effects
+  applied to all equations (e.g. `~(1|species)`).
+
+- levels:
+
+  (Hierarchical Data) A named list mapping variables to their hierarchy
+  levels. Required if `data` is a list of data frames (hierarchical
+  format). Example: `list(individual = c("y", "x"), site = c("z"))`.
+
+- hierarchy:
+
+  (Hierarchical Data) Character string describing the topological
+  ordering of levels (e.g., `"site > individual"`). Required for
+  hierarchical data if not fully inferred from random effects.
+
+- link_vars:
+
+  (Hierarchical Data) Optional named character vector specifying
+  variables used to link data levels (e.g. `c(site = "site_id")`).
+
+- fix_residual_variance:
+
+  Optional named vector for fixing residual variances. Useful for
+  handling non-identified models or specific theoretical constraints.
+  Example: `c(response_var = 1)`.
+
+## Value
+
+A list of class `"because"` with model output and diagnostics.

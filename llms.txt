@@ -1,0 +1,159 @@
+# because
+
+### Bayesian Estimation of Causal Effects ![](reference/figures/because_hex.svg)
+
+**because** provides a unified framework for specifying and fitting
+Bayesian structural equation models using
+[JAGS](http://mcmc-jags.sourceforge.net).
+
+> **Please beware that this package and its functions are still in
+> beta.** Functionality may change, and bugs may occur — feedback is
+> very welcome!
+
+## Features
+
+**because** simplifies the process of running complex Bayesian
+Structural Equation Models by automatically generating JAGS code from
+standard R formulas. Key features include:
+
+- **Automatic JAGS Code Generation**: Builds models directly from a list
+  of structural equations.
+- **Generalized Covariance Structures**: Supports standard SEMs,
+  Phylogenetic SEMS (PhyBaSE) as well as Spatial SEMs and Animal Models
+  via custom covariance matrices or pedigrees.
+- **Phylogenetic Uncertainty**: Incorporates uncertainty by sampling
+  across a set of trees.
+- **Missing Data Support**: Handles missing values in both response and
+  predictor variables using phylogenetic imputation.
+- **Measurement Error**: Accounts for within-species variability or
+  measurement error.
+- **Multiple Response Distributions**: Supports Gaussian, Binomial,
+  Multinomial, Ordinal, Poisson, and Negative Binomial distributions.
+- **Categorical Predictors**: Automatic handling of factor variables
+  with dummy variable expansion.
+- **Latent Variables**: Support for modeling induced correlations from
+  latent common causes.
+- **Model Validation**: Tools for d-separation testing to validate
+  causal hypotheses.
+- **Parallel Computing**: Run MCMC chains in parallel on multi-core
+  systems for faster computation.
+
+## Installation
+
+To install the **stable release** (`v0.9.5`), run:
+
+``` r
+remotes::install_github("achazhardenberg/because@v0.9.5", build_vignettes = TRUE)
+```
+
+To install the **latest development version** (unstable), run:
+
+``` r
+remotes::install_github("achazhardenberg/because", build_vignettes = TRUE)
+```
+
+## Prerequisites
+
+Before using phybaseR, you need to have **JAGS** (Just Another Gibbs
+Sampler) installed on your machine.
+
+- **macOS**: `brew install jags` or download from
+  [SourceForge](http://mcmc-jags.sourceforge.net).
+- **Windows**: Download installer from
+  [SourceForge](http://mcmc-jags.sourceforge.net).
+- **Linux**: `sudo apt-get install jags`.
+
+## Documentation & Examples
+
+For detailed examples and step-by-step tutorials on how to use all
+features of the package, please refer to the package vignettes:
+
+``` r
+vignette("01_getting_started", package = "because")
+```
+
+You can also download the full **[Reference Manual
+(PDF)](https://achazhardenberg.github.io/because/inst/pdf/because_reference_manual.pdf)**
+which describes all functions in the package.
+
+**PDF Vignettes:** - [Getting
+Started](https://achazhardenberg.github.io/because/inst/pdf/01_getting_started.pdf) -
+[D-Separation
+Tests](https://achazhardenberg.github.io/because/inst/pdf/02_dseparation.pdf) -
+[Phylogenetic
+Models](https://achazhardenberg.github.io/because/inst/pdf/03_phylogenetic_models.pdf)
+
+## Citation
+
+To cite the **because** package in publications, please use:
+
+> von Hardenberg, A. (2025). because: Bayesian Estimation of Causal
+> Effects. R package version 0.9.4.
+> <https://github.com/achazhardenberg/because>
+
+If you use **because** to run Phylogenetic Bayesian Structural Equation
+Models (PhyBaSE) in your research, please *also* cite:
+
+> von Hardenberg, A. and Gonzalez-Voyer, A. (2025). PhyBaSE: A Bayesian
+> approach to Phylogenetic Structural Equation Models. *Methods in
+> Ecology and Evolution*. <https://doi.org/10.1111/2041-210X.70044>
+
+# Package index
+
+## All functions
+
+- [`RhinoMulti.dat`](https://achazhardenberg.github.io/because/reference/RhinoMulti.dat.md)
+  : Rhinograd Simulated Repeated Measures Data
+- [`RhinoMulti_se.dat`](https://achazhardenberg.github.io/because/reference/RhinoMulti_se.dat.md)
+  : Rhinograd Means and Standard Errors
+- [`because()`](https://achazhardenberg.github.io/because/reference/because.md)
+  : Run a Phylogenetic Bayesian Structural Equation model (Because)
+- [`because_compare()`](https://achazhardenberg.github.io/because/reference/because_compare.md)
+  : Compare Because Models
+- [`because_dsep()`](https://achazhardenberg.github.io/because/reference/because_dsep.md)
+  : Extract d-separation statements from a structural equation model
+- [`because_format_data()`](https://achazhardenberg.github.io/because/reference/because_format_data.md)
+  : Format Data for Because Analysis
+- [`because_lambda()`](https://achazhardenberg.github.io/because/reference/because_lambda.md)
+  : Calculate Pagel's Lambda from Variance Components
+- [`because_loo()`](https://achazhardenberg.github.io/because/reference/because_loo.md)
+  : Calculate LOO-CV for a Because Model
+- [`because_loo_compare()`](https://achazhardenberg.github.io/because/reference/because_loo_compare.md)
+  : Compare Models Using LOO-CV
+- [`because_model()`](https://achazhardenberg.github.io/because/reference/because_model.md)
+  : Generate a JAGS model string for Phylogenetic Bayesian SEM (Because)
+- [`because_waic()`](https://achazhardenberg.github.io/because/reference/because_waic.md)
+  : Calculate WAIC with Standard Errors for a Because Model
+- [`extract_imputed()`](https://achazhardenberg.github.io/because/reference/extract_imputed.md)
+  : Extract Imputed Values for Missing Data
+- [`plot_dag()`](https://achazhardenberg.github.io/because/reference/plot_dag.md)
+  : Plot DAG from Equations or Fitted Model
+- [`print(`*`<summary.because>`*`)`](https://achazhardenberg.github.io/because/reference/print.summary.because.md)
+  : Print Summary for Because Model
+- [`rhino.dat`](https://achazhardenberg.github.io/because/reference/rhino.dat.md)
+  : Rhinograd life-history data
+- [`rhino.tree`](https://achazhardenberg.github.io/because/reference/rhino.tree.md)
+  : Rhinograd phylogenetic tree
+- [`storks`](https://achazhardenberg.github.io/because/reference/storks.md)
+  : Data on Stork Populations and Human Birth Rates
+- [`summary(`*`<because>`*`)`](https://achazhardenberg.github.io/because/reference/summary.because.md)
+  : Summary for Because Model
+
+# Articles
+
+### All vignettes
+
+- [Getting Started with because
+  (PDF)](https://achazhardenberg.github.io/because/articles/01_getting_started_pdf.md):
+- [Getting Started with
+  because](https://achazhardenberg.github.io/because/articles/01_getting_started.md):
+- [D-Separation Tests with because
+  (PDF)](https://achazhardenberg.github.io/because/articles/02_dseparation_pdf.md):
+- [D-separation makes because a tool for causal
+  inference](https://achazhardenberg.github.io/because/articles/02_dseparation.md):
+- [Phylogenetic Linear Models with because
+  (PDF)](https://achazhardenberg.github.io/because/articles/03_phylogenetic_models_pdf.md):
+- [Phylogenetic
+  Models](https://achazhardenberg.github.io/because/articles/03_phylogenetic_models.md):
+- [Visualizing Causal
+  Models](https://achazhardenberg.github.io/because/articles/05_visualizing_models.md):

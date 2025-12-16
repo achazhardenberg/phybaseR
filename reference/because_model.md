@@ -1,0 +1,215 @@
+# Generate a JAGS model string for Phylogenetic Bayesian SEM (Because)
+
+This function builds the model code to be passed to JAGS based on a set
+of structural equations. It supports both single and multiple
+phylogenetic trees (to account for phylogenetic uncertainty). Missing
+values are handled both in the response and predictor variables treating
+all of them as stochastic nodes.
+
+## Usage
+
+``` r
+because_model(
+  equations,
+  multi.tree = FALSE,
+  latent_method = "correlations",
+  structure_names = "phylo",
+  random_structure_names = NULL,
+  random_terms = list(),
+  vars_with_na = NULL,
+  induced_correlations = NULL,
+  variability = NULL,
+  distribution = NULL,
+  optimise = TRUE,
+  standardize_latent = TRUE,
+  poly_terms = NULL,
+  latent = NULL,
+  fix_residual_variance = NULL
+)
+```
+
+## Arguments
+
+- equations:
+
+  A list of model formulas.
+
+- multi.tree:
+
+  Logical; if `TRUE`, incorporates phylogenetic uncertainty by sampling
+  across a set of trees.
+
+- structure_names:
+
+  (Internal) Character vector of names for multiple trees/structures.
+
+- vars_with_na:
+
+  Optional character vector of response variable names that have missing
+  data. These variables will use element-wise likelihoods instead of
+  multivariate normal.
+
+- induced_correlations:
+
+  Optional list of variable pairs with induced correlations from latent
+  variables. Each element should be a character vector of length 2
+  specifying the pair of variables that share a latent common cause.
+
+- variability:
+
+  Optional character vector or named character vector of variable names
+  that have measurement error or within-species variability. If named,
+  the names should be the variable names and the values should be the
+  type of variability: "se" (for mean and standard error) or "reps" (for
+  repeated measures). If unnamed, it defaults to "se" for all specified
+  variables.
+
+  - "se": Expects `Var_mean` and `Var_se` in the data. The model fixes
+    observation error: `Var_mean ~ dnorm(Var, 1/Var_se^2)`.
+
+  - "reps": Expects `Var_obs` (matrix) and `N_reps_Var` (vector) in the
+    data. The model estimates observation error:
+    `Var_obs[i,j] ~ dnorm(Var[i], Var_tau)`.
+
+- distribution:
+
+  Optional named character vector specifying the distribution for
+  response variables. Default is "gaussian" for all variables. Supported
+  values: "gaussian", "binomial", "multinomial". For "binomial"
+  variables, the model uses a logit link and a Bernoulli likelihood,
+  with phylogenetic correlation modeled on the latent scale.
+
+- optimise:
+
+  Logical. If TRUE (default), use random effects formulation for 4.6×
+  speedup. If FALSE, use original marginal covariance formulation.
+
+- standardize_latent:
+
+  Logical (default TRUE). If TRUE, standardizes latent variables to unit
+  variance.
+
+- poly_terms:
+
+  (Internal) List of polynomial terms for model generation.
+
+- latent:
+
+  Optional character vector of latent variable names.
+
+- fix_residual_variance:
+
+  Optional numeric value or named vector to fix residual variance.
+
+## Value
+
+A list with two elements:
+
+- `model`: A character string containing the JAGS model code.
+
+- `parameter_map`: A data frame mapping response variables to their
+  predictors and parameter names.
+
+## Details
+
+The generated model includes:
+
+- Linear predictors and multivariate normal likelihoods for each
+  response variable.
+
+- Priors for intercepts (`alpha`), slopes (`beta`), lambda parameters
+  (`lambda`), and residual precisions (`tau`).
+
+- Phylogenetic covariance modeled via a single `VCV` matrix (when
+  `multi.tree = FALSE`) or a 3D array `multiVCV[,,K]` with categorical
+  sampling across trees (when `multi.tree = TRUE`).
+
+- (Optional) Observation models for variables with measurement error:
+
+  - Type "se": `Var_mean ~ dnorm(Var, 1/Var_se^2)`
+
+  - Type "reps": `Var_obs[i,j] ~ dnorm(Var[i], Var_tau)`
+
+- (Optional) Generalized linear mixed models for non-Gaussian responses
+  (e.g., binomial).
+
+- (Optional) Element-wise likelihoods for response variables with
+  missing data.
+
+## Examples
+
+``` r
+eqs <- list(BR ~ BM, S ~ BR, G ~ BR, L ~ BR)
+cat(because_model(eqs, multi.tree = TRUE)$model)
+#> model {
+#>   # Dummy usage of ID to prevent warnings for unused data
+#>   dummy_ID <- ID[1,1]
+#>   # Structural equations
+#>   for (i in 1:N) {
+#> 
+#>     muBR[i] <- alphaBR + beta_BR_BM*BM[i]
+#>     muS[i] <- alphaS + beta_S_BR*BR[i]
+#>     muG[i] <- alphaG + beta_G_BR*BR[i]
+#>     muL[i] <- alphaL + beta_L_BR*BR[i]
+#>   }
+#>   # Multivariate normal likelihoods
+#>   u_std_BR_phylo[1:N] ~ dmnorm(zeros[1:N], Prec_phylo[1:N, 1:N, K])
+#>   for (i in 1:N) { u_BR_phylo[i] <- u_std_BR_phylo[i] / sqrt(tau_u_BR_phylo) }
+#>   for (i in 1:N) {
+#>     BR[i] ~ dnorm(muBR[i] + u_BR_phylo[i], tau_e_BR)
+#>     log_lik_BR[i] <- logdensity.norm(BR[i], muBR[i] + u_BR_phylo[i], tau_e_BR)
+#>   }
+#>   u_std_S_phylo[1:N] ~ dmnorm(zeros[1:N], Prec_phylo[1:N, 1:N, K])
+#>   for (i in 1:N) { u_S_phylo[i] <- u_std_S_phylo[i] / sqrt(tau_u_S_phylo) }
+#>   for (i in 1:N) {
+#>     S[i] ~ dnorm(muS[i] + u_S_phylo[i], tau_e_S)
+#>     log_lik_S[i] <- logdensity.norm(S[i], muS[i] + u_S_phylo[i], tau_e_S)
+#>   }
+#>   u_std_G_phylo[1:N] ~ dmnorm(zeros[1:N], Prec_phylo[1:N, 1:N, K])
+#>   for (i in 1:N) { u_G_phylo[i] <- u_std_G_phylo[i] / sqrt(tau_u_G_phylo) }
+#>   for (i in 1:N) {
+#>     G[i] ~ dnorm(muG[i] + u_G_phylo[i], tau_e_G)
+#>     log_lik_G[i] <- logdensity.norm(G[i], muG[i] + u_G_phylo[i], tau_e_G)
+#>   }
+#>   u_std_L_phylo[1:N] ~ dmnorm(zeros[1:N], Prec_phylo[1:N, 1:N, K])
+#>   for (i in 1:N) { u_L_phylo[i] <- u_std_L_phylo[i] / sqrt(tau_u_L_phylo) }
+#>   for (i in 1:N) {
+#>     L[i] ~ dnorm(muL[i] + u_L_phylo[i], tau_e_L)
+#>     log_lik_L[i] <- logdensity.norm(L[i], muL[i] + u_L_phylo[i], tau_e_L)
+#>   }
+#>   # Priors for structural parameters
+#>   alphaBR ~ dnorm(0, 1.0E-6)
+#>   tau_e_BR ~ dgamma(1, 1)
+#>   tau_u_BR_phylo ~ dgamma(1, 1)
+#>   sigma_BR_phylo <- 1/sqrt(tau_u_BR_phylo)
+#>   lambdaBR <- (1/tau_u_BR_phylo) / ((1/tau_u_BR_phylo) + (1/tau_e_BR))
+#>   sigma_BR_res <- 1/sqrt(tau_e_BR)
+#>   alphaS ~ dnorm(0, 1.0E-6)
+#>   tau_e_S ~ dgamma(1, 1)
+#>   tau_u_S_phylo ~ dgamma(1, 1)
+#>   sigma_S_phylo <- 1/sqrt(tau_u_S_phylo)
+#>   lambdaS <- (1/tau_u_S_phylo) / ((1/tau_u_S_phylo) + (1/tau_e_S))
+#>   sigma_S_res <- 1/sqrt(tau_e_S)
+#>   alphaG ~ dnorm(0, 1.0E-6)
+#>   tau_e_G ~ dgamma(1, 1)
+#>   tau_u_G_phylo ~ dgamma(1, 1)
+#>   sigma_G_phylo <- 1/sqrt(tau_u_G_phylo)
+#>   lambdaG <- (1/tau_u_G_phylo) / ((1/tau_u_G_phylo) + (1/tau_e_G))
+#>   sigma_G_res <- 1/sqrt(tau_e_G)
+#>   alphaL ~ dnorm(0, 1.0E-6)
+#>   tau_e_L ~ dgamma(1, 1)
+#>   tau_u_L_phylo ~ dgamma(1, 1)
+#>   sigma_L_phylo <- 1/sqrt(tau_u_L_phylo)
+#>   lambdaL <- (1/tau_u_L_phylo) / ((1/tau_u_L_phylo) + (1/tau_e_L))
+#>   sigma_L_res <- 1/sqrt(tau_e_L)
+#>   beta_BR_BM ~ dnorm(0, 1.0E-6)
+#>   beta_S_BR ~ dnorm(0, 1.0E-6)
+#>   beta_G_BR ~ dnorm(0, 1.0E-6)
+#>   beta_L_BR ~ dnorm(0, 1.0E-6)
+#> 
+#>   for (k in 1:Ntree) {
+#>     p[k] <- 1 / Ntree
+#>   }
+#>   K ~ dcat(p[])
+#> }
+```
