@@ -6,13 +6,9 @@
 Bayesian structural equation models in `R` using
 [JAGS](http://mcmc-jags.sourceforge.net).
 
-> **Please beware that this package and its functions are still in
-> beta.** Functionality may change, and bugs may occur — feedback is
-> very welcome!
-
-> **Note on the logo**: The package hexagon features the mathematical
-> symbol for “because” ($\because$), represented as three dots in an
-> inverted triangle.
+> **Note on the logo**: The package hexagon sticker features the
+> mathematical symbol for “because”, represented as three dots in an
+> inverted triangle ($\because$).
 
 ## Features
 
