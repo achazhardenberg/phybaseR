@@ -4,6 +4,7 @@ template:
   bootswatch: yeti
   bslib:
     navbar-bg: "#0076BA"
+navbar:
   structure:
-    left: [home, intro, reference, articles, tutorials, news]
+    left: [brand, home, intro, reference, articles, tutorials, news]
     right: [search, github]
