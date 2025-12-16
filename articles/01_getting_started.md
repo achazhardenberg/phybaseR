@@ -18,6 +18,9 @@ autocorrelation, genetic relatedness etc.).
   Analysis](https://because-pkg.github.io/because/articles/03_phylogenetic_models.md):
   Using the Phylogenetic Bayesian Structural Equation Model appraoch
   (Because, von Hardenberg & Gonzalez-Voyer, 2025).
+- [Missing Data
+  Imputation](https://because-pkg.github.io/because/articles/04_missing_data.md):
+  Handling missing data using Bayesian imputation.
 - *Alternative Covariance structures:* Spatial, genetic, social, or
   other correlation structures. \*Alternative dustribution families:
   Modeling non-Gaussian data.
