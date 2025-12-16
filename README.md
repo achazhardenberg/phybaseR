@@ -1,7 +1,7 @@
 # because
 ### Bayesian Estimation of Causal Effects 
 
-**because** provides a unified framework for specifying and fitting Bayesian structural equation models using [JAGS](http://mcmc-jags.sourceforge.net).
+**because** provides a unified framework for specifying and fitting Bayesian structural equation models in `R` using [JAGS](http://mcmc-jags.sourceforge.net).
 
 > **Please beware that this package and its functions are still in beta.**
 > Functionality may change, and bugs may occur — feedback is very welcome!
