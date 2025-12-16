@@ -12,7 +12,7 @@ autocorrelation, genetic relatedness etc.).
 **because** main features:
 
 - [Causal Inference with
-  D-Separation](https://achazhardenberg.github.io/because/articles/02_dseparation.md):
+  d-Separation](https://achazhardenberg.github.io/because/articles/02_dseparation.md):
   Testing conditional independencies implied by your causal model.
 - [Phylogenetic Path
   Analysis](https://achazhardenberg.github.io/because/articles/03_phylogenetic_models.md):

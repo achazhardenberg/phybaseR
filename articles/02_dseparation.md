@@ -1,4 +1,4 @@
-# D-separation makes because a tool for causal inference
+# Causal inference with d-separation
 
 d-separation (Shipley, 2000, 2003) is the foundation of causal inference
 in `because`. It tests whether your hypothesized causal model correctly
