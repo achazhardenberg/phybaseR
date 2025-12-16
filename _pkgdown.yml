@@ -5,5 +5,5 @@ template:
   bslib:
     navbar-bg: "#0076BA"
   structure:
-    left: [brand, intro, reference, articles, tutorials, news]
+    left: [home, intro, reference, articles, tutorials, news]
     right: [search, github]
