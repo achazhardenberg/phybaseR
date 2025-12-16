@@ -1,5 +1,5 @@
 ---
-title: "D-separation makes because a tool for causal inference"
+title: "Causal inference with d-separation"
 author: "Achaz von Hardenberg"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette

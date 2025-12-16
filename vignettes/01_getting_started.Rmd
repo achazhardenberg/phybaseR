@@ -30,7 +30,7 @@ autocorrelation, genetic relatedness etc.).
 
 **because** main features:
 
--   [Causal Inference with D-Separation](02_dseparation.html): Testing
+-   [Causal Inference with d-Separation](02_dseparation.html): Testing
     conditional independencies implied by your causal model.
 -   [Phylogenetic Path Analysis](03_phylogenetic_models.html): Using the
     Phylogenetic Bayesian Structural Equation Model appraoch (Because,
