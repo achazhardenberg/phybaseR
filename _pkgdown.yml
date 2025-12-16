@@ -7,7 +7,7 @@ template:
 navbar:
   components:
     brand:
-      image:
+      image: logo.png
         src: man/figures/logo.png
         alt: "because"
   structure:
