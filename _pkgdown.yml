@@ -1,7 +1,6 @@
 url: https://achazhardenberg.github.io/because/
 template:
   bootstrap: 5
-  bootswatch: cosmo
   bslib:
     navbar-bg: "#0076BA"
 navbar:
