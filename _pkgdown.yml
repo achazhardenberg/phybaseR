@@ -1,4 +1,4 @@
 url: https://achazhardenberg.github.io/because/
 template:
   bootstrap: 5
-
+  bootswatch: Yeti 
