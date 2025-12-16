@@ -10,3 +10,4 @@
 ^docs$
 ^pkgdown$
 ^vignettes/.*_pdf\.Rmd$
+^vignettes/05_visualizing_models\.Rmd$

@@ -72,8 +72,8 @@ Y <- 0.7 * M - 0.3 * X + rnorm(N)
 df <- data.frame(X, M, Y)
 
 # Fit a quick model
+# Fit a quick model
 mod <- because(
-    measure_time = FALSE,
     list(M ~ X, Y ~ M + X),
     data = df,
     n.iter = 100 # Short run for demo
