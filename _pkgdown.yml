@@ -1,7 +1,9 @@
 url: https://achazhardenberg.github.io/because/
 template:
   bootstrap: 5
+  light-switch: true
   bslib:
+    primary: "#0076BA"
     navbar-bg: "#0076BA"
 navbar:
   structure:
