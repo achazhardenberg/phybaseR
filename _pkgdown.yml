@@ -3,7 +3,7 @@ template:
   bootstrap: 5
   bootswatch: yeti
   bslib:
-    navbar-bg: "#2E70AA"
+    navbar-bg: "#0076BA"
 navbar:
   structure:
     left: [brand, intro, reference, articles, tutorials, news]
