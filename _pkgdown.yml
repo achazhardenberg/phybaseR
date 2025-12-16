@@ -2,3 +2,5 @@ url: https://achazhardenberg.github.io/because/
 template:
   bootstrap: 5
   bootswatch: yeti
+  bslib:
+    navbar-bg: "#3475B2"
