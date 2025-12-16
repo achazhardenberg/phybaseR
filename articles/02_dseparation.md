@@ -183,7 +183,7 @@ storks <- scale(storks[2:5])
 ```
 
 Now we can fit the model with
-[`because()`](https://achazhardenberg.github.io/because/reference/because.md),
+[`because()`](https://because-pkg.github.io/because/reference/because.md),
 enabling d-separation tests with the `dsep = TRUE` argument:
 
 ``` r
@@ -320,7 +320,7 @@ Now that you understand d-separation and how to test causal models with
 vignette will guide you through fitting Phylogenetic Bayesian models,
 which account for shared evolutionary history among species:
 [**Phylogenetic
-Models**](https://achazhardenberg.github.io/because/articles/03_phylogenetic_models.md)
+Models**](https://because-pkg.github.io/because/articles/03_phylogenetic_models.md)
 
 ## References
 

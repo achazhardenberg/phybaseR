@@ -53,7 +53,7 @@ samples.
 Note: The imputed values are only available if they were monitored
 during the run. You must use `monitor = "all"` (or include the variable
 names in `monitor`) when running
-[`because()`](https://achazhardenberg.github.io/because/reference/because.md)
+[`because()`](https://because-pkg.github.io/because/reference/because.md)
 to ensure these values are saved.
 
 ## Examples

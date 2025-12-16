@@ -12,10 +12,10 @@ autocorrelation, genetic relatedness etc.).
 **because** main features:
 
 - [Causal Inference with
-  d-Separation](https://achazhardenberg.github.io/because/articles/02_dseparation.md):
+  d-Separation](https://because-pkg.github.io/because/articles/02_dseparation.md):
   Testing conditional independencies implied by your causal model.
 - [Phylogenetic Path
-  Analysis](https://achazhardenberg.github.io/because/articles/03_phylogenetic_models.md):
+  Analysis](https://because-pkg.github.io/because/articles/03_phylogenetic_models.md):
   Using the Phylogenetic Bayesian Structural Equation Model appraoch
   (Because, von Hardenberg & Gonzalez-Voyer, 2025).
 - *Alternative Covariance structures:* Spatial, genetic, social, or
@@ -75,7 +75,7 @@ library(because)
 #### Your First Model
 
 The main function in because is
-[`because()`](https://achazhardenberg.github.io/because/reference/because.md),
+[`because()`](https://because-pkg.github.io/because/reference/because.md),
 which compiles and fits your specified Structural Equation Model in
 JAGS. The function is very rich with functionalities allowing to model
 complex models with different error structures and hierarchically
@@ -108,7 +108,7 @@ summary(lm(Y ~ X, data = sim.dat))
 Now we can fit the same model using because. We need to specify the
 structural equations (in this case only one) using R’s formula syntax
 and then call
-[`because()`](https://achazhardenberg.github.io/because/reference/because.md)
+[`because()`](https://because-pkg.github.io/because/reference/because.md)
 passing the equation and the data frame:
 
 ``` r
@@ -140,10 +140,10 @@ plot(fit$samples)
 analyze and plot the MCMC samples.
 
 You can see how
-[`because()`](https://achazhardenberg.github.io/because/reference/because.md)
+[`because()`](https://because-pkg.github.io/because/reference/because.md)
 translates your model into JAGS syntax calling `fit$model` or, before
 fitting it, using
-[`because_model()`](https://achazhardenberg.github.io/because/reference/because_model.md):
+[`because_model()`](https://because-pkg.github.io/because/reference/because_model.md):
 
 ``` r
 # Generate JAGS model code
@@ -167,5 +167,5 @@ model hold in the data (Shipley, 2016). If they do not, this suggests
 that your model may be misspecified and that you may need to add or
 remove paths. More details on d-separation tests, how to interpret them
 and a full tutorial can be found in the [Causal inference with
-d-separation](https://achazhardenberg.github.io/because/articles/02_dseparation.md)
+d-separation](https://because-pkg.github.io/because/articles/02_dseparation.md)
 vignette.

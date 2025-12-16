@@ -68,10 +68,10 @@ Calculated from `RhinoMulti.dat`.
 This dataset is derived from `RhinoMulti.dat` by calculating the mean
 and standard error for each trait per species (N=10 replicates). It is
 designed for use with the `variability = "se"` option in
-[`because()`](https://achazhardenberg.github.io/because/reference/because.md),
+[`because()`](https://because-pkg.github.io/because/reference/because.md),
 where precision is modeled as `1/SE^2`.
 
 ## See also
 
-[`rhino.dat`](https://achazhardenberg.github.io/because/reference/rhino.dat.md),
-[`RhinoMulti.dat`](https://achazhardenberg.github.io/because/reference/RhinoMulti.dat.md)
+[`rhino.dat`](https://because-pkg.github.io/because/reference/rhino.dat.md),
+[`RhinoMulti.dat`](https://because-pkg.github.io/because/reference/RhinoMulti.dat.md)

@@ -15,7 +15,7 @@ because_loo_compare(...)
 - ...:
 
   Two or more `loo` objects from
-  [`because_loo()`](https://achazhardenberg.github.io/because/reference/because_loo.md).
+  [`because_loo()`](https://because-pkg.github.io/because/reference/because_loo.md).
 
 ## Value
 

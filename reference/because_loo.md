@@ -14,7 +14,7 @@ because_loo(model, ...)
 - model:
 
   A fitted model object of class `"because"` returned by
-  [`because`](https://achazhardenberg.github.io/because/reference/because.md).
+  [`because`](https://because-pkg.github.io/because/reference/because.md).
   **Note**: If the model was not fitted with `WAIC = TRUE` (so `log_lik`
   is missing), this function will automatically refit the model (using a
   short MCMC run) to calculate the likelihoods.

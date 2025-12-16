@@ -2,7 +2,7 @@
 
 Converts data from long format (one row per observation) to the list
 format required by
-[`because`](https://achazhardenberg.github.io/because/reference/because.md).
+[`because`](https://because-pkg.github.io/because/reference/because.md).
 
 ## Usage
 

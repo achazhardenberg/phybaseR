@@ -15,7 +15,7 @@ because_waic(model)
 - model:
 
   A fitted model object of class `"because"` returned by
-  [`because`](https://achazhardenberg.github.io/because/reference/because.md)
+  [`because`](https://because-pkg.github.io/because/reference/because.md)
   with `WAIC = TRUE`.
 
 ## Value
@@ -40,7 +40,7 @@ individual observation contributions for model comparison.
 ## Details
 
 This function is automatically called by
-[`because`](https://achazhardenberg.github.io/because/reference/because.md)
+[`because`](https://because-pkg.github.io/because/reference/because.md)
 when `WAIC = TRUE`. It can also be called manually. If the model was not
 originally fitted with `WAIC = TRUE` (so pointwise log-likelihoods are
 missing), this function will automatically refit the model (using a

@@ -27,7 +27,7 @@ automatically matches the species names in the data and tree: you only
 need to ensure that the species names in the data frame column specified
 by `species` match the tip labels in the tree and provide the name of
 the species column to the
-[`because()`](https://achazhardenberg.github.io/because/reference/because.md)
+[`because()`](https://because-pkg.github.io/because/reference/because.md)
 function through the `id_col` argument. Also, you do not need to rescale
 the total tree length to 1 (needed for a correct estimation of Pagel’s
 lambda parameter), as `because` will handle this internally.
@@ -48,7 +48,7 @@ plot_dag(sem8_eq)
 ![](figures/sem8.png)
 
 Now we can fit the model with
-[`because()`](https://achazhardenberg.github.io/because/reference/because.md)
+[`because()`](https://because-pkg.github.io/because/reference/because.md)
 including the phylogenetic tree with the `structure` argument. Also, as
 this is a more complex model than in the previous examples, to speed up
 the model fitting we will run 3 chains in parallel using the
@@ -129,7 +129,7 @@ materials of the paper).
 If you are familiar with the output obtained from that model, you may
 however have noticed that besides Pagel’s $\lambda$ parameters for each
 response variable, with
-[`because()`](https://achazhardenberg.github.io/because/reference/because.md)
+[`because()`](https://because-pkg.github.io/because/reference/because.md)
 we also get estimates of the standard deviations of the phylogenetic and
 residual components (`sigma_[RESP]_phylo` and `sigma_[RESP]_res`,
 respectively). These are estimated because `because` uses an optimised
@@ -233,12 +233,12 @@ that the the hypothesised causal structure is consistent with the data.
 In von Hardenberg and Gonzalez-Voyer (2025), we showed how PhyBaSE
 models can be specified to account for measurement error in the traits.
 These models can also be fitted with
-[`because()`](https://achazhardenberg.github.io/because/reference/because.md).
+[`because()`](https://because-pkg.github.io/because/reference/because.md).
 In the case you have available repeated measures per species, it is
 sufficient to provide the data frame with all measurements
 (i.e. multiple rows per species) and specify the `id_col` argument to
 indicate the species identifier column.
-[`because()`](https://achazhardenberg.github.io/because/reference/because.md)
+[`because()`](https://because-pkg.github.io/because/reference/because.md)
 will automatically format the data to create a response matrix with
 species in rows and replicates in columns, padding with `NA`s as
 necessary. We will use the same data simulated in von Hardenberg and
@@ -315,7 +315,7 @@ In von Hardenberg and Gonzalez-Voyer (2025) we showed also how to
 account for measurement error when only a single observation per species
 is available, but the measurement standard error is known. This can also
 be done with
-[`because()`](https://achazhardenberg.github.io/because/reference/because.md)
+[`because()`](https://because-pkg.github.io/because/reference/because.md)
 by providing for each trait a second collumn called `[TRAIT]_se`
 containing the standard error of the measurements for each species.
 

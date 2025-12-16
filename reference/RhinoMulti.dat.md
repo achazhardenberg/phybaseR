@@ -50,12 +50,12 @@ This dataset was simulated by adding white noise to the original
 `rhino.dat` species values. It represents a scenario where each species
 has 10 independent observations for each trait. This allows using the
 `variability = "reps"` option in
-[`because()`](https://achazhardenberg.github.io/because/reference/because.md)
+[`because()`](https://because-pkg.github.io/because/reference/because.md)
 to explicitly model measurement error.
 
 The underlying causal model is the same as for `rhino.dat`.
 
 ## See also
 
-[`rhino.dat`](https://achazhardenberg.github.io/because/reference/rhino.dat.md),
-[`RhinoMulti_se.dat`](https://achazhardenberg.github.io/because/reference/RhinoMulti_se.dat.md)
+[`rhino.dat`](https://because-pkg.github.io/because/reference/rhino.dat.md),
+[`RhinoMulti_se.dat`](https://because-pkg.github.io/because/reference/RhinoMulti_se.dat.md)

@@ -23,7 +23,7 @@ because_compare(
 
   For comparing fitted models: individual fitted model objects of class
   `"because"`. For running models: additional arguments passed to
-  [`because`](https://achazhardenberg.github.io/because/reference/because.md)
+  [`because`](https://because-pkg.github.io/because/reference/because.md)
   (e.g., `n.iter`).
 
 - model_specs:
