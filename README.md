@@ -38,7 +38,7 @@ remotes::install_github("because-pkg/because", build_vignettes = TRUE)
 
 ## Prerequisites
 
-Before using phybaseR, you need to have **JAGS** (Just Another Gibbs Sampler) installed on your machine.
+Before using `because`, you need to have **JAGS** (Just Another Gibbs Sampler) installed on your machine.
 
 -   **macOS**: `brew install jags` or download from [SourceForge](http://mcmc-jags.sourceforge.net).
 -   **Windows**: Download installer from [SourceForge](http://mcmc-jags.sourceforge.net).
