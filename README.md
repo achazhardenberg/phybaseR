@@ -1,5 +1,5 @@
 # because
-### Bayesian Estimation of Causal Effects <img src="man/figures/because_hex.svg" align="right" height="50" />
+### Bayesian Estimation of Causal Effects 
 
 **because** provides a unified framework for specifying and fitting Bayesian structural equation models using [JAGS](http://mcmc-jags.sourceforge.net).
 
