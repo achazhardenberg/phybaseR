@@ -1,13 +1,10 @@
 # because
-### Bayesian Estimation of Causal Effects 
+
+### Bayesian Estimation of Causal Effects
 
 **because** provides a unified framework for specifying and fitting Bayesian structural equation models in `R` using [JAGS](http://mcmc-jags.sourceforge.net).
 
-> **Please beware that this package and its functions are still in beta.**
-> Functionality may change, and bugs may occur — feedback is very welcome!
-
-> **Note on the logo**: The package hexagon features the mathematical symbol for "because" ($\because$), represented as three dots in an inverted triangle.
-
+> **Note on the logo**: The package hexagon sticker features the mathematical symbol for "because", represented as three dots in an inverted triangle ($\because$).
 
 ## Features
 
@@ -24,18 +21,17 @@
 -   **Model Validation**: Tools for d-separation testing to validate causal hypotheses.
 -   **Parallel Computing**: Run MCMC chains in parallel on multi-core systems for faster computation.
 
-
 ## Installation
 
 To install the **stable release** (`v0.9.6`), run:
 
-```r
+``` r
 remotes::install_github("because-pkg/because@v0.9.6", build_vignettes = TRUE)
 ```
 
 To install the **latest development version** (unstable), run:
 
-```r
+``` r
 remotes::install_github("because-pkg/because", build_vignettes = TRUE)
 ```
 
