@@ -1,9 +1,7 @@
 url: https://achazhardenberg.github.io/because/
 template:
   bootstrap: 5
-  theme: gruvbox-light
-  theme-dark: gruvbox-dark
-  light-switch: true
+  bootswatch: cosmo
   bslib:
     navbar-bg: "#0076BA"
 navbar:
