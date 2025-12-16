@@ -1,6 +1,6 @@
 # because
 
-### Bayesian Estimation of Causal Effects ![](reference/figures/because_hex.svg)
+### Bayesian Estimation of Causal Effects
 
 **because** provides a unified framework for specifying and fitting
 Bayesian structural equation models using
