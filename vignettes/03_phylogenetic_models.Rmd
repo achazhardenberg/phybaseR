@@ -41,8 +41,14 @@ sem8_eq <- list(
     DD ~ NL
 )
 
-
+plot_dag(sem8_eq)
 ```
+
+```{r, echo=FALSE, eval=TRUE, out.width="100%"}
+knitr::include_graphics("figures/sem8.png")
+```
+
+
 
 Now we can fit the model with `because()` including the phylogenetic tree with the `structure` argument. Also, as this is a more complex model than in the previous examples, to speed up the model fitting we will run 3 chains in parallel using the `parallel = TRUE` and `n.cores = 3` arguments. Also we will request the WAIC information criterion to be computed by setting `WAIC = TRUE`:
 
