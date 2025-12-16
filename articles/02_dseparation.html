@@ -176,13 +176,13 @@ regression, the effect of Storks on Births becomes non-significant:</p>
 variables and their causal relationships using a Directed Acyclic Graph
 (DAG):</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rich-iannone.github.io/DiagrammeR/" class="external-link">DiagrammeR</a></span><span class="op">)</span></span>
-<span><span class="va">dag_storks</span> <span class="op">&lt;-</span> <span class="st">"digraph {</span></span>
-<span><span class="st">  Area -&gt; Storks</span></span>
-<span><span class="st">  Area -&gt; Birth</span></span>
-<span><span class="st">}"</span></span>
-<span><span class="fu">DiagrammeR</span><span class="fu">::</span><span class="fu">grViz</span><span class="op">(</span><span class="va">dag_storks</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/area_storks_birth_dag.png" class="r-plt" width="100%"></p>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://achazhardenberg.github.io/because/">because</a></span><span class="op">)</span></span>
+<span><span class="va">dag_storks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  <span class="va">Storks</span> <span class="op">~</span> <span class="va">Area</span>,</span>
+<span>  <span class="va">Birth</span> <span class="op">~</span> <span class="va">Area</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/plot_dag.html">plot_dag</a></span><span class="op">(</span><span class="va">dag_storks</span><span class="op">)</span></span></code></pre></div>
+<p><img src="figures/dag_storks.png" class="r-plt" width="100%"></p>
 <p>Directed Acyclic Graphs (DAGs) explicitly state your causal
 assumptions, and with the multiple regression above we have effectively
 tested the conditional independence implied by this DAG: Storks
@@ -205,12 +205,12 @@ below which we tested using classic piecewise Path Analysis (follow the
 <a href="https://github.com/achazhardenberg/mpcm-OPM" class="external-link">online
 tutorial</a> if you want to replicate that analysis).</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dag_storks2</span> <span class="op">&lt;-</span> <span class="st">"digraph {</span></span>
-<span><span class="st">  Area -&gt; Storks</span></span>
-<span><span class="st">  Area -&gt; Birth</span></span>
-<span><span class="st">  Birth -&gt; Humans }"</span></span>
-<span><span class="fu">DiagrammeR</span><span class="fu">::</span><span class="fu">grViz</span><span class="op">(</span><span class="va">dag_storks2</span><span class="op">)</span></span></code></pre></div>
-<p><img src="figures/final_storks_dag.png" class="r-plt" width="100%"></p>
+<code class="sourceCode R"><span><span class="va">dag_storks2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">Storks</span> <span class="op">~</span> <span class="va">Area</span>,</span>
+<span>                    <span class="va">Birth</span> <span class="op">~</span> <span class="va">Area</span>,</span>
+<span>                    <span class="va">Humans</span> <span class="op">~</span> <span class="va">Birth</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/plot_dag.html">plot_dag</a></span><span class="op">(</span><span class="va">dag_storks2</span><span class="op">)</span></span></code></pre></div>
+<p><img src="figures/dag_storks2.png" class="r-plt" width="100%"></p>
 <p>Let’s now see how to test this causal model with
 <code>because</code>. First, we have to specify the structural equations
 implied by this DAG:</p>

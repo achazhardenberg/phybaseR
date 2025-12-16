@@ -134,6 +134,8 @@ trace plots of the MCMC samples:
 plot(fit$samples)
 ```
 
+![](figures/traceplot_1.png)
+
 `fit$samples` is an MCMC object, so you can use all coda functions to
 analyze and plot the MCMC samples.
 
@@ -164,6 +166,6 @@ evaluate whether the conditional independencies implied by your causal
 model hold in the data (Shipley, 2016). If they do not, this suggests
 that your model may be misspecified and that you may need to add or
 remove paths. More details on d-separation tests, how to interpret them
-and a full tutorial can be found in the [D-Separation
-Tests](https://achazhardenberg.github.io/because/articles/02_dseparation.md)
+and a full tutorial can be found in the [Causal inference with
+d-separation](https://achazhardenberg.github.io/because/articles/02_dseparation.md)
 vignette.

@@ -120,15 +120,15 @@ In a causal inference framework, we can represent these three variables
 and their causal relationships using a Directed Acyclic Graph (DAG):
 
 ``` r
-library(DiagrammeR)
-dag_storks <- "digraph {
-  Area -> Storks
-  Area -> Birth
-}"
-DiagrammeR::grViz(dag_storks)
+library(because)
+dag_storks <- list(
+  Storks ~ Area,
+  Birth ~ Area)
+
+plot_dag(dag_storks)
 ```
 
-![](figures/area_storks_birth_dag.png)
+![](figures/dag_storks.png)
 
 Directed Acyclic Graphs (DAGs) explicitly state your causal assumptions,
 and with the multiple regression above we have effectively tested the
@@ -153,14 +153,14 @@ tutorial](https://github.com/achazhardenberg/mpcm-OPM) if you want to
 replicate that analysis).
 
 ``` r
-dag_storks2 <- "digraph {
-  Area -> Storks
-  Area -> Birth
-  Birth -> Humans }"
-DiagrammeR::grViz(dag_storks2)
+dag_storks2 <- list(Storks ~ Area,
+                    Birth ~ Area,
+                    Humans ~ Birth)
+
+plot_dag(dag_storks2)
 ```
 
-![](figures/final_storks_dag.png)
+![](figures/dag_storks2.png)
 
 Let’s now see how to test this causal model with `because`. First, we
 have to specify the structural equations implied by this DAG:

@@ -200,6 +200,7 @@ trace plots of the MCMC samples:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Plot trace plots</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">samples</span><span class="op">)</span></span></code></pre></div>
+<p><img src="figures/traceplot_1.png" class="r-plt" width="100%"></p>
 <p><code>fit$samples</code> is an MCMC object, so you can use all coda
 functions to analyze and plot the MCMC samples.</p>
 <p>You can see how <code><a href="../reference/because.html">because()</a></code> translates your model into
@@ -226,7 +227,8 @@ tests evaluate whether the conditional independencies implied by your
 causal model hold in the data (Shipley, 2016). If they do not, this
 suggests that your model may be misspecified and that you may need to
 add or remove paths. More details on d-separation tests, how to
-interpret them and a full tutorial can be found in the <a href="02_dseparation.html">D-Separation Tests</a> vignette.</p>
+interpret them and a full tutorial can be found in the <a href="02_dseparation.html">Causal inference with d-separation</a>
+vignette.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
