@@ -5,7 +5,6 @@ template:
   bslib:
     navbar-bg: "#0076BA"
 navbar:
-  title: "because"
   structure:
-    left: [home, intro, reference, articles, tutorials, news]
+    left: [brand, intro, reference, articles, tutorials, news]
     right: [search, github]
