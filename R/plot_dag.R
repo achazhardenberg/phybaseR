@@ -152,8 +152,8 @@ plot_dag <- function(
         max_chars <- max(nchar(unlist(strsplit(dag_data$label_display, "\n"))))
         # Heuristic: base size + scaling factor * chars * text_size
         # Typically node_size=14 covers ~3 chars at text_size=4.
-        # We'll use a conservative multiplier.
-        calc_size <- 10 + (max_chars * 2.5 * (text_size / 4))
+        # Reduced multiplier to prevent excessive size in compact/Rmd plots.
+        calc_size <- 8 + (max_chars * 1.8 * (text_size / 4))
 
         # Use simple logic: manual node_size is a baseline, but we ensure it fits.
         # However, user asked to "make the boxes size the same... according to the longest".
@@ -329,19 +329,9 @@ plot_dag <- function(
     }
 
     # Define Caps based on node size
-    # node_size in geom_point is roughly diameter in mm?
-    # ggraph caps use units.
-    # Heuristic: convert size to unit.
-    # geom_point size 1 is 1/72 inch * 1.5? roughly.
-    # Let's try circle(size, "pt") but scaled properly.
-    # Actually, a safe bet is to use the same value as "mm" if it's large (14),
-    # but 14mm is huge. node_size=14 in ggplot is big.
-    # Let's use circle(uniform_node_size / 2 + 1, "mm") as a starting guess or just use "pt" * scaling.
-    # Standard ggplot point size 1 = 0.75mm?
-    # Let's use ggraph::circle(uniform_node_size * 1.5, "pt") + a small buffer.
-    node_radius_pt <- uniform_node_size * 2 # Approximate radius coverage in points including text?
-    # No, let's just use a generous cap.
-    cap_size <- ggraph::circle(uniform_node_size * 1.5, "pt")
+    # Reduced multiplier from 1.5 to 1.15 to decrease white space/margins.
+    # This prevents edges from disappearing in compact plots.
+    cap_size <- ggraph::circle(uniform_node_size * 1.15, "pt")
 
     p <- ggplot2::ggplot(
         combined_dag_data,
