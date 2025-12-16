@@ -2,7 +2,7 @@
 % Please edit documentation in R/because.R
 \name{because}
 \alias{because}
-\title{Run a Phylogenetic Bayesian Structural Equation model (Because)}
+\title{Run a Bayesian Structural Equation Model}
 \usage{
 because(
   data,
@@ -196,5 +196,5 @@ Example: \code{c(response_var = 1)}.}
 A list of class \code{"because"} with model output and diagnostics.
 }
 \description{
-Run a Phylogenetic Bayesian Structural Equation model (Because)
+Run a Bayesian Structural Equation Model
 }
