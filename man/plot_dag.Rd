@@ -6,7 +6,7 @@
 \usage{
 plot_dag(
   x,
-  layout = "nicely",
+  layout = "sugiyama",
   latent = NULL,
   node_size = 14,
   node_color = "black",
@@ -22,7 +22,7 @@ plot_dag(
 \arguments{
 \item{x}{A list of formulas (equations), a \code{because} model object, or a list of these.}
 
-\item{layout}{The layout algorithm to use (default "nicely"). See \code{\link[ggdag]{ggdag}}.}
+\item{layout}{The layout algorithm to use (default "sugiyama"). See \code{\link[ggdag]{ggdag}}.}
 
 \item{latent}{Character vector of latent variable names. Overrides the model's latent variables if provided.}
 
@@ -75,4 +75,5 @@ my_coords <- list(
 )
 plot_dag(eq, coords = my_coords)
 }
+
 }
