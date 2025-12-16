@@ -1,5 +1,5 @@
 # because
-### Bayesian Estimation of Causal Effects <img src="man/figures/because_hex.svg" align="right" height="139" />
+### Bayesian Estimation of Causal Effects <img src="man/figures/because_hex.svg" align="right" height="50" />
 
 **because** provides a unified framework for specifying and fitting Bayesian structural equation models using [JAGS](http://mcmc-jags.sourceforge.net).
 
@@ -43,30 +43,3 @@ Before using phybaseR, you need to have **JAGS** (Just Another Gibbs Sampler) in
 -   **macOS**: `brew install jags` or download from [SourceForge](http://mcmc-jags.sourceforge.net).
 -   **Windows**: Download installer from [SourceForge](http://mcmc-jags.sourceforge.net).
 -   **Linux**: `sudo apt-get install jags`.
-
-## Documentation & Examples
-
-For detailed examples and step-by-step tutorials on how to use all features of the package, please refer to the package vignettes:
-
-```r
-vignette("01_getting_started", package = "because")
-```
-
-You can also download the full **[Reference Manual (PDF)](inst/pdf/because_reference_manual.pdf)** which describes all functions in the package.
-
-**PDF Vignettes:**
-- [Getting Started](inst/pdf/01_getting_started.pdf)
-- [D-Separation Tests](inst/pdf/02_dseparation.pdf)
-- [Phylogenetic Models](inst/pdf/03_phylogenetic_models.pdf)
-
-
-## Citation
-
-To cite the **because** package in publications, please use:
-
-> von Hardenberg, A. (2025). because: Bayesian Estimation of Causal Effects. R package version 0.9.4. https://github.com/achazhardenberg/because
-
-If you use **because** to run Phylogenetic Bayesian Structural Equation Models (PhyBaSE) in your research, please *also* cite:
-
-> von Hardenberg, A. and Gonzalez-Voyer, A. (2025). PhyBaSE: A Bayesian approach to Phylogenetic Structural Equation Models. *Methods in Ecology and Evolution*. https://doi.org/10.1111/2041-210X.70044
-
