@@ -5,6 +5,11 @@ template:
   bslib:
     navbar-bg: "#0076BA"
 navbar:
+  components:
+    brand:
+      image:
+        src: man/figures/logo.png
+        alt: "because"
   structure:
     left: [brand, intro, reference, articles, tutorials, news]
     right: [search, github]
