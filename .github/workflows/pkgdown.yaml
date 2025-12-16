@@ -43,5 +43,3 @@ jobs:
           clean: false
           branch: gh-pages
           folder: docs
-Good
-Bad
