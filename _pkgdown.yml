@@ -3,12 +3,8 @@ template:
   bootstrap: 5
   bootswatch: yeti
   bslib:
+    navbar-bg: "#2E70AA"
 navbar:
-  components:
-    brand:
-      image:
-        src: man/figures/logo.svg
-        alt: "because"
   structure:
     left: [brand, intro, reference, articles, tutorials, news]
     right: [search, github]
