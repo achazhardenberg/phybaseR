@@ -33,8 +33,10 @@ autocorrelation, genetic relatedness etc.).
 -   [Causal Inference with d-Separation](02_dseparation.html): Testing
     conditional independencies implied by your causal model.
 -   [Phylogenetic Path Analysis](03_phylogenetic_models.html): Using the
-    Phylogenetic Bayesian Structural Equation Model appraoch (Because,
+         Phylogenetic Bayesian Structural Equation   Model appraoch (Because,
     von Hardenberg & Gonzalez-Voyer, 2025).
+-   [Missing Data Imputation](04_missing_data.html):
+     Handling missing data using Bayesian imputation.
 -   *Alternative Covariance structures:*
     Spatial, genetic, social, or other correlation structures.
     *Alternative  dustribution families: Modeling
