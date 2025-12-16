@@ -6,6 +6,9 @@
 > **Please beware that this package and its functions are still in beta.**
 > Functionality may change, and bugs may occur — feedback is very welcome!
 
+> **Note on the logo**: The package hexagon features the mathematical symbol for "because" ($\because$), represented as three dots in an inverted triangle.
+
+
 ## Features
 
 **because** simplifies the process of running complex Bayesian Structural Equation Models by automatically generating JAGS code from standard R formulas. Key features include:
