@@ -7,7 +7,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/achazhardenberg/because/blob/master/inst/CITATION)
+[`inst/CITATION`](https://github.com/achazhardenberg/because/blob/v0.9.6/inst/CITATION)
 
 von Hardenberg, A. (2025). because: Bayesian Estimation of Causal
 Effects. R package version 0.9.5.
