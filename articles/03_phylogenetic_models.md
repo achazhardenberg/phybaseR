@@ -41,7 +41,11 @@ sem8_eq <- list(
     NL ~ BM + RS,
     DD ~ NL
 )
+
+plot_dag(sem8_eq)
 ```
+
+![](figures/sem8.png)
 
 Now we can fit the model with
 [`because()`](https://achazhardenberg.github.io/because/reference/because.md)
