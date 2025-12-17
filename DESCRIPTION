@@ -21,7 +21,6 @@ LazyData: true
 Imports:
     rjags,
     ape,
-    ggm,
     coda,
     stats,
     parallel,
@@ -41,7 +40,9 @@ Suggests:
     ggdag,
     ggraph,
     ggplot2,
-    dplyr
+    dplyr,
+    ggm,
+    igraph
 VignetteBuilder: knitr, rmarkdown
 URL: https://because-pkg.github.io/because/, https://github.com/because-pkg/because
 BugReports: https://github.com/because-pkg/because/issues
