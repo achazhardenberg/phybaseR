@@ -5,7 +5,7 @@
 **because** is an R package designed to easily perform causal inference
 with Bayesian Structural Equation Models in JAGS. The package integrates
 the methods proposed by von Hardenberg & Gonzalez-Voyer (2025) to fit
-Phylogenetic Bayesian Structural Equation Models (Because) and extends
+Phylogenetic Bayesian Structural Equation Models (PhyBaSE) and extends
 them to other types of covariance structures (eg. spatial
 autocorrelation, genetic relatedness etc.).
 
