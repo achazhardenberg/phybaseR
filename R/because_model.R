@@ -89,10 +89,17 @@ because_model <- function(
   beta_counter <- list()
   response_counter <- list()
 
-  # Parse equations
+  # Parse equations and extract deterministic terms
+  deterministic_terms <- extract_deterministic_terms(equations) # Requires R/deterministic_nodes.R logic
+
   eq_list <- lapply(equations, function(eq) {
     response <- as.character(formula(eq))[2]
     predictors <- attr(terms(formula(eq)), "term.labels")
+
+    # Sanitize predictors (e.g. A:B -> A_x_B)
+    predictors <- sapply(predictors, sanitize_term_name)
+    names(predictors) <- NULL # Remove names from sapply output
+
     list(response = response, predictors = predictors)
   })
 
@@ -188,6 +195,19 @@ because_model <- function(
         model_lines,
         "    # Deterministic polynomial transformations",
         poly_jags
+      )
+    }
+  }
+
+  # Add generic deterministic nodes (e.g., interactions, logic)
+  # This generalizes the polynomial logic (Item #12)
+  if (!is.null(deterministic_terms) && length(deterministic_terms) > 0) {
+    det_jags <- generate_deterministic_jags(deterministic_terms)
+    if (length(det_jags) > 0) {
+      model_lines <- c(
+        model_lines,
+        "    # Deterministic nodes (Interactions / Logic)",
+        det_jags
       )
     }
   }

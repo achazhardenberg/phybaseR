@@ -1832,7 +1832,8 @@ because <- function(
       extract_names("^\\s*rho"),
       extract_names("^\\s*sigma"),
       extract_names("^\\s*psi"),
-      extract_names("^\\s*r_")
+      extract_names("^\\s*r_"),
+      extract_names("^\\s*cutpoint")
     ))
 
     # Remove tau_obs_* (deterministic constants, not stochastic parameters)
@@ -1873,6 +1874,7 @@ because <- function(
           grepl("^rho", all_params) | # Induced correlations
           grepl("^psi", all_params) | # Zero-inflation probability
           grepl("^r_", all_params) | # Negative Binomial size
+          grepl("^cutpoint", all_params) | # Ordinal cutpoints
           (grepl("^lambda", all_params) &
             gsub("^lambda_?", "", all_params) %in% response_vars &
             !gsub("^lambda_?", "", all_params) %in% mag_exogenous_vars) # Response lambdas, excluding MAG exogenous
@@ -2043,12 +2045,24 @@ because <- function(
       # message("-------------------------------------")
     }
     # Compile model
-    model <- rjags::jags.model(
-      model_file,
-      data = data,
-      n.chains = n.chains,
-      n.adapt = n.adapt,
-      quiet = quiet
+    model <- tryCatch(
+      {
+        rjags::jags.model(
+          model_file,
+          data = data,
+          n.chains = n.chains,
+          n.adapt = n.adapt,
+          quiet = quiet
+        )
+      },
+      error = function(e) {
+        if (!quiet) {
+          message("\nCRITICAL JAGS ERROR during compilation:")
+          message(e$message)
+          message("Check your model code syntax or data dimensions.\n")
+        }
+        stop(e)
+      }
     )
     update(model, n.iter = n.burnin)
 
