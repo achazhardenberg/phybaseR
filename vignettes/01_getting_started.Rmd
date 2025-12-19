@@ -32,14 +32,15 @@ autocorrelation, genetic relatedness etc.).
 
 -   [Causal Inference with d-Separation](02_dseparation.html): Testing
     conditional independencies implied by your causal model.
--   [Phylogenetic Path Analysis](03_phylogenetic_models.html): Using the
-         Phylogenetic Bayesian Structural Equation   Model appraoch (Because,
-    von Hardenberg & Gonzalez-Voyer, 2025).
+-   [Phylogenetic Path Analysis](03_phylogenetic_models.html): Using        the Phylogenetic Bayesian Structural Equation Model approach
+     (PhyBaSE, von Hardenberg & Gonzalez-Voyer, 2025).
 -   [Missing Data Imputation](04_missing_data.html):
      Handling missing data using Bayesian imputation.
+-   [Custom Priors and Mechanistic Constraints](05_custom_priors.html):
+     Incorporating prior knowledge and mechanistic constraints.
 -   *Alternative Covariance structures:*
     Spatial, genetic, social, or other correlation structures.
-    *Alternative  dustribution families: Modeling
+    *Alternative  dustribution families:* Modeling
     non-Gaussian data.
     -   Gaussian (continuous data)
     -   Binomial (binary/proportion data)
@@ -50,8 +51,7 @@ autocorrelation, genetic relatedness etc.).
     -   Zero inflated Poissson (ZIP) and negative binomial (ZINB)
 -   *Advanced Model Specifications:* random
     effects (mixed models, nested designs), polynomial terms,
-    interaction terms,categorical predictors, measurement error, missing
-    data, phylogenetic uncertainty. 
+    interaction terms,categorical predictors, measurement error,           missing data, phylogenetic uncertainty. 
 -   *Hierarchical Data:* Multi-level data with variables at
     different hierarchical levels.
 -   *Latent Variables and MAG:* Measurement
