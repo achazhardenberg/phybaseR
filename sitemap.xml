@@ -23,8 +23,10 @@
 <url><loc>https://because-pkg.github.io/because/reference/expand_nesting_syntax.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/expand_polynomial_formula.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/extract_bidirected_edges.html</loc></url>
+<url><loc>https://because-pkg.github.io/because/reference/extract_deterministic_terms.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/extract_imputed.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/extract_polynomial_terms.html</loc></url>
+<url><loc>https://because-pkg.github.io/because/reference/generate_deterministic_jags.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/generate_polynomial_jags.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/get_all_polynomial_terms.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/get_data_for_variables.html</loc></url>
@@ -36,8 +38,10 @@
 <url><loc>https://because-pkg.github.io/because/reference/print.summary.because.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/rhino.dat.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/rhino.tree.html</loc></url>
+<url><loc>https://because-pkg.github.io/because/reference/sanitize_term_name.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/storks.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/summary.because.html</loc></url>
+<url><loc>https://because-pkg.github.io/because/reference/term_to_jags_expression.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/validate_hierarchical_data.html</loc></url>
 </urlset>
 

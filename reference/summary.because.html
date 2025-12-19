@@ -45,15 +45,32 @@
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for class 'because'</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  show_internal <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  show_nodes <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  show_random <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
 
 
-<dl><dt id="arg-object">object<a class="anchor" aria-label="anchor" href="#arg-object"></a></dt>
-<dd><p>A fitted model object of class <code>"because"</code>.</p></dd>
+<dl><dt id="arg-show-internal">show_internal<a class="anchor" aria-label="anchor" href="#arg-show-internal"></a></dt>
+<dd><p>Logical. If <code>TRUE</code>, shows internal parameters created for
+deterministically defined nodes (e.g., <code>beta_..._det_...</code>). Defaults to <code>FALSE</code>.</p></dd>
+
+
+<dt id="arg-show-nodes">show_nodes<a class="anchor" aria-label="anchor" href="#arg-show-nodes"></a></dt>
+<dd><p>Logical. If <code>TRUE</code>, shows latent node values (e.g., <code>Age[1]</code>).
+Defaults to <code>FALSE</code> to prevent clutter when <code>monitor="all"</code>.</p></dd>
+
+
+<dt id="arg-show-random">show_random<a class="anchor" aria-label="anchor" href="#arg-show-random"></a></dt>
+<dd><p>Logical. If <code>TRUE</code>, shows random effect estimates (e.g., <code>u_...</code>).
+Defaults to <code>FALSE</code>.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

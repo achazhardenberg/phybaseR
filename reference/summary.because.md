@@ -6,14 +6,32 @@ Summarizes the output of a Because model run.
 
 ``` r
 # S3 method for class 'because'
-summary(object, ...)
+summary(
+  object,
+  show_internal = FALSE,
+  show_nodes = FALSE,
+  show_random = FALSE,
+  ...
+)
 ```
 
 ## Arguments
 
-- object:
+- show_internal:
 
-  A fitted model object of class `"because"`.
+  Logical. If `TRUE`, shows internal parameters created for
+  deterministically defined nodes (e.g., `beta_..._det_...`). Defaults
+  to `FALSE`.
+
+- show_nodes:
+
+  Logical. If `TRUE`, shows latent node values (e.g., `Age[1]`).
+  Defaults to `FALSE` to prevent clutter when `monitor="all"`.
+
+- show_random:
+
+  Logical. If `TRUE`, shows random effect estimates (e.g., `u_...`).
+  Defaults to `FALSE`.
 
 - ...:
 
