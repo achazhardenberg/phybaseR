@@ -7,7 +7,7 @@ articles:
   03_phylogenetic_models: 03_phylogenetic_models.html
   04_missing_data: 04_missing_data.html
   05_custom_priors: 05_custom_priors.html
-last_built: 2025-12-19T20:50Z
+last_built: 2025-12-19T20:55Z
 urls:
   reference: https://because-pkg.github.io/because/reference
   article: https://because-pkg.github.io/because/articles

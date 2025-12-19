@@ -16,13 +16,16 @@ autocorrelation, genetic relatedness etc.).
   Testing conditional independencies implied by your causal model.
 - [Phylogenetic Path
   Analysis](https://because-pkg.github.io/because/articles/03_phylogenetic_models.md):
-  Using the Phylogenetic Bayesian Structural Equation Model appraoch
-  (Because, von Hardenberg & Gonzalez-Voyer, 2025).
+  Using the Phylogenetic Bayesian Structural Equation Model approach
+  (PhyBaSE, von Hardenberg & Gonzalez-Voyer, 2025).
 - [Missing Data
   Imputation](https://because-pkg.github.io/because/articles/04_missing_data.md):
   Handling missing data using Bayesian imputation.
+- [Custom Priors and Mechanistic
+  Constraints](https://because-pkg.github.io/because/articles/05_custom_priors.md):
+  Incorporating prior knowledge and mechanistic constraints.
 - *Alternative Covariance structures:* Spatial, genetic, social, or
-  other correlation structures. \*Alternative dustribution families:
+  other correlation structures. *Alternative dustribution families:*
   Modeling non-Gaussian data.
   - Gaussian (continuous data)
   - Binomial (binary/proportion data)
