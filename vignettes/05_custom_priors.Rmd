@@ -31,8 +31,8 @@ For this example, let's simulate **Absolute Growth Rate** in **grams per day (g/
 ```{r setup}
 library(because)
 
-set.seed(123)
-N <- 100
+set.seed(42)
+N <- 30
 # Ambient temperature in Celsius (Mean 20C)
 Temp_Raw <- rnorm(N, mean = 20, sd = 5)
 
@@ -97,7 +97,7 @@ Notice how the credible intervals for the custom model will be tighter and cente
 
 ### Visualizing the Impact
 
-We can plot the posterior estimates side-by-side to see the "shrinkage" effect of our informative priors.
+We can plot the posterior estimates together to see the "shrinkage" effect of our informative priors.
 
 ```{r plot_compare, fig.width=9, fig.height=4}
 # We can use the helper function plot_posterior() to compare models.
@@ -173,30 +173,42 @@ We usually estimate the residual variance (`sigma` or its inverse `tau`) from th
 For example, if you know the precision of your scale is roughly 2 g, this gives you a strong expectation for the residual standard deviation (sigma).
 
 ```{r variance_prior}
-# We believe sigma is around 2 (grams/day).
-# tau = 1/2^2 = 0.25.
-# A Gamma(shape, rate) prior can be tuned.
-# Mean of Gamma = shape/rate. Var = shape/rate^2.
-# Let's try to center it around 0.25. Gamma(10, 40) -> Mean = 0.25.
+# Simulate small, noisy dataset
+set.seed(42)
+N_small <- 15
+Temp_Small <- rnorm(N_small, 20, 5)
+# Actual residual SD = 3 (quite noisy)
+Growth_Small <- 0.5 * Temp_Small + rnorm(N_small, sd = 3)
+df_small <- data.frame(Growth_g_day = Growth_Small, Temp_Centered = Temp_Small - 20)
 
-variance_prior <- list(
-    # Prior for residual precision of Growth_g_day
-    tau_e_Growth_g_day = "dgamma(10, 40)"
-)
-
-fit_variance <- because(
+# 1. Default Model (Weak Prior)
+# The data (SD=3) will dominate, finding a sigma around 3 with wide uncertainty.
+fit_default_var <- because(
     equations = list(Growth_g_day ~ Temp_Centered),
-    data = df,
-    priors = variance_prior,
-    n.iter = 1000,
+    data = df_small,
     quiet = TRUE
 )
 
-# Inspect the estimated sigma (derived from tau)
-summary(fit_variance)
+# 2. Constrained Model (Strong Prior)
+# Suppose we have theoretical reasons to believe residual SD should be small (~1.0).
+# Precision = 1/1^2 = 1.
+# dgamma(20, 20) -> Mean 1, Variance 0.05 (Strong)
+variance_prior <- list(
+    tau_e_Growth_g_day = "dgamma(20, 20)"
+)
 
-# Visualize the posterior for the residual standard deviation
-plot_posterior(fit_variance, parameter = "sigma")
+fit_constrained_var <- because(
+    equations = list(Growth_g_day ~ Temp_Centered),
+    data = df_small,
+    priors = variance_prior,
+    quiet = TRUE
+)
+
+# Visualize: The constrained posterior will be shifted left (towards 1) and sharper
+plot_posterior(
+    list(Default = fit_default_var, Constrained = fit_constrained_var),
+    parameter = "sigma"
+)
 ```
 
 ## Default Priors Reference
@@ -237,8 +249,9 @@ fit_check <- because(
     n.iter = 0, quiet = TRUE
 )
 
-# Print the first few lines of the JAGS model
-cat(substr(fit_check$model_code, 1, 1000))
+# Print the JAGS model
+fit_check$model
+
 ```
 
 \`\`\`
