@@ -29,8 +29,8 @@ temperature.
 ``` r
 library(because)
 
-set.seed(123)
-N <- 100
+set.seed(42)
+N <- 30
 # Ambient temperature in Celsius (Mean 20C)
 Temp_Raw <- rnorm(N, mean = 20, sd = 5)
 
@@ -64,26 +64,26 @@ fit_default <- because(
 #>    Resolving undeclared variables
 #>    Allocating nodes
 #> Graph information:
-#>    Observed stochastic nodes: 100
+#>    Observed stochastic nodes: 30
 #>    Unobserved stochastic nodes: 3
-#>    Total graph size: 10509
+#>    Total graph size: 1059
 #> 
 #> Initializing model
 
 summary(fit_default)
 #>                                  Mean    SD Naive SE Time-series SE  2.5%   50%
-#> alphaGrowth_g_day               9.793 0.196    0.004          0.004 9.401 9.793
-#> beta_Growth_g_day_Temp_Centered 0.479 0.043    0.001          0.001 0.393 0.479
-#> sigmaGrowth_g_day               1.940 0.138    0.003          0.003 1.692 1.933
-#>                                  97.5% Rhat n.eff
-#> alphaGrowth_g_day               10.178    1  2912
-#> beta_Growth_g_day_Temp_Centered  0.568    1  3187
-#> sigmaGrowth_g_day                2.219    1  2902
+#> alphaGrowth_g_day               9.775 0.385    0.007          0.007 9.014 9.777
+#> beta_Growth_g_day_Temp_Centered 0.431 0.064    0.001          0.001 0.307 0.431
+#> sigmaGrowth_g_day               2.097 0.278    0.005          0.005 1.643 2.059
+#>                                  97.5%  Rhat n.eff
+#> alphaGrowth_g_day               10.533 1.000  2924
+#> beta_Growth_g_day_Temp_Centered  0.557 1.000  3000
+#> sigmaGrowth_g_day                2.724 1.001  3000
 #> 
 #> DIC:
-#> Mean deviance:  417.4 
-#> penalty 3.02 
-#> Penalized deviance: 420.5
+#> Mean deviance:  130.4 
+#> penalty 3.156 
+#> Penalized deviance: 133.5
 ```
 
 ### Custom Prior Model
@@ -124,26 +124,26 @@ fit_custom <- because(
 #>    Resolving undeclared variables
 #>    Allocating nodes
 #> Graph information:
-#>    Observed stochastic nodes: 100
+#>    Observed stochastic nodes: 30
 #>    Unobserved stochastic nodes: 3
-#>    Total graph size: 10511
+#>    Total graph size: 1061
 #> 
 #> Initializing model
 
 summary(fit_custom)
 #>                                  Mean    SD Naive SE Time-series SE  2.5%   50%
-#> alphaGrowth_g_day               9.957 0.090    0.002          0.002 9.780 9.956
-#> beta_Growth_g_day_Temp_Centered 0.485 0.033    0.001          0.001 0.420 0.485
-#> sigmaGrowth_g_day               1.934 0.133    0.002          0.002 1.697 1.924
+#> alphaGrowth_g_day               9.981 0.096    0.002          0.002 9.798 9.980
+#> beta_Growth_g_day_Temp_Centered 0.471 0.039    0.001          0.001 0.393 0.471
+#> sigmaGrowth_g_day               2.064 0.267    0.005          0.005 1.627 2.036
 #>                                  97.5% Rhat n.eff
-#> alphaGrowth_g_day               10.135    1  2818
-#> beta_Growth_g_day_Temp_Centered  0.549    1  3000
-#> sigmaGrowth_g_day                2.225    1  3150
+#> alphaGrowth_g_day               10.171    1  3000
+#> beta_Growth_g_day_Temp_Centered  0.547    1  2521
+#> sigmaGrowth_g_day                2.653    1  2773
 #> 
 #> DIC:
-#> Mean deviance:  417 
-#> penalty 1.804 
-#> Penalized deviance: 418.8
+#> Mean deviance:  129.6 
+#> penalty 1.501 
+#> Penalized deviance: 131.1
 ```
 
 Notice how the credible intervals for the custom model will be tighter
@@ -152,7 +152,7 @@ and centered closer to our priors, especially if the data were sparse
 
 ### Visualizing the Impact
 
-We can plot the posterior estimates side-by-side to see the “shrinkage”
+We can plot the posterior estimates together to see the “shrinkage”
 effect of our informative priors.
 
 ``` r
@@ -239,32 +239,32 @@ fit_mech_kleiber <- because(
 # Compare Estimates
 summary(fit_default_kleiber)
 #>                       Mean    SD Naive SE Time-series SE   2.5%   50%  97.5%
-#> alphaLog_MR          3.471 4.246    0.078          0.269 -5.066 3.533 11.793
-#> beta_Log_MR_Log_Mass 0.051 1.038    0.019          0.065 -2.002 0.033  2.074
-#> sigmaLog_MR          2.932 0.395    0.007          0.008  2.279 2.885  3.814
+#> alphaLog_MR          3.301 4.380    0.080          0.297 -5.222 3.372 12.162
+#> beta_Log_MR_Log_Mass 0.095 1.067    0.019          0.071 -2.065 0.093  2.205
+#> sigmaLog_MR          2.941 0.390    0.007          0.007  2.298 2.907  3.790
 #>                       Rhat n.eff
-#> alphaLog_MR          1.003   250
-#> beta_Log_MR_Log_Mass 1.003   253
-#> sigmaLog_MR          1.000  2638
+#> alphaLog_MR          1.007   218
+#> beta_Log_MR_Log_Mass 1.007   225
+#> sigmaLog_MR          1.001  2907
 #> 
 #> DIC:
 #> Mean deviance:  151.1 
-#> penalty 3.128 
-#> Penalized deviance: 154.3
+#> penalty 3.054 
+#> Penalized deviance: 154.2
 summary(fit_mech_kleiber)
 #>                       Mean    SD Naive SE Time-series SE   2.5%   50% 97.5%
-#> alphaLog_MR          1.151 1.917    0.035          0.059 -3.237 1.476 3.925
-#> beta_Log_MR_Log_Mass 0.623 0.456    0.008          0.014  0.030 0.533 1.679
-#> sigmaLog_MR          2.912 0.382    0.007          0.007  2.271 2.879 3.800
+#> alphaLog_MR          1.294 1.863    0.034          0.064 -3.016 1.653 3.971
+#> beta_Log_MR_Log_Mass 0.590 0.437    0.008          0.016  0.032 0.507 1.643
+#> sigmaLog_MR          2.916 0.379    0.007          0.007  2.290 2.879 3.744
 #>                      Rhat n.eff
-#> alphaLog_MR             1  1045
-#> beta_Log_MR_Log_Mass    1  1011
-#> sigmaLog_MR             1  2918
+#> alphaLog_MR             1   917
+#> beta_Log_MR_Log_Mass    1   881
+#> sigmaLog_MR             1  3000
 #> 
 #> DIC:
 #> Mean deviance:  150.5 
-#> penalty 2.23 
-#> Penalized deviance: 152.7
+#> penalty 2.278 
+#> Penalized deviance: 152.8
 
 # Visualize: Unconstrained vs. Truncated
 plot_posterior(
@@ -298,43 +298,42 @@ this gives you a strong expectation for the residual standard deviation
 (sigma).
 
 ``` r
-# We believe sigma is around 2 (grams/day).
-# tau = 1/2^2 = 0.25.
-# A Gamma(shape, rate) prior can be tuned.
-# Mean of Gamma = shape/rate. Var = shape/rate^2.
-# Let's try to center it around 0.25. Gamma(10, 40) -> Mean = 0.25.
+# Simulate small, noisy dataset
+set.seed(42)
+N_small <- 15
+Temp_Small <- rnorm(N_small, 20, 5)
+# Actual residual SD = 3 (quite noisy)
+Growth_Small <- 0.5 * Temp_Small + rnorm(N_small, sd = 3)
+df_small <- data.frame(Growth_g_day = Growth_Small, Temp_Centered = Temp_Small - 20)
 
-variance_prior <- list(
-    # Prior for residual precision of Growth_g_day
-    tau_e_Growth_g_day = "dgamma(10, 40)"
-)
-
-fit_variance <- because(
+# 1. Default Model (Weak Prior)
+# The data (SD=3) will dominate, finding a sigma around 3 with wide uncertainty.
+fit_default_var <- because(
     equations = list(Growth_g_day ~ Temp_Centered),
-    data = df,
-    priors = variance_prior,
-    n.iter = 1000,
+    data = df_small,
     quiet = TRUE
 )
 
-# Inspect the estimated sigma (derived from tau)
-summary(fit_variance)
-#>                                  Mean    SD Naive SE Time-series SE  2.5%   50%
-#> alphaGrowth_g_day               9.776 0.204    0.013          0.013 9.399 9.791
-#> beta_Growth_g_day_Temp_Centered 0.480 0.046    0.003          0.003 0.396 0.482
-#> sigmaGrowth_g_day               1.961 0.135    0.009          0.009 1.702 1.958
-#>                                  97.5%  Rhat n.eff
-#> alphaGrowth_g_day               10.134 0.995   240
-#> beta_Growth_g_day_Temp_Centered  0.577 0.999   282
-#> sigmaGrowth_g_day                2.245 0.999   240
-#> 
-#> DIC:
-#> Mean deviance:  417.4 
-#> penalty 2.892 
-#> Penalized deviance: 420.2
+# 2. Constrained Model (Strong Prior)
+# Suppose we have theoretical reasons to believe residual SD should be small (~1.0).
+# Precision = 1/1^2 = 1.
+# dgamma(20, 20) -> Mean 1, Variance 0.05 (Strong)
+variance_prior <- list(
+    tau_e_Growth_g_day = "dgamma(20, 20)"
+)
 
-# Visualize the posterior for the residual standard deviation
-plot_posterior(fit_variance, parameter = "sigma")
+fit_constrained_var <- because(
+    equations = list(Growth_g_day ~ Temp_Centered),
+    data = df_small,
+    priors = variance_prior,
+    quiet = TRUE
+)
+
+# Visualize: The constrained posterior will be shifted left (towards 1) and sharper
+plot_posterior(
+    list(Default = fit_default_var, Constrained = fit_constrained_var),
+    parameter = "sigma"
+)
 ```
 
 ![](05_custom_priors_files/figure-html/variance_prior-1.png)
@@ -385,8 +384,10 @@ fit_check <- because(
     n.iter = 0, quiet = TRUE
 )
 
-# Print the first few lines of the JAGS model
-cat(substr(fit_check$model_code, 1, 1000))
+# Print the JAGS model
+fit_check$model
+#> JAGS model:
+#> 
 #> model {
 #>   # Dummy usage of ID to prevent warnings for unused data
 #>   dummy_ID <- ID[1,1]
@@ -406,6 +407,8 @@ cat(substr(fit_check$model_code, 1, 1000))
 #>   sigmaGrowth_g_day <- 1/sqrt(tau_e_Growth_g_day)
 #>   beta_Growth_g_day_Temp_Centered ~ dnorm(0, 1.0E-6)
 #> }
+#> Fully observed variables:
+#>  Growth_g_day ID N Temp_Centered dummy_ID
 ```
 
 \`\`\`

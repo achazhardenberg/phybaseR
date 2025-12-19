@@ -103,8 +103,8 @@ juvenile birds responding to ambient temperature.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://because-pkg.github.io/because/">because</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
-<span><span class="va">N</span> <span class="op">&lt;-</span> <span class="fl">100</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
+<span><span class="va">N</span> <span class="op">&lt;-</span> <span class="fl">30</span></span>
 <span><span class="co"># Ambient temperature in Celsius (Mean 20C)</span></span>
 <span><span class="va">Temp_Raw</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">N</span>, mean <span class="op">=</span> <span class="fl">20</span>, sd <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span></span>
@@ -138,26 +138,26 @@ Gamma priors (<code>dgamma(1, 1)</code>) to precisions
 <span><span class="co">#&gt;    Resolving undeclared variables</span></span>
 <span><span class="co">#&gt;    Allocating nodes</span></span>
 <span><span class="co">#&gt; Graph information:</span></span>
-<span><span class="co">#&gt;    Observed stochastic nodes: 100</span></span>
+<span><span class="co">#&gt;    Observed stochastic nodes: 30</span></span>
 <span><span class="co">#&gt;    Unobserved stochastic nodes: 3</span></span>
-<span><span class="co">#&gt;    Total graph size: 10509</span></span>
+<span><span class="co">#&gt;    Total graph size: 1059</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Initializing model</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_default</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                                  Mean    SD Naive SE Time-series SE  2.5%   50%</span></span>
-<span><span class="co">#&gt; alphaGrowth_g_day               9.793 0.196    0.004          0.004 9.401 9.793</span></span>
-<span><span class="co">#&gt; beta_Growth_g_day_Temp_Centered 0.479 0.043    0.001          0.001 0.393 0.479</span></span>
-<span><span class="co">#&gt; sigmaGrowth_g_day               1.940 0.138    0.003          0.003 1.692 1.933</span></span>
-<span><span class="co">#&gt;                                  97.5% Rhat n.eff</span></span>
-<span><span class="co">#&gt; alphaGrowth_g_day               10.178    1  2912</span></span>
-<span><span class="co">#&gt; beta_Growth_g_day_Temp_Centered  0.568    1  3187</span></span>
-<span><span class="co">#&gt; sigmaGrowth_g_day                2.219    1  2902</span></span>
+<span><span class="co">#&gt; alphaGrowth_g_day               9.775 0.385    0.007          0.007 9.014 9.777</span></span>
+<span><span class="co">#&gt; beta_Growth_g_day_Temp_Centered 0.431 0.064    0.001          0.001 0.307 0.431</span></span>
+<span><span class="co">#&gt; sigmaGrowth_g_day               2.097 0.278    0.005          0.005 1.643 2.059</span></span>
+<span><span class="co">#&gt;                                  97.5%  Rhat n.eff</span></span>
+<span><span class="co">#&gt; alphaGrowth_g_day               10.533 1.000  2924</span></span>
+<span><span class="co">#&gt; beta_Growth_g_day_Temp_Centered  0.557 1.000  3000</span></span>
+<span><span class="co">#&gt; sigmaGrowth_g_day                2.724 1.001  3000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; DIC:</span></span>
-<span><span class="co">#&gt; Mean deviance:  417.4 </span></span>
-<span><span class="co">#&gt; penalty 3.02 </span></span>
-<span><span class="co">#&gt; Penalized deviance: 420.5</span></span></code></pre></div>
+<span><span class="co">#&gt; Mean deviance:  130.4 </span></span>
+<span><span class="co">#&gt; penalty 3.156 </span></span>
+<span><span class="co">#&gt; Penalized deviance: 133.5</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="custom-prior-model">Custom Prior Model<a class="anchor" aria-label="anchor" href="#custom-prior-model"></a>
@@ -195,26 +195,26 @@ around <strong>0.5 g/day/°C</strong>.</p>
 <span><span class="co">#&gt;    Resolving undeclared variables</span></span>
 <span><span class="co">#&gt;    Allocating nodes</span></span>
 <span><span class="co">#&gt; Graph information:</span></span>
-<span><span class="co">#&gt;    Observed stochastic nodes: 100</span></span>
+<span><span class="co">#&gt;    Observed stochastic nodes: 30</span></span>
 <span><span class="co">#&gt;    Unobserved stochastic nodes: 3</span></span>
-<span><span class="co">#&gt;    Total graph size: 10511</span></span>
+<span><span class="co">#&gt;    Total graph size: 1061</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Initializing model</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_custom</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                                  Mean    SD Naive SE Time-series SE  2.5%   50%</span></span>
-<span><span class="co">#&gt; alphaGrowth_g_day               9.957 0.090    0.002          0.002 9.780 9.956</span></span>
-<span><span class="co">#&gt; beta_Growth_g_day_Temp_Centered 0.485 0.033    0.001          0.001 0.420 0.485</span></span>
-<span><span class="co">#&gt; sigmaGrowth_g_day               1.934 0.133    0.002          0.002 1.697 1.924</span></span>
+<span><span class="co">#&gt; alphaGrowth_g_day               9.981 0.096    0.002          0.002 9.798 9.980</span></span>
+<span><span class="co">#&gt; beta_Growth_g_day_Temp_Centered 0.471 0.039    0.001          0.001 0.393 0.471</span></span>
+<span><span class="co">#&gt; sigmaGrowth_g_day               2.064 0.267    0.005          0.005 1.627 2.036</span></span>
 <span><span class="co">#&gt;                                  97.5% Rhat n.eff</span></span>
-<span><span class="co">#&gt; alphaGrowth_g_day               10.135    1  2818</span></span>
-<span><span class="co">#&gt; beta_Growth_g_day_Temp_Centered  0.549    1  3000</span></span>
-<span><span class="co">#&gt; sigmaGrowth_g_day                2.225    1  3150</span></span>
+<span><span class="co">#&gt; alphaGrowth_g_day               10.171    1  3000</span></span>
+<span><span class="co">#&gt; beta_Growth_g_day_Temp_Centered  0.547    1  2521</span></span>
+<span><span class="co">#&gt; sigmaGrowth_g_day                2.653    1  2773</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; DIC:</span></span>
-<span><span class="co">#&gt; Mean deviance:  417 </span></span>
-<span><span class="co">#&gt; penalty 1.804 </span></span>
-<span><span class="co">#&gt; Penalized deviance: 418.8</span></span></code></pre></div>
+<span><span class="co">#&gt; Mean deviance:  129.6 </span></span>
+<span><span class="co">#&gt; penalty 1.501 </span></span>
+<span><span class="co">#&gt; Penalized deviance: 131.1</span></span></code></pre></div>
 <p>Notice how the credible intervals for the custom model will be
 tighter and centered closer to our priors, especially if the data were
 sparse (small N).</p>
@@ -222,8 +222,8 @@ sparse (small N).</p>
 <div class="section level3">
 <h3 id="visualizing-the-impact">Visualizing the Impact<a class="anchor" aria-label="anchor" href="#visualizing-the-impact"></a>
 </h3>
-<p>We can plot the posterior estimates side-by-side to see the
-“shrinkage” effect of our informative priors.</p>
+<p>We can plot the posterior estimates together to see the “shrinkage”
+effect of our informative priors.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># We can use the helper function plot_posterior() to compare models.</span></span>
 <span><span class="co"># By passing a list of models, they are overlaid on the same plot.</span></span>
@@ -306,32 +306,32 @@ enforcing a positive prior.</p>
 <span><span class="co"># Compare Estimates</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_default_kleiber</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                       Mean    SD Naive SE Time-series SE   2.5%   50%  97.5%</span></span>
-<span><span class="co">#&gt; alphaLog_MR          3.471 4.246    0.078          0.269 -5.066 3.533 11.793</span></span>
-<span><span class="co">#&gt; beta_Log_MR_Log_Mass 0.051 1.038    0.019          0.065 -2.002 0.033  2.074</span></span>
-<span><span class="co">#&gt; sigmaLog_MR          2.932 0.395    0.007          0.008  2.279 2.885  3.814</span></span>
+<span><span class="co">#&gt; alphaLog_MR          3.301 4.380    0.080          0.297 -5.222 3.372 12.162</span></span>
+<span><span class="co">#&gt; beta_Log_MR_Log_Mass 0.095 1.067    0.019          0.071 -2.065 0.093  2.205</span></span>
+<span><span class="co">#&gt; sigmaLog_MR          2.941 0.390    0.007          0.007  2.298 2.907  3.790</span></span>
 <span><span class="co">#&gt;                       Rhat n.eff</span></span>
-<span><span class="co">#&gt; alphaLog_MR          1.003   250</span></span>
-<span><span class="co">#&gt; beta_Log_MR_Log_Mass 1.003   253</span></span>
-<span><span class="co">#&gt; sigmaLog_MR          1.000  2638</span></span>
+<span><span class="co">#&gt; alphaLog_MR          1.007   218</span></span>
+<span><span class="co">#&gt; beta_Log_MR_Log_Mass 1.007   225</span></span>
+<span><span class="co">#&gt; sigmaLog_MR          1.001  2907</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; DIC:</span></span>
 <span><span class="co">#&gt; Mean deviance:  151.1 </span></span>
-<span><span class="co">#&gt; penalty 3.128 </span></span>
-<span><span class="co">#&gt; Penalized deviance: 154.3</span></span>
+<span><span class="co">#&gt; penalty 3.054 </span></span>
+<span><span class="co">#&gt; Penalized deviance: 154.2</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_mech_kleiber</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                       Mean    SD Naive SE Time-series SE   2.5%   50% 97.5%</span></span>
-<span><span class="co">#&gt; alphaLog_MR          1.151 1.917    0.035          0.059 -3.237 1.476 3.925</span></span>
-<span><span class="co">#&gt; beta_Log_MR_Log_Mass 0.623 0.456    0.008          0.014  0.030 0.533 1.679</span></span>
-<span><span class="co">#&gt; sigmaLog_MR          2.912 0.382    0.007          0.007  2.271 2.879 3.800</span></span>
+<span><span class="co">#&gt; alphaLog_MR          1.294 1.863    0.034          0.064 -3.016 1.653 3.971</span></span>
+<span><span class="co">#&gt; beta_Log_MR_Log_Mass 0.590 0.437    0.008          0.016  0.032 0.507 1.643</span></span>
+<span><span class="co">#&gt; sigmaLog_MR          2.916 0.379    0.007          0.007  2.290 2.879 3.744</span></span>
 <span><span class="co">#&gt;                      Rhat n.eff</span></span>
-<span><span class="co">#&gt; alphaLog_MR             1  1045</span></span>
-<span><span class="co">#&gt; beta_Log_MR_Log_Mass    1  1011</span></span>
-<span><span class="co">#&gt; sigmaLog_MR             1  2918</span></span>
+<span><span class="co">#&gt; alphaLog_MR             1   917</span></span>
+<span><span class="co">#&gt; beta_Log_MR_Log_Mass    1   881</span></span>
+<span><span class="co">#&gt; sigmaLog_MR             1  3000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; DIC:</span></span>
 <span><span class="co">#&gt; Mean deviance:  150.5 </span></span>
-<span><span class="co">#&gt; penalty 2.23 </span></span>
-<span><span class="co">#&gt; Penalized deviance: 152.7</span></span>
+<span><span class="co">#&gt; penalty 2.278 </span></span>
+<span><span class="co">#&gt; Penalized deviance: 152.8</span></span>
 <span></span>
 <span><span class="co"># Visualize: Unconstrained vs. Truncated</span></span>
 <span><span class="fu"><a href="../reference/plot_posterior.html">plot_posterior</a></span><span class="op">(</span></span>
@@ -362,43 +362,42 @@ Error).</p>
 this gives you a strong expectation for the residual standard deviation
 (sigma).</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># We believe sigma is around 2 (grams/day).</span></span>
-<span><span class="co"># tau = 1/2^2 = 0.25.</span></span>
-<span><span class="co"># A Gamma(shape, rate) prior can be tuned.</span></span>
-<span><span class="co"># Mean of Gamma = shape/rate. Var = shape/rate^2.</span></span>
-<span><span class="co"># Let's try to center it around 0.25. Gamma(10, 40) -&gt; Mean = 0.25.</span></span>
+<code class="sourceCode R"><span><span class="co"># Simulate small, noisy dataset</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
+<span><span class="va">N_small</span> <span class="op">&lt;-</span> <span class="fl">15</span></span>
+<span><span class="va">Temp_Small</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">N_small</span>, <span class="fl">20</span>, <span class="fl">5</span><span class="op">)</span></span>
+<span><span class="co"># Actual residual SD = 3 (quite noisy)</span></span>
+<span><span class="va">Growth_Small</span> <span class="op">&lt;-</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="va">Temp_Small</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">N_small</span>, sd <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">df_small</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Growth_g_day <span class="op">=</span> <span class="va">Growth_Small</span>, Temp_Centered <span class="op">=</span> <span class="va">Temp_Small</span> <span class="op">-</span> <span class="fl">20</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">variance_prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    <span class="co"># Prior for residual precision of Growth_g_day</span></span>
-<span>    tau_e_Growth_g_day <span class="op">=</span> <span class="st">"dgamma(10, 40)"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">fit_variance</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/because.html">because</a></span><span class="op">(</span></span>
+<span><span class="co"># 1. Default Model (Weak Prior)</span></span>
+<span><span class="co"># The data (SD=3) will dominate, finding a sigma around 3 with wide uncertainty.</span></span>
+<span><span class="va">fit_default_var</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/because.html">because</a></span><span class="op">(</span></span>
 <span>    equations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">Growth_g_day</span> <span class="op">~</span> <span class="va">Temp_Centered</span><span class="op">)</span>,</span>
-<span>    data <span class="op">=</span> <span class="va">df</span>,</span>
-<span>    priors <span class="op">=</span> <span class="va">variance_prior</span>,</span>
-<span>    n.iter <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>    data <span class="op">=</span> <span class="va">df_small</span>,</span>
 <span>    quiet <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Inspect the estimated sigma (derived from tau)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_variance</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                                  Mean    SD Naive SE Time-series SE  2.5%   50%</span></span>
-<span><span class="co">#&gt; alphaGrowth_g_day               9.776 0.204    0.013          0.013 9.399 9.791</span></span>
-<span><span class="co">#&gt; beta_Growth_g_day_Temp_Centered 0.480 0.046    0.003          0.003 0.396 0.482</span></span>
-<span><span class="co">#&gt; sigmaGrowth_g_day               1.961 0.135    0.009          0.009 1.702 1.958</span></span>
-<span><span class="co">#&gt;                                  97.5%  Rhat n.eff</span></span>
-<span><span class="co">#&gt; alphaGrowth_g_day               10.134 0.995   240</span></span>
-<span><span class="co">#&gt; beta_Growth_g_day_Temp_Centered  0.577 0.999   282</span></span>
-<span><span class="co">#&gt; sigmaGrowth_g_day                2.245 0.999   240</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; DIC:</span></span>
-<span><span class="co">#&gt; Mean deviance:  417.4 </span></span>
-<span><span class="co">#&gt; penalty 2.892 </span></span>
-<span><span class="co">#&gt; Penalized deviance: 420.2</span></span>
+<span><span class="co"># 2. Constrained Model (Strong Prior)</span></span>
+<span><span class="co"># Suppose we have theoretical reasons to believe residual SD should be small (~1.0).</span></span>
+<span><span class="co"># Precision = 1/1^2 = 1.</span></span>
+<span><span class="co"># dgamma(20, 20) -&gt; Mean 1, Variance 0.05 (Strong)</span></span>
+<span><span class="va">variance_prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    tau_e_Growth_g_day <span class="op">=</span> <span class="st">"dgamma(20, 20)"</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Visualize the posterior for the residual standard deviation</span></span>
-<span><span class="fu"><a href="../reference/plot_posterior.html">plot_posterior</a></span><span class="op">(</span><span class="va">fit_variance</span>, parameter <span class="op">=</span> <span class="st">"sigma"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">fit_constrained_var</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/because.html">because</a></span><span class="op">(</span></span>
+<span>    equations <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">Growth_g_day</span> <span class="op">~</span> <span class="va">Temp_Centered</span><span class="op">)</span>,</span>
+<span>    data <span class="op">=</span> <span class="va">df_small</span>,</span>
+<span>    priors <span class="op">=</span> <span class="va">variance_prior</span>,</span>
+<span>    quiet <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Visualize: The constrained posterior will be shifted left (towards 1) and sharper</span></span>
+<span><span class="fu"><a href="../reference/plot_posterior.html">plot_posterior</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Default <span class="op">=</span> <span class="va">fit_default_var</span>, Constrained <span class="op">=</span> <span class="va">fit_constrained_var</span><span class="op">)</span>,</span>
+<span>    parameter <span class="op">=</span> <span class="st">"sigma"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p><img src="05_custom_priors_files/figure-html/variance_prior-1.png" class="r-plt" width="700"></p>
 </div>
 <div class="section level2">
@@ -511,8 +510,10 @@ generated model code:</p>
 <span>    n.iter <span class="op">=</span> <span class="fl">0</span>, quiet <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Print the first few lines of the JAGS model</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/substr.html" class="external-link">substr</a></span><span class="op">(</span><span class="va">fit_check</span><span class="op">$</span><span class="va">model_code</span>, <span class="fl">1</span>, <span class="fl">1000</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># Print the JAGS model</span></span>
+<span><span class="va">fit_check</span><span class="op">$</span><span class="va">model</span></span>
+<span><span class="co">#&gt; JAGS model:</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; model {</span></span>
 <span><span class="co">#&gt;   # Dummy usage of ID to prevent warnings for unused data</span></span>
 <span><span class="co">#&gt;   dummy_ID &lt;- ID[1,1]</span></span>
@@ -531,7 +532,9 @@ generated model code:</p>
 <span><span class="co">#&gt;   tau_e_Growth_g_day ~ dgamma(1, 1)</span></span>
 <span><span class="co">#&gt;   sigmaGrowth_g_day &lt;- 1/sqrt(tau_e_Growth_g_day)</span></span>
 <span><span class="co">#&gt;   beta_Growth_g_day_Temp_Centered ~ dnorm(0, 1.0E-6)</span></span>
-<span><span class="co">#&gt; }</span></span></code></pre></div>
+<span><span class="co">#&gt; }</span></span>
+<span><span class="co">#&gt; Fully observed variables:</span></span>
+<span><span class="co">#&gt;  Growth_g_day ID N Temp_Centered dummy_ID</span></span></code></pre></div>
 <p>```</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
