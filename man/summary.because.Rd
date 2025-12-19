@@ -4,10 +4,23 @@
 \alias{summary.because}
 \title{Summary for Because Model}
 \usage{
-\method{summary}{because}(object, ...)
+\method{summary}{because}(
+  object,
+  show_internal = FALSE,
+  show_nodes = FALSE,
+  show_random = FALSE,
+  ...
+)
 }
 \arguments{
-\item{object}{A fitted model object of class \code{"because"}.}
+\item{show_internal}{Logical. If \code{TRUE}, shows internal parameters created for
+deterministically defined nodes (e.g., \code{beta_..._det_...}). Defaults to \code{FALSE}.}
+
+\item{show_nodes}{Logical. If \code{TRUE}, shows latent node values (e.g., \code{Age[1]}).
+Defaults to \code{FALSE} to prevent clutter when \code{monitor="all"}.}
+
+\item{show_random}{Logical. If \code{TRUE}, shows random effect estimates (e.g., \code{u_...}).
+Defaults to \code{FALSE}.}
 
 \item{...}{Additional arguments passed to \code{\link[coda]{summary.mcmc}}.}
 }

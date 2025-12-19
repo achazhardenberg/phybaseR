@@ -57,7 +57,12 @@ sanitize_term_name <- function(term) {
     # 3. Handle powers ^ -> _pow
     out <- gsub("\\^", "_pow", out)
 
-    # 4. Handle comparisons (simple replacement)
+    # 4. Handle logical AND/OR
+    # R uses & / | but JAGS internal naming needs to be clean
+    out <- gsub("&", "_and_", out)
+    out <- gsub("\\|", "_or_", out)
+
+    # 5. Handle comparisons (simple replacement)
     out <- gsub(">", "_gt_", out)
     out <- gsub("<", "_lt_", out)
     out <- gsub("==", "_eq_", out)
@@ -81,6 +86,60 @@ sanitize_term_name <- function(term) {
     out <- gsub("^_", "", out)
     out <- gsub("_$", "", out)
 
+    # NEW STRATEGY: Smart Naming based on content
+    # If the name is complicated (contains underscores or logic), rename it based on variables
+    # This avoids "det_1_times_Age_lt_1..."
+
+    # Check if name is complex (arbitrary heuristic: > 20 chars or contains 'times'/'plus')
+    if (
+        nchar(out) > 20 ||
+            grepl("_times_", out) ||
+            grepl("_plus_", out) ||
+            grepl("_gt_", out)
+    ) {
+        # We need to extract variables from the ORIGINAL term, but we don't have it passed here easily?
+        # modify extract_deterministic_terms to pass vars? No, sanitize takes 'term'.
+        # 'term' passed to this function is the string.
+
+        # Wait, sanitize_term_name takes 'term' which is the raw string (e.g. "I(Age^2)")?
+        # Checking lines 48-50: "param term Character string".
+        # But in lines 50+ we modified 'out' heavily.
+        # Let's use the 'term' argument (original) to find variables.
+
+        # Extract vars safely
+        vars <- tryCatch(all.vars(parse(text = term)), error = function(e) {
+            character(0)
+        })
+
+        if (length(vars) > 0) {
+            # Create base name from vars (e.g. "Age" or "Age_Sex")
+            base <- paste(head(vars, 3), collapse = "_") # Limit to first 3 vars
+
+            # Create hash for uniqueness (sum of ascii codes)
+            checksum <- sprintf("%x", sum(utf8ToInt(out)))
+
+            # New readable name
+            out <- paste0("det_", base, "_", checksum)
+        } else {
+            # Fallback if no vars found
+            # Truncate existing if too long
+            if (nchar(out) > 25) {
+                checksum <- sprintf("%x", sum(utf8ToInt(out)))
+                out <- paste0(substr(out, 1, 25), "_", checksum)
+            }
+
+            # CRITICAL: Even if short, we MUST ensure it doesn't start with a digit
+            if (grepl("^[0-9]", out)) {
+                out <- paste0("det_", out)
+            }
+        }
+    } else {
+        # Valid short name, just ensure prefix
+        if (grepl("^[0-9]", out)) {
+            out <- paste0("det_", out)
+        }
+    }
+
     return(out)
 }
 
@@ -101,9 +160,15 @@ term_to_jags_expression <- function(term) {
     }
 
     # 2. Handle I(...) wrapper - strip it for parsing
+    # Remove newlines for easier parsing
+    term <- gsub("\\n", " ", term)
+    term <- gsub("\\s+", " ", term) # Collapse multiple spaces
+
+    # 2. Handle I(...) wrapper - strip it for parsing
     inner <- term
     if (grepl("^I\\(", term)) {
-        inner <- sub("^I\\((.*)\\)$", "\\1", term)
+        # Use simple string extraction to be safer than regex
+        inner <- substr(term, 3, nchar(term) - 1)
     }
 
     # 3. Naive parser: Append [i] to any variable name
@@ -162,6 +227,19 @@ term_to_jags_expression <- function(term) {
     # Actually, step(x) is 1 if x >= 0.
     # For now, let's assume the user uses math. R's comparison operators don't work directly in JAGS math unless we use `step`.
     # Let's trust JAGS syntax support for basic boolean or leave for refinement.
+
+    # JAGS doesn't support '==' as a numeric value directly in all versions/contexts.
+    # The safest way to get 0/1 is the 'equals(a, b)' function.
+    if (grepl("==", expression)) {
+        # Simple regex for A == B -> equals(A, B)
+        # We use a more careful match to avoid partial word issues
+        # NOTE: Do NOT use \\s inside [] in default R regex, it treats it as literal 's'!
+        expression <- gsub(
+            "([^[:space:]()=]+)[[:space:]]*==[[:space:]]*([^[:space:]()=]+)",
+            "equals(\\1, \\2)",
+            expression
+        )
+    }
 
     return(expression)
 }

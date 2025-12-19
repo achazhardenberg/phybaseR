@@ -2,7 +2,12 @@
 #'
 #' Summarizes the output of a Because model run.
 #'
-#' @param object A fitted model object of class \code{"because"}.
+#' @param show_internal Logical. If \code{TRUE}, shows internal parameters created for
+#'   deterministically defined nodes (e.g., \code{beta_..._det_...}). Defaults to \code{FALSE}.
+#' @param show_nodes Logical. If \code{TRUE}, shows latent node values (e.g., \code{Age[1]}).
+#'   Defaults to \code{FALSE} to prevent clutter when \code{monitor="all"}.
+#' @param show_random Logical. If \code{TRUE}, shows random effect estimates (e.g., \code{u_...}).
+#'   Defaults to \code{FALSE}.
 #' @param ... Additional arguments passed to \code{\link[coda]{summary.mcmc}}.
 #'
 #' @return A summary object containing statistics for the monitored parameters.
@@ -10,7 +15,13 @@
 #'   the conditional independence tests.
 #'
 #' @export
-summary.because <- function(object, ...) {
+summary.because <- function(
+    object,
+    show_internal = FALSE,
+    show_nodes = FALSE,
+    show_random = FALSE,
+    ...
+) {
     # Use stored summary if available, otherwise calculate it
     if (!is.null(object$summary)) {
         summ <- object$summary
@@ -233,6 +244,49 @@ summary.because <- function(object, ...) {
 
         # Create combined table
         combined <- cbind(stats_table, quant_table)
+
+        # Smart Filtering: Hide internal deterministic parameters by default
+        if (!show_internal) {
+            # Regex to identify internal deterministic link parameters
+            # Matches "beta_..._det_..." AND "beta_..._1_times_..." (legacy)
+            # The 'beta' is strict because we might want to see 'sigma_det' if that ever exists?
+            # Usually these are betas linking the deterministic term.
+
+            # Pattern: ^beta_.*_det_ OR ^beta_.*_times_ (for the pre-fix version)
+            # Safe bet: contains "_det_" or "_times_" combined with beta
+            internal_idx <- grep("^beta_.*(_det_|_times_)", rownames(combined))
+
+            if (length(internal_idx) > 0) {
+                combined <- combined[-internal_idx, , drop = FALSE]
+            }
+        }
+
+        # Filter Nodes (e.g. Age[1], Rank[5]...)
+        # Heuristic: Parameters that overlap with variable names in the data/model, usually indexed.
+        # We want to keep 'alpha...', 'beta...', 'sigma...', 'tau...', 'lambda...', 'cutpoint...'
+        # We want to hide 'Age[...]', 'Rank[...]' if they are monitored nodes.
+        if (!show_nodes) {
+            # Keep standard structural prefixes
+            # We filter OUT things that look like nodes if they are not structural.
+
+            is_structural <- grepl(
+                "^(alpha|beta|sigma|tau|lambda|cutpoint)",
+                rownames(combined)
+            )
+            is_random <- grepl("^u_", rownames(combined))
+
+            # If show_nodes=FALSE, we hide things that are NOT structural and NOT random (unless show_random is on)
+            to_keep <- is_structural
+
+            if (show_random) {
+                to_keep <- to_keep | is_random
+            }
+
+            # Note: Internal parameters (beta_..._det_...) were filtered earlier if show_internal=FALSE.
+            # However, if show_internal=TRUE, they start with 'beta', so is_structural keeps them. Perfect.
+
+            combined <- combined[to_keep, , drop = FALSE]
+        }
 
         # Add Rhat if available
         if (!is.null(rhat)) {

@@ -41,6 +41,7 @@
 #' Models in the Presence of Latent Variables and Including Correlated Errors.
 #' Structural Equation Modeling: A Multidisciplinary Journal, 28(4), 582–589.
 #' https://doi.org/10.1080/10705511.2020.1871355
+#'
 
 #'
 #' @examples
@@ -67,6 +68,7 @@ because_dsep <- function(
   random_terms = list(),
   hierarchical_info = NULL,
   poly_terms = NULL,
+  categorical_vars = NULL,
   quiet = FALSE
 ) {
   # If no latents, use standard DAG d-separation
@@ -76,6 +78,7 @@ because_dsep <- function(
       random_terms = random_terms,
       hierarchical_info = hierarchical_info,
       poly_terms = poly_terms,
+      categorical_vars = categorical_vars,
       quiet = quiet
     ))
   }
@@ -87,6 +90,7 @@ because_dsep <- function(
     random_terms = random_terms,
     hierarchical_info = hierarchical_info,
     poly_terms = poly_terms,
+    categorical_vars = categorical_vars,
     quiet = quiet
   ))
 }
@@ -97,6 +101,7 @@ dsep_standard <- function(
   random_terms = list(),
   hierarchical_info = NULL,
   poly_terms = NULL,
+  categorical_vars = NULL,
   quiet = FALSE
 ) {
   # Extract grouping variables from random terms to exclude from DAG
@@ -159,7 +164,7 @@ dsep_standard <- function(
 
   # Convert basis set to formula list
   # We reuse mag_basis_to_formulas as the format is identical (list of vectors)
-  tests <- mag_basis_to_formulas(basis)
+  tests <- mag_basis_to_formulas(basis, categorical_vars = categorical_vars)
 
   # Append random terms if relevant (same logic as in with_latents)
   if (length(random_terms) > 0 && length(tests) > 0) {
@@ -219,6 +224,7 @@ dsep_with_latents <- function(
   random_terms = list(),
   hierarchical_info = NULL,
   poly_terms = NULL,
+  categorical_vars = NULL,
   quiet = FALSE
 ) {
   # Extract grouping variables from random terms to exclude from DAG
@@ -323,7 +329,11 @@ dsep_with_latents <- function(
   }
 
   # Convert to formula format, with variable ordering preference
-  tests <- mag_basis_to_formulas(basis, latent_children = latent_children)
+  tests <- mag_basis_to_formulas(
+    basis,
+    latent_children = latent_children,
+    categorical_vars = categorical_vars
+  )
 
   # Save tests without random effects for clean display
   tests_for_display <- tests

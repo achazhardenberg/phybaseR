@@ -71,9 +71,9 @@ because_model <- function(
   distribution = NULL,
   optimise = TRUE,
   standardize_latent = TRUE,
-  poly_terms = NULL, # Polynomial transformation terms
+  poly_terms = NULL,
   latent = NULL,
-
+  categorical_vars = NULL,
   fix_residual_variance = NULL
 ) {
   # Helper: returns b if a is NULL or if a is a list element that doesn't exist
@@ -221,6 +221,26 @@ because_model <- function(
     predictors <- eq$predictors
     dist <- dist_list[[response]] %||% "gaussian"
 
+    # Check if this is a deterministic identity equation (e.g., dummy ~ I(parent == k))
+    is_identity <- FALSE
+    if (length(predictors) == 1 && !is.null(categorical_vars)) {
+      # Is response a dummy variable?
+      is_dummy <- any(sapply(categorical_vars, function(cv) {
+        response %in% cv$dummies
+      }))
+      if (is_dummy) {
+        is_identity <- TRUE
+      }
+    }
+
+    if (is_identity) {
+      # Deterministic assignment
+      expr <- term_to_jags_expression(predictors[1])
+      model_lines <- c(model_lines, paste0("    ", response, "[i] <- ", expr))
+      # No parameters to monitor or priors to add for this equation
+      next
+    }
+
     # Count and assign unique suffix for the response variable
     response_count <- response_counter[[response]] %||% 0
     response_count <- response_count + 1
@@ -228,7 +248,6 @@ because_model <- function(
     suffix <- if (response_count == 1) "" else as.character(response_count)
 
     alpha <- paste0("alpha", response, suffix)
-
     linpred <- alpha
     for (pred in predictors) {
       key <- paste(response, pred, suffix, sep = "_")

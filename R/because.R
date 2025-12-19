@@ -134,8 +134,8 @@
 #' @importFrom coda gelman.diag effectiveSize
 #' @import coda
 because <- function(
-  data,
   equations,
+  data,
   id_col = NULL,
   structure = NULL,
   tree = NULL,
@@ -202,8 +202,11 @@ because <- function(
     message("No tree provided. Running standard (non-phylogenetic) SEM.")
   }
   if (is.null(equations)) {
-    stop("Argument 'equations' must be provided.\"")
+    stop("Argument 'equations' must be provided.")
   }
+
+  # --- Automatic Data Cleaning (Handle Character/Factor Columns) ---
+  data <- preprocess_categorical_vars(data, quiet = quiet)
 
   # --- Hierarchical Data Detection & Validation ---
   # Data is hierarchical if it's a list (not dataframe) AND levels are provided
@@ -555,7 +558,15 @@ because <- function(
     # Also check for variability-related columns (X_se, X_obs patterns)
     se_cols <- grep("_se$", colnames(data), value = TRUE)
     obs_cols <- grep("_obs$", colnames(data), value = TRUE)
-    extra_cols <- c(se_cols, obs_cols)
+
+    # Add generated dummy variables for categorical predictors
+    dummy_vars <- character(0)
+    if (!is.null(attr(data, "categorical_vars"))) {
+      cat_vars <- attr(data, "categorical_vars")
+      dummy_vars <- unlist(lapply(cat_vars, function(x) x$dummies))
+    }
+
+    extra_cols <- c(se_cols, obs_cols, dummy_vars)
 
     # Convert to list format
     data_list <- list()
@@ -579,8 +590,16 @@ because <- function(
 
     # Preserve any existing attributes
     data_attrs <- attributes(original_data)
+
     # Combine data_list with random effect data
-    data <- c(data_list, random_data_updates)
+    data <- data_list
+    if (length(random_data_updates) > 0) {
+      for (nm in names(random_data_updates)) {
+        if (!is.null(nm) && nm != "") {
+          data[[nm]] <- random_data_updates[[nm]]
+        }
+      }
+    }
 
     # Remove raw grouping variables from data passed to JAGS to avoid "Unused variable" warnings
     if (length(random_terms) > 0) {
@@ -1238,6 +1257,11 @@ because <- function(
       random_terms = random_terms,
       hierarchical_info = hierarchical_info,
       poly_terms = all_poly_terms,
+      categorical_vars = if (!is.null(attr(data, "categorical_vars"))) {
+        attr(data, "categorical_vars")
+      } else {
+        NULL
+      },
       quiet = !dsep
     )
 
@@ -1416,10 +1440,11 @@ because <- function(
                 is_categorical <- TRUE
                 dummies <- cat_vars[[predictor]]$dummies
                 # Monitor all dummy betas
-                # For Gaussian: betaPredictor format
+                # For Gaussian: beta_Response_Predictor format
+                # Note: 'dummies' are like 'sex_m'
                 params_to_monitor <- c(
                   params_to_monitor,
-                  paste0("beta", dummies)
+                  paste0("beta_", response, "_", dummies)
                 )
               }
             }
@@ -1434,6 +1459,11 @@ because <- function(
           }
 
           current_monitor <- c(monitor, params_to_monitor) # Combine with global monitor
+
+          # Remove "all" keyword if present, as it causes warnings in d-sep (rjags doesn't support it here)
+          if ("all" %in% current_monitor) {
+            current_monitor <- setdiff(current_monitor, "all")
+          }
 
           # Run model for this d-sep test
           if (!quiet) {
@@ -1469,10 +1499,11 @@ because <- function(
               is_categorical <- TRUE
               dummies <- cat_vars[[predictor]]$dummies
               # Monitor all dummy betas
-              # For Gaussian: betaPredictor format
+              # For Gaussian: beta_Response_Predictor format
+              # Note: 'dummies' are like 'sex_m'
               params_to_monitor <- c(
                 params_to_monitor,
-                paste0("beta", dummies)
+                paste0("beta_", response, "_", dummies)
               )
             }
           }
@@ -1487,6 +1518,11 @@ because <- function(
         }
 
         current_monitor <- c(monitor, params_to_monitor) # Combine with global monitor
+
+        # Remove "all" keyword if present (sequential mode)
+        if ("all" %in% current_monitor) {
+          current_monitor <- setdiff(current_monitor, "all")
+        }
 
         if (!quiet) {
           message(sprintf(
@@ -1708,28 +1744,64 @@ because <- function(
   # Auto-expand categorical variables in equations
   if (!is.null(attr(data, "categorical_vars"))) {
     categorical_vars <- attr(data, "categorical_vars")
+    new_equations <- list()
 
-    equations <- lapply(equations, function(eq) {
+    # Use for loop instead of lapply to safely modify data and collect equations
+    for (idx in seq_along(equations)) {
+      eq <- equations[[idx]]
       # Parse formula to get all variables
       vars <- all.vars(eq)
 
       # Check if any predictors are categorical
       for (var in vars) {
         if (var %in% names(categorical_vars)) {
+          # Check if var is the response (LHS)
+          lhs_var <- all.vars(eq[[2]])
+          if (var %in% lhs_var) {
+            # Skip expansion if it's the response
+            next
+          }
+
           # Get dummy variable names
+          levels <- categorical_vars[[var]]$levels
           dummies <- categorical_vars[[var]]$dummies
+
+          # If the parent variable is being imputed (is in response_vars_with_na),
+          # we MUST define the dummies deterministically in JAGS to link them.
+          if (var %in% response_vars_with_na) {
+            for (k in 2:length(levels)) {
+              dummy_name <- paste0(var, "_", levels[k])
+
+              # Create deterministic equation: dummy ~ I(var == k)
+              det_eq_str <- sprintf("%s ~ I(%s == %d)", dummy_name, var, k)
+              det_eq <- stats::as.formula(det_eq_str)
+
+              # Only add if not already present
+              eq_exists <- any(sapply(c(equations, new_equations), function(e) {
+                deparse(e) == deparse(det_eq)
+              }))
+
+              if (!eq_exists) {
+                new_equations <- c(new_equations, list(det_eq))
+                # Also remove the dummy from the data list so JAGS uses the definition
+                if (dummy_name %in% names(data)) {
+                  data[[dummy_name]] <- NULL
+                }
+              }
+            }
+          }
 
           # Convert formula to character for manipulation
           eq_str <- paste(deparse(eq), collapse = " ")
 
           # Replace categorical variable with its dummies
-          # Match whole word only (avoid partial matches)
           pattern <- paste0("\\b", var, "\\b")
           replacement <- paste(dummies, collapse = " + ")
           eq_str <- gsub(pattern, replacement, eq_str)
 
           # Convert back to formula
           eq <- as.formula(eq_str)
+          equations[[idx]] <- eq
 
           if (!quiet) {
             message(sprintf(
@@ -1740,8 +1812,9 @@ because <- function(
           }
         }
       }
-      return(eq)
-    })
+    }
+    # Add the new deterministic equations
+    equations <- c(equations, new_equations)
   }
 
   # JAGS model code
@@ -1758,7 +1831,12 @@ because <- function(
     structure_names = structure_names,
     random_structure_names = names(random_structures),
     random_terms = random_terms,
-    poly_terms = all_poly_terms
+    poly_terms = all_poly_terms,
+    categorical_vars = if (!is.null(attr(data, "categorical_vars"))) {
+      attr(data, "categorical_vars")
+    } else {
+      NULL
+    }
   )
 
   model_string <- model_output$model
@@ -1973,6 +2051,7 @@ because <- function(
       }
       # Explicitly load rjags to ensure modules are available
       loadNamespace("rjags")
+
       # Compile model for this chain
       # Explicitly set RNG seed to ensure chains are different
       inits_list <- list(
@@ -2045,6 +2124,7 @@ because <- function(
       # message("-------------------------------------")
     }
     # Compile model
+
     model <- tryCatch(
       {
         rjags::jags.model(
@@ -2300,4 +2380,102 @@ because <- function(
   }
 
   return(result)
+}
+
+#' Preprocess categorical variables (character/factor) to integer codes and dummies
+#'
+#' @param data A data.frame or list of data.frames
+#' @param quiet Logical; whether to suppress informational messages
+#' @return The modified data object with categorical_vars attribute
+#' @keywords internal
+preprocess_categorical_vars <- function(data, quiet = FALSE) {
+  if (is.null(data)) {
+    return(NULL)
+  }
+
+  # Recursively process lists of data frames (hierarchical data)
+  if (is.list(data) && !is.data.frame(data)) {
+    all_cat_vars <- list()
+
+    # Process each element (usually levels in hierarchy)
+    for (i in seq_along(data)) {
+      if (is.data.frame(data[[i]])) {
+        processed <- preprocess_categorical_vars(data[[i]], quiet = quiet)
+        data[[i]] <- processed
+        # Collect categorical vars metadata
+        level_cat_vars <- attr(processed, "categorical_vars")
+        if (!is.null(level_cat_vars)) {
+          # Use utils::modifyList if available, or manual merge
+          for (name in names(level_cat_vars)) {
+            all_cat_vars[[name]] <- level_cat_vars[[name]]
+          }
+        }
+      }
+    }
+
+    # Attach merged metadata to the top-level list
+    attr(data, "categorical_vars") <- all_cat_vars
+    return(data)
+  }
+
+  # Process single data frame
+  if (!is.data.frame(data)) {
+    return(data)
+  }
+
+  char_cols <- sapply(data, function(x) is.character(x) || is.factor(x))
+  if (any(char_cols)) {
+    categorical_vars <- list()
+    if (!is.null(attr(data, "categorical_vars"))) {
+      categorical_vars <- attr(data, "categorical_vars")
+    }
+
+    col_names <- names(data)[char_cols]
+    for (col in col_names) {
+      # Convert to factor first to get levels
+      f_vals <- factor(data[[col]])
+      levels <- levels(f_vals)
+
+      if (length(levels) < 2) {
+        if (!quiet) {
+          warning(sprintf(
+            "Variable '%s' has < 2 levels. Converting to numeric constant.",
+            col
+          ))
+        }
+        data[[col]] <- as.numeric(f_vals)
+      } else {
+        # Store metadata for model expansion
+        categorical_vars[[col]] <- list(
+          levels = levels,
+          reference = levels[1],
+          dummies = paste0(col, "_", levels[-1])
+        )
+
+        # Convert to integer codes for JAGS
+        data[[col]] <- as.integer(f_vals)
+
+        # Generate Dummy Variables explicitly
+        # This is required so JAGS can find 'sex_m' etc.
+        for (k in 2:length(levels)) {
+          lev_name <- levels[k]
+          dummy_col_name <- paste0(col, "_", lev_name)
+          # Create binary column
+          data[[dummy_col_name]] <- as.numeric(data[[col]] == k)
+        }
+
+        if (!quiet) {
+          message(sprintf(
+            "Converted categorical '%s' to integers (1..%d). Reference: '%s'",
+            col,
+            length(levels),
+            levels[1]
+          ))
+        }
+      }
+    }
+    attr(data, "categorical_vars") <- categorical_vars
+  }
+
+  return(data)
 }
