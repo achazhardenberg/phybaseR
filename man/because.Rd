@@ -5,8 +5,8 @@
 \title{Run a Bayesian Structural Equation Model}
 \usage{
 because(
-  data,
   equations,
+  data,
   id_col = NULL,
   structure = NULL,
   tree = NULL,
@@ -34,10 +34,13 @@ because(
   levels = NULL,
   hierarchy = NULL,
   link_vars = NULL,
-  fix_residual_variance = NULL
+  fix_residual_variance = NULL,
+  priors = NULL
 )
 }
 \arguments{
+\item{equations}{A list of model formulas describing the structural equation model.}
+
 \item{data}{Data for the model. Accepts:
 \itemize{
 \item \code{data.frame}: A data frame with variables as columns. Variables needed
@@ -46,8 +49,6 @@ are ignored.
 \item \code{list}: A named list where each element is a vector of values
 (traditional format for backward compatibility).
 }}
-
-\item{equations}{A list of model formulas describing the structural equation model.}
 
 \item{id_col}{Character string specifying the column name in a data.frame containing
 unit identifiers (species, individuals, sites, etc.). This is used to:
@@ -191,6 +192,10 @@ data levels (e.g. \code{c(site = "site_id")}).}
 \item{fix_residual_variance}{Optional named vector for fixing residual variances.
 Useful for handling non-identified models or specific theoretical constraints.
 Example: \code{c(response_var = 1)}.}
+
+\item{priors}{Optional named list of character strings specifying custom priors for specific parameters.
+Enables overriding default uninformative priors.
+Example: \code{list(alpha_Response = "dnorm(0, 0.001)", beta_Response_Predictor = "dnorm(1, 10)")}.}
 }
 \value{
 A list of class \code{"because"} with model output and diagnostics.

@@ -74,11 +74,20 @@ because_model <- function(
   poly_terms = NULL,
   latent = NULL,
   categorical_vars = NULL,
-  fix_residual_variance = NULL
+  fix_residual_variance = NULL,
+  priors = NULL
 ) {
   # Helper: returns b if a is NULL or if a is a list element that doesn't exist
   `%||%` <- function(a, b) {
     tryCatch(if (!is.null(a)) a else b, error = function(e) b)
+  }
+
+  # Helper: Get prior for a parameter (custom override or default)
+  get_prior <- function(param_name, default_prior) {
+    if (!is.null(priors) && param_name %in% names(priors)) {
+      return(paste0(param_name, " ~ ", priors[[param_name]]))
+    }
+    return(paste0(param_name, " ~ ", default_prior))
   }
 
   has_phylo <- !is.null(structure_names) && length(structure_names) > 0
@@ -1920,9 +1929,11 @@ because_model <- function(
 
     for (k in 1:response_counter[[response]]) {
       suffix <- if (k == 1) "" else as.character(k)
+      # alpha prior
+      alpha_name <- paste0("alpha", response, suffix)
       model_lines <- c(
         model_lines,
-        paste0("  alpha", response, suffix, " ~ dnorm(0, 1.0E-6)")
+        paste0("  ", get_prior(alpha_name, "dnorm(0, 1.0E-6)"))
       )
 
       # Only generate lambda/tau priors if NOT using GLMM (missing data)
@@ -1959,7 +1970,10 @@ because_model <- function(
           } else {
             model_lines <- c(
               model_lines,
-              paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)")
+              paste0(
+                "  ",
+                get_prior(paste0("tau_e_", response, suffix), "dgamma(1, 1)")
+              )
             )
           }
           model_lines <- c(
@@ -2006,7 +2020,10 @@ because_model <- function(
             if (!dist %in% c("negbinomial", "zinb")) {
               model_lines <- c(
                 model_lines,
-                paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)")
+                paste0(
+                  "  ",
+                  get_prior(paste0("tau_e_", response, suffix), "dgamma(1, 1)")
+                )
               )
             }
           }
@@ -2097,8 +2114,14 @@ because_model <- function(
           # Marginal Priors (lambda, tau)
           model_lines <- c(
             model_lines,
-            paste0("  lambda", response, suffix, " ~ dunif(0, 1)"),
-            paste0("  tau", response, suffix, " ~ dgamma(1, 1)"),
+            paste0(
+              "  ",
+              get_prior(paste0("lambda", response, suffix), "dunif(0, 1)")
+            ),
+            paste0(
+              "  ",
+              get_prior(paste0("tau", response, suffix), "dgamma(1, 1)")
+            ),
             paste0(
               "  sigma",
               response,
@@ -2140,7 +2163,10 @@ because_model <- function(
             " # Fixed"
           )
         } else {
-          tau_line <- paste0("    tau_e_", response, "[k] ~ dgamma(1, 1)")
+          tau_line <- paste0(
+            "    ",
+            get_prior(paste0("tau_e_", response, "[k]"), "dgamma(1, 1)")
+          )
         }
 
         model_lines <- c(
@@ -2199,7 +2225,7 @@ because_model <- function(
 
               prior_lines <- c(
                 prior_lines,
-                paste0("    ", tau_u, "[k] ~ dgamma(1, 1)"),
+                paste0("    ", get_prior(paste0(tau_u, "[k]"), "dgamma(1, 1)")),
                 paste0(
                   "    sigma_",
                   response,
@@ -2262,7 +2288,10 @@ because_model <- function(
           paste0("  for (k in 2:", K_var, ") {"),
           paste0("    alpha_", response, "[k] ~ dnorm(0, 1.0E-6)"),
           paste0("    lambda_", response, "[k] ~ dunif(0, 1)"),
-          paste0("    tau_", response, "[k] ~ dgamma(1, 1)"),
+          paste0(
+            "    ",
+            get_prior(paste0("tau_", response, "[k]"), "dgamma(1, 1)")
+          ),
           "  }"
         )
       }
@@ -2275,7 +2304,10 @@ because_model <- function(
             model_lines <- c(
               model_lines,
               paste0("  for (k in 2:", K_var, ") {"),
-              paste0("    ", beta_name, "[k] ~ dnorm(0, 1.0E-6)"),
+              paste0(
+                "    ",
+                get_prior(paste0(beta_name, "[k]"), "dnorm(0, 1.0E-6)")
+              ),
               "  }"
             )
           }
@@ -2333,8 +2365,14 @@ because_model <- function(
           } else {
             # Structured: tau_u and tau_e and lambda
             c(
-              paste0("  tau_u_", response, suffix, " ~ dgamma(1, 1)"),
-              paste0("  tau_e_", response, suffix, " ~ dgamma(1, 1)"),
+              paste0(
+                "  ",
+                get_prior(paste0("tau_u_", response, suffix), "dgamma(1, 1)")
+              ),
+              paste0(
+                "  ",
+                get_prior(paste0("tau_e_", response, suffix), "dgamma(1, 1)")
+              ),
               # Derived lambda
               paste0(
                 "  lambda_",
@@ -2363,7 +2401,7 @@ because_model <- function(
             beta_name <- paste0("beta_", response, "_", pred)
             model_lines <- c(
               model_lines,
-              paste0("  ", beta_name, " ~ dnorm(0, 1.0E-6)")
+              paste0("  ", get_prior(beta_name, "dnorm(0, 1.0E-6)"))
             )
           }
         }
@@ -2449,7 +2487,10 @@ because_model <- function(
   unique_betas <- setdiff(unique_betas, excluded_betas)
 
   for (beta in unique_betas) {
-    model_lines <- c(model_lines, paste0("  ", beta, " ~ dnorm(0, 1.0E-6)"))
+    model_lines <- c(
+      model_lines,
+      paste0("  ", get_prior(beta, "dnorm(0, 1.0E-6)"))
+    )
   }
 
   # Zero vectors for multivariate normals

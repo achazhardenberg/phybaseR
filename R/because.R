@@ -124,6 +124,9 @@
 #' @param fix_residual_variance Optional named vector for fixing residual variances.
 #'   Useful for handling non-identified models or specific theoretical constraints.
 #'   Example: \code{c(response_var = 1)}.
+#' @param priors Optional named list of character strings specifying custom priors for specific parameters.
+#'   Enables overriding default uninformative priors.
+#'   Example: \code{list(alpha_Response = "dnorm(0, 0.001)", beta_Response_Predictor = "dnorm(1, 10)")}.
 #'
 #' @return A list of class \code{"because"} with model output and diagnostics.
 #' @export
@@ -163,7 +166,8 @@ because <- function(
   levels = NULL, # Hierarchical data: variable-to-level mapping
   hierarchy = NULL, # Hierarchical data: level ordering (e.g., "site > individual")
   link_vars = NULL, # Hierarchical data: variables linking levels
-  fix_residual_variance = NULL # Optional: fix residual variance (tau_e) for specific variables
+  fix_residual_variance = NULL, # Optional: fix residual variance (tau_e) for specific variables
+  priors = NULL # Optional: custom priors list
 ) {
   # --- Input Validation & Setup ---
 
@@ -1836,7 +1840,8 @@ because <- function(
       attr(data, "categorical_vars")
     } else {
       NULL
-    }
+    },
+    priors = priors
   )
 
   model_string <- model_output$model
@@ -2069,15 +2074,21 @@ because <- function(
       )
 
       # Burn-in
-      update(model, n.iter = n.burnin)
+      if (n.burnin > 0) {
+        update(model, n.iter = n.burnin)
+      }
 
       # Sample
-      samples <- rjags::coda.samples(
-        model,
-        variable.names = monitor,
-        n.iter = n.iter - n.burnin,
-        thin = n.thin
-      )
+      if (n.iter > n.burnin) {
+        samples <- rjags::coda.samples(
+          model,
+          variable.names = monitor,
+          n.iter = n.iter - n.burnin,
+          thin = n.thin
+        )
+      } else {
+        samples <- NULL
+      }
 
       return(list(samples = samples, model = model))
     }
@@ -2110,9 +2121,13 @@ because <- function(
     }
 
     # Combine samples from all chains
-    samples <- coda::mcmc.list(lapply(chain_results, function(x) {
-      x$samples[[1]]
-    }))
+    if (!is.null(chain_results[[1]]$samples)) {
+      samples <- coda::mcmc.list(lapply(chain_results, function(x) {
+        x$samples[[1]]
+      }))
+    } else {
+      samples <- NULL
+    }
 
     # Use the first chain's model for DIC/WAIC (they all have the same structure)
     model <- chain_results[[1]]$model
@@ -2144,7 +2159,9 @@ because <- function(
         stop(e)
       }
     )
-    update(model, n.iter = n.burnin)
+    if (n.burnin > 0) {
+      update(model, n.iter = n.burnin)
+    }
 
     # Disable DIC/WAIC if only 1 chain (rjags requirement)
     if (n.chains < 2 && (DIC || WAIC)) {
@@ -2156,19 +2173,27 @@ because <- function(
     }
 
     # Sample posterior
-    samples <- rjags::coda.samples(
-      model,
-      variable.names = monitor,
-      n.iter = n.iter - n.burnin,
-      thin = n.thin
-    )
+    if (n.iter > n.burnin) {
+      samples <- rjags::coda.samples(
+        model,
+        variable.names = monitor,
+        n.iter = n.iter - n.burnin,
+        thin = n.thin
+      )
+    } else {
+      samples <- NULL
+    }
   }
 
   # Summarize posterior
-  sum_stats <- summary(samples)
+  if (!is.null(samples)) {
+    sum_stats <- summary(samples)
+  } else {
+    sum_stats <- NULL
+  }
 
   # Explicitly calculate R-hat if multiple chains
-  if (n.chains > 1) {
+  if (!is.null(samples) && n.chains > 1) {
     tryCatch(
       {
         # Manual R-hat calculation to avoid coda::gelman.diag issues
@@ -2333,14 +2358,20 @@ because <- function(
     )
 
     # Short burn-in (use a fraction of original)
-    update(ic_model, n.iter = min(n.burnin, 500))
+    if (n.burnin > 0) {
+      update(ic_model, n.iter = min(n.burnin, 500))
+    }
 
     # Compute DIC
     if (DIC) {
-      result$DIC <- rjags::dic.samples(
-        ic_model,
-        n.iter = min(n.iter - n.burnin, 1000)
-      )
+      if (n.iter > n.burnin) {
+        result$DIC <- rjags::dic.samples(
+          ic_model,
+          n.iter = min(n.iter - n.burnin, 1000)
+        )
+      } else {
+        result$DIC <- NULL
+      }
     }
 
     # Compute WAIC using pointwise log-likelihoods
@@ -2365,7 +2396,11 @@ because <- function(
   } else {
     # Sequential execution - use standard approach
     if (DIC) {
-      result$DIC <- rjags::dic.samples(model, n.iter = n.iter - n.burnin)
+      if (n.iter > n.burnin) {
+        result$DIC <- rjags::dic.samples(model, n.iter = n.iter - n.burnin)
+      } else {
+        result$DIC <- NULL
+      }
     }
     # WAIC will be computed after class assignment
   }
