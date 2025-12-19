@@ -24,7 +24,9 @@ because_model(
   standardize_latent = TRUE,
   poly_terms = NULL,
   latent = NULL,
-  fix_residual_variance = NULL
+  categorical_vars = NULL,
+  fix_residual_variance = NULL,
+  priors = NULL
 )
 ```
 

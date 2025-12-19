@@ -5,7 +5,11 @@ Convert MAG basis set to becauseR formula format
 ## Usage
 
 ``` r
-mag_basis_to_formulas(basis_set, latent_children = NULL)
+mag_basis_to_formulas(
+  basis_set,
+  latent_children = NULL,
+  categorical_vars = NULL
+)
 ```
 
 ## Arguments

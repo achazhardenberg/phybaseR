@@ -10,3 +10,5 @@
   Models](https://because-pkg.github.io/because/articles/03_phylogenetic_models.md):
 - [Missing Data Imputation in
   because](https://because-pkg.github.io/because/articles/04_missing_data.md):
+- [Custom Priors and Mechanistic
+  Modeling](https://because-pkg.github.io/because/articles/05_custom_priors.md):

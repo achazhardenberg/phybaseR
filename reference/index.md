@@ -28,6 +28,8 @@
   : Extract Imputed Values for Missing Data
 - [`plot_dag()`](https://because-pkg.github.io/because/reference/plot_dag.md)
   : Plot DAG from Equations or Fitted Model
+- [`plot_posterior()`](https://because-pkg.github.io/because/reference/plot_posterior.md)
+  : Plot Posterior Distributions for Model Comparison
 - [`print(`*`<summary.because>`*`)`](https://because-pkg.github.io/because/reference/print.summary.because.md)
   : Print Summary for Because Model
 - [`rhino.dat`](https://because-pkg.github.io/because/reference/rhino.dat.md)

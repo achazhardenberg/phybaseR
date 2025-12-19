@@ -6,8 +6,8 @@ Run a Bayesian Structural Equation Model
 
 ``` r
 because(
-  data,
   equations,
+  data,
   id_col = NULL,
   structure = NULL,
   tree = NULL,
@@ -35,11 +35,16 @@ because(
   levels = NULL,
   hierarchy = NULL,
   link_vars = NULL,
-  fix_residual_variance = NULL
+  fix_residual_variance = NULL,
+  priors = NULL
 )
 ```
 
 ## Arguments
+
+- equations:
+
+  A list of model formulas describing the structural equation model.
 
 - data:
 
@@ -51,10 +56,6 @@ because(
 
   - `list`: A named list where each element is a vector of values
     (traditional format for backward compatibility).
-
-- equations:
-
-  A list of model formulas describing the structural equation model.
 
 - id_col:
 
@@ -296,6 +297,13 @@ because(
   Optional named vector for fixing residual variances. Useful for
   handling non-identified models or specific theoretical constraints.
   Example: `c(response_var = 1)`.
+
+- priors:
+
+  Optional named list of character strings specifying custom priors for
+  specific parameters. Enables overriding default uninformative priors.
+  Example:
+  `list(alpha_Response = "dnorm(0, 0.001)", beta_Response_Predictor = "dnorm(1, 10)")`.
 
 ## Value
 

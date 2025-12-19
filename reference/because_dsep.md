@@ -16,6 +16,7 @@ because_dsep(
   random_terms = list(),
   hierarchical_info = NULL,
   poly_terms = NULL,
+  categorical_vars = NULL,
   quiet = FALSE
 )
 ```

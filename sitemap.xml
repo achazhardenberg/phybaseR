@@ -4,6 +4,7 @@
 <url><loc>https://because-pkg.github.io/because/articles/02_dseparation.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/articles/03_phylogenetic_models.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/articles/04_missing_data.html</loc></url>
+<url><loc>https://because-pkg.github.io/because/articles/05_custom_priors.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/articles/index.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/authors.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/index.html</loc></url>
@@ -35,6 +36,8 @@
 <url><loc>https://because-pkg.github.io/because/reference/mag_basis_to_formulas.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/parse_hierarchy_from_random.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/plot_dag.html</loc></url>
+<url><loc>https://because-pkg.github.io/because/reference/plot_posterior.html</loc></url>
+<url><loc>https://because-pkg.github.io/because/reference/preprocess_categorical_vars.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/print.summary.because.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/rhino.dat.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/rhino.tree.html</loc></url>
