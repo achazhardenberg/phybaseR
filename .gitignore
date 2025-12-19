@@ -6,9 +6,9 @@
 /Meta/
 papers_external/
 vignettes/drafts/
-
 .DS_Store
 jags_func_test.bug
 *.Rcheck/
 playground/
 docs
+file_storade_wd
