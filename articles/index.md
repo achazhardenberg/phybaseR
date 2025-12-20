@@ -11,4 +11,6 @@
 - [Missing Data Imputation in
   because](https://because-pkg.github.io/because/articles/04_missing_data.md):
 - [Custom Priors and Mechanistic
-  Modeling](https://because-pkg.github.io/because/articles/05_custom_priors.md):
+  Constraints](https://because-pkg.github.io/because/articles/05_custom_priors.md):
+- [06. Automated Mediation
+  Analysis](https://because-pkg.github.io/because/articles/06_mediation.md):

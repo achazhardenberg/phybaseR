@@ -13,6 +13,7 @@ plot_posterior(
   col = NULL,
   lwd = 2,
   legend_pos = "topleft",
+  density_args = list(),
   ...
 )
 ```
@@ -43,6 +44,13 @@ plot_posterior(
 - legend_pos:
 
   Legend position (default = "topleft"). Set to `NULL` to suppress.
+
+- density_args:
+
+  List of additional arguments passed to
+  [`stats::density()`](https://rdrr.io/r/stats/density.html). Useful for
+  handling boundary corrections (e.g., `list(from=0)` for truncated
+  priors).
 
 - ...:
 

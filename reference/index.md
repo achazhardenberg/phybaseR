@@ -20,6 +20,8 @@
   : Calculate LOO-CV for a Because Model
 - [`because_loo_compare()`](https://because-pkg.github.io/because/reference/because_loo_compare.md)
   : Compare Models Using LOO-CV
+- [`because_mediation()`](https://because-pkg.github.io/because/reference/because_mediation.md)
+  : Automated Mediation Analysis
 - [`because_model()`](https://because-pkg.github.io/because/reference/because_model.md)
   : Generate a JAGS model string for Phylogenetic Bayesian SEM (Because)
 - [`because_waic()`](https://because-pkg.github.io/because/reference/because_waic.md)

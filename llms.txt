@@ -85,6 +85,8 @@ Sampler) installed on your machine.
   : Calculate LOO-CV for a Because Model
 - [`because_loo_compare()`](https://because-pkg.github.io/because/reference/because_loo_compare.md)
   : Compare Models Using LOO-CV
+- [`because_mediation()`](https://because-pkg.github.io/because/reference/because_mediation.md)
+  : Automated Mediation Analysis
 - [`because_model()`](https://because-pkg.github.io/because/reference/because_model.md)
   : Generate a JAGS model string for Phylogenetic Bayesian SEM (Because)
 - [`because_waic()`](https://because-pkg.github.io/because/reference/because_waic.md)
@@ -119,4 +121,6 @@ Sampler) installed on your machine.
 - [Missing Data Imputation in
   because](https://because-pkg.github.io/because/articles/04_missing_data.md):
 - [Custom Priors and Mechanistic
-  Modeling](https://because-pkg.github.io/because/articles/05_custom_priors.md):
+  Constraints](https://because-pkg.github.io/because/articles/05_custom_priors.md):
+- [06. Automated Mediation
+  Analysis](https://because-pkg.github.io/because/articles/06_mediation.md):
