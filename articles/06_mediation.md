@@ -61,7 +61,7 @@ fit <- because(
     data = rhino.dat,
     structure = rhino.tree,
     id_col = "SP",# Map species names
-  n.iter = 1000  #We run a short run just for                        demonstration run it longer for                    real analyses!
+  n.iter = 1000  #We run a short run just for demonstration run it longer for real analyses!
 )
 #> Converted data.frame to list with 5 variables: LS, BM, NL, RS, DD
 #> Standardizing tree (max_bt: 3.31 -> 1.0)
@@ -93,10 +93,10 @@ credible intervals for the Total, Direct, and Total Indirect effects.
 
 ``` r
 med_results$summary
-#>                        Type      Mean         SD     Lower     Upper
-#> 2.5%           Total Effect 0.2495425 0.05012557 0.1673723 0.3576593
-#> 2.5%1         Direct Effect 0.0000000 0.00000000 0.0000000 0.0000000
-#> 2.5%2 Total Indirect Effect 0.2495425 0.05012557 0.1673723 0.3576593
+#>                        Type      Mean         SD     Lower    Upper
+#> 2.5%           Total Effect 0.2547159 0.04932668 0.1551591 0.362895
+#> 2.5%1         Direct Effect 0.0000000 0.00000000 0.0000000 0.000000
+#> 2.5%2 Total Indirect Effect 0.2547159 0.04932668 0.1551591 0.362895
 ```
 
 **Interpretation:** \* **Total Effect**: The overall causal impact of BM
@@ -113,8 +113,8 @@ If there were multiple indirect paths (e.g., `BM -> LS -> NL -> RS`),
 
 ``` r
 med_results$paths
-#>                Path     Type      Mean         SD     Lower     Upper
-#> 2.5% BM -> NL -> DD Indirect 0.2495425 0.05012557 0.1673723 0.3576593
+#>                Path     Type      Mean         SD     Lower    Upper
+#> 2.5% BM -> NL -> DD Indirect 0.2547159 0.04932668 0.1551591 0.362895
 ```
 
 This table shows exactly which causal pathways contribute to the
