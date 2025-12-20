@@ -93,10 +93,10 @@ credible intervals for the Total, Direct, and Total Indirect effects.
 
 ``` r
 med_results$summary
-#>                        Type      Mean         SD     Lower     Upper
-#> 2.5%           Total Effect 0.2510941 0.05098617 0.1550499 0.3581591
-#> 2.5%1         Direct Effect 0.0000000 0.00000000 0.0000000 0.0000000
-#> 2.5%2 Total Indirect Effect 0.2510941 0.05098617 0.1550499 0.3581591
+#>                        Type     Mean         SD     Lower     Upper
+#> 2.5%           Total Effect 0.252227 0.04780124 0.1730653 0.3454253
+#> 2.5%1         Direct Effect 0.000000 0.00000000 0.0000000 0.0000000
+#> 2.5%2 Total Indirect Effect 0.252227 0.04780124 0.1730653 0.3454253
 ```
 
 **Interpretation:** \* **Total Effect**: The overall causal impact of BM
@@ -113,8 +113,8 @@ If there were multiple indirect paths (e.g., `BM -> LS -> NL -> RS`),
 
 ``` r
 med_results$paths
-#>                Path     Type      Mean         SD     Lower     Upper
-#> 2.5% BM -> NL -> DD Indirect 0.2510941 0.05098617 0.1550499 0.3581591
+#>                Path     Type     Mean         SD     Lower     Upper
+#> 2.5% BM -> NL -> DD Indirect 0.252227 0.04780124 0.1730653 0.3454253
 ```
 
 This table shows exactly which causal pathways contribute to the

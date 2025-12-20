@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">because</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -165,10 +165,10 @@ and credible intervals for the Total, Direct, and Total Indirect
 effects.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">med_results</span><span class="op">$</span><span class="va">summary</span></span>
-<span><span class="co">#&gt;                        Type      Mean         SD     Lower     Upper</span></span>
-<span><span class="co">#&gt; 2.5%           Total Effect 0.2510941 0.05098617 0.1550499 0.3581591</span></span>
-<span><span class="co">#&gt; 2.5%1         Direct Effect 0.0000000 0.00000000 0.0000000 0.0000000</span></span>
-<span><span class="co">#&gt; 2.5%2 Total Indirect Effect 0.2510941 0.05098617 0.1550499 0.3581591</span></span></code></pre></div>
+<span><span class="co">#&gt;                        Type     Mean         SD     Lower     Upper</span></span>
+<span><span class="co">#&gt; 2.5%           Total Effect 0.252227 0.04780124 0.1730653 0.3454253</span></span>
+<span><span class="co">#&gt; 2.5%1         Direct Effect 0.000000 0.00000000 0.0000000 0.0000000</span></span>
+<span><span class="co">#&gt; 2.5%2 Total Indirect Effect 0.252227 0.04780124 0.1730653 0.3454253</span></span></code></pre></div>
 <p><strong>Interpretation:</strong> * <strong>Total Effect</strong>: The
 overall causal impact of BM on DD. * <strong>Direct Effect</strong>: The
 path <code>BM -&gt; DD</code>. * <strong>Indirect Effect</strong>: The
@@ -185,8 +185,8 @@ credible interval excludes zero, we have evidence of mediation.</p>
 <code>because_mediation</code> would list each one separately.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">med_results</span><span class="op">$</span><span class="va">paths</span></span>
-<span><span class="co">#&gt;                Path     Type      Mean         SD     Lower     Upper</span></span>
-<span><span class="co">#&gt; 2.5% BM -&gt; NL -&gt; DD Indirect 0.2510941 0.05098617 0.1550499 0.3581591</span></span></code></pre></div>
+<span><span class="co">#&gt;                Path     Type     Mean         SD     Lower     Upper</span></span>
+<span><span class="co">#&gt; 2.5% BM -&gt; NL -&gt; DD Indirect 0.252227 0.04780124 0.1730653 0.3454253</span></span></code></pre></div>
 <p>This table shows exactly which causal pathways contribute to the
 relationship.</p>
 </div>

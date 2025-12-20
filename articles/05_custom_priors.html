@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">because</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -147,17 +147,17 @@ Gamma priors (<code>dgamma(1, 1)</code>) to precisions
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_default</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                                  Mean    SD Naive SE Time-series SE  2.5%   50%</span></span>
-<span><span class="co">#&gt; alphaGrowth_g_day               9.771 0.386    0.007          0.007 9.027 9.773</span></span>
-<span><span class="co">#&gt; beta_Growth_g_day_Temp_Centered 0.431 0.063    0.001          0.001 0.310 0.429</span></span>
-<span><span class="co">#&gt; sigmaGrowth_g_day               2.098 0.288    0.005          0.005 1.616 2.067</span></span>
-<span><span class="co">#&gt;                                  97.5% Rhat n.eff</span></span>
-<span><span class="co">#&gt; alphaGrowth_g_day               10.543    1  3024</span></span>
-<span><span class="co">#&gt; beta_Growth_g_day_Temp_Centered  0.558    1  3276</span></span>
-<span><span class="co">#&gt; sigmaGrowth_g_day                2.758    1  3000</span></span>
+<span><span class="co">#&gt; alphaGrowth_g_day               9.772 0.386    0.007          0.007 9.030 9.771</span></span>
+<span><span class="co">#&gt; beta_Growth_g_day_Temp_Centered 0.431 0.063    0.001          0.001 0.307 0.432</span></span>
+<span><span class="co">#&gt; sigmaGrowth_g_day               2.081 0.278    0.005          0.005 1.622 2.054</span></span>
+<span><span class="co">#&gt;                                  97.5%  Rhat n.eff</span></span>
+<span><span class="co">#&gt; alphaGrowth_g_day               10.554 1.000  3000</span></span>
+<span><span class="co">#&gt; beta_Growth_g_day_Temp_Centered  0.552 1.002  3000</span></span>
+<span><span class="co">#&gt; sigmaGrowth_g_day                2.707 1.000  3336</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; DIC:</span></span>
 <span><span class="co">#&gt; Mean deviance:  130.4 </span></span>
-<span><span class="co">#&gt; penalty 3.17 </span></span>
+<span><span class="co">#&gt; penalty 3.159 </span></span>
 <span><span class="co">#&gt; Penalized deviance: 133.6</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -204,17 +204,17 @@ around <strong>0.5 g/day/°C</strong>.</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_custom</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                                  Mean    SD Naive SE Time-series SE  2.5%   50%</span></span>
-<span><span class="co">#&gt; alphaGrowth_g_day               9.981 0.095    0.002          0.002 9.788 9.982</span></span>
-<span><span class="co">#&gt; beta_Growth_g_day_Temp_Centered 0.471 0.038    0.001          0.001 0.397 0.470</span></span>
-<span><span class="co">#&gt; sigmaGrowth_g_day               2.064 0.270    0.005          0.005 1.622 2.039</span></span>
+<span><span class="co">#&gt; alphaGrowth_g_day               9.985 0.094    0.002          0.002 9.799 9.983</span></span>
+<span><span class="co">#&gt; beta_Growth_g_day_Temp_Centered 0.471 0.038    0.001          0.001 0.397 0.471</span></span>
+<span><span class="co">#&gt; sigmaGrowth_g_day               2.061 0.263    0.005          0.005 1.627 2.035</span></span>
 <span><span class="co">#&gt;                                  97.5% Rhat n.eff</span></span>
-<span><span class="co">#&gt; alphaGrowth_g_day               10.168    1  3000</span></span>
-<span><span class="co">#&gt; beta_Growth_g_day_Temp_Centered  0.546    1  3000</span></span>
-<span><span class="co">#&gt; sigmaGrowth_g_day                2.663    1  3000</span></span>
+<span><span class="co">#&gt; alphaGrowth_g_day               10.171    1  3169</span></span>
+<span><span class="co">#&gt; beta_Growth_g_day_Temp_Centered  0.546    1  2963</span></span>
+<span><span class="co">#&gt; sigmaGrowth_g_day                2.631    1  3000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; DIC:</span></span>
 <span><span class="co">#&gt; Mean deviance:  129.6 </span></span>
-<span><span class="co">#&gt; penalty 1.505 </span></span>
+<span><span class="co">#&gt; penalty 1.509 </span></span>
 <span><span class="co">#&gt; Penalized deviance: 131.1</span></span></code></pre></div>
 <p>Notice how the credible intervals for the custom model will be
 tighter and centered closer to our priors, especially if the data were
@@ -306,32 +306,32 @@ enforcing a positive prior.</p>
 <span></span>
 <span><span class="co"># Compare Estimates</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_default_kleiber</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                       Mean    SD Naive SE Time-series SE   2.5%   50%  97.5%</span></span>
-<span><span class="co">#&gt; alphaLog_MR          3.213 4.298    0.078          0.295 -5.310 3.262 11.503</span></span>
-<span><span class="co">#&gt; beta_Log_MR_Log_Mass 0.113 1.051    0.019          0.066 -1.919 0.095  2.184</span></span>
-<span><span class="co">#&gt; sigmaLog_MR          2.945 0.392    0.007          0.008  2.279 2.903  3.817</span></span>
-<span><span class="co">#&gt;                      Rhat n.eff</span></span>
-<span><span class="co">#&gt; alphaLog_MR          1.01   216</span></span>
-<span><span class="co">#&gt; beta_Log_MR_Log_Mass 1.01   252</span></span>
-<span><span class="co">#&gt; sigmaLog_MR          1.00  2596</span></span>
+<span><span class="co">#&gt;                        Mean    SD Naive SE Time-series SE   2.5%    50%  97.5%</span></span>
+<span><span class="co">#&gt; alphaLog_MR           3.773 4.493    0.082          0.287 -5.495  3.758 12.878</span></span>
+<span><span class="co">#&gt; beta_Log_MR_Log_Mass -0.015 1.091    0.020          0.070 -2.211 -0.014  2.203</span></span>
+<span><span class="co">#&gt; sigmaLog_MR           2.948 0.407    0.007          0.008  2.265  2.916  3.887</span></span>
+<span><span class="co">#&gt;                       Rhat n.eff</span></span>
+<span><span class="co">#&gt; alphaLog_MR          1.022   243</span></span>
+<span><span class="co">#&gt; beta_Log_MR_Log_Mass 1.021   239</span></span>
+<span><span class="co">#&gt; sigmaLog_MR          1.000  2882</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; DIC:</span></span>
 <span><span class="co">#&gt; Mean deviance:  151.1 </span></span>
-<span><span class="co">#&gt; penalty 3.084 </span></span>
-<span><span class="co">#&gt; Penalized deviance: 154.2</span></span>
+<span><span class="co">#&gt; penalty 3.147 </span></span>
+<span><span class="co">#&gt; Penalized deviance: 154.3</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_mech_kleiber</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                       Mean    SD Naive SE Time-series SE   2.5%   50% 97.5%</span></span>
-<span><span class="co">#&gt; alphaLog_MR          1.380 1.832    0.033          0.055 -2.979 1.697 4.013</span></span>
-<span><span class="co">#&gt; beta_Log_MR_Log_Mass 0.569 0.430    0.008          0.013  0.022 0.481 1.607</span></span>
-<span><span class="co">#&gt; sigmaLog_MR          2.913 0.386    0.007          0.007  2.278 2.872 3.784</span></span>
-<span><span class="co">#&gt;                       Rhat n.eff</span></span>
-<span><span class="co">#&gt; alphaLog_MR          1.000  1114</span></span>
-<span><span class="co">#&gt; beta_Log_MR_Log_Mass 1.001  1088</span></span>
-<span><span class="co">#&gt; sigmaLog_MR          1.000  3000</span></span>
+<span><span class="co">#&gt; alphaLog_MR          1.344 1.889    0.034          0.059 -3.170 1.709 4.006</span></span>
+<span><span class="co">#&gt; beta_Log_MR_Log_Mass 0.577 0.443    0.008          0.014  0.025 0.475 1.649</span></span>
+<span><span class="co">#&gt; sigmaLog_MR          2.907 0.380    0.007          0.007  2.286 2.873 3.734</span></span>
+<span><span class="co">#&gt;                      Rhat n.eff</span></span>
+<span><span class="co">#&gt; alphaLog_MR             1  1038</span></span>
+<span><span class="co">#&gt; beta_Log_MR_Log_Mass    1  1059</span></span>
+<span><span class="co">#&gt; sigmaLog_MR             1  2874</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; DIC:</span></span>
 <span><span class="co">#&gt; Mean deviance:  150.5 </span></span>
-<span><span class="co">#&gt; penalty 2.248 </span></span>
+<span><span class="co">#&gt; penalty 2.245 </span></span>
 <span><span class="co">#&gt; Penalized deviance: 152.7</span></span>
 <span></span>
 <span><span class="co"># Visualize: Unconstrained vs. Truncated</span></span>
