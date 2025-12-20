@@ -10,6 +10,7 @@ plot_posterior(
   col = NULL,
   lwd = 2,
   legend_pos = "topleft",
+  density_args = list(),
   ...
 )
 }
@@ -26,6 +27,9 @@ Example: \code{"beta"}, \code{"^alpha"}, \code{"beta_Y_X"}. Plots all matching p
 \item{lwd}{Line width (default = 2).}
 
 \item{legend_pos}{Legend position (default = "topleft"). Set to \code{NULL} to suppress.}
+
+\item{density_args}{List of additional arguments passed to \code{stats::density()}.
+Useful for handling boundary corrections (e.g., \code{list(from=0)} for truncated priors).}
 
 \item{...}{Additional arguments passed to \code{plot()}.}
 }

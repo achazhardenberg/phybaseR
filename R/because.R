@@ -210,7 +210,11 @@ because <- function(
   }
 
   # --- Automatic Data Cleaning (Handle Character/Factor Columns) ---
-  data <- preprocess_categorical_vars(data, quiet = quiet)
+  data <- preprocess_categorical_vars(
+    data,
+    exclude_cols = id_col,
+    quiet = quiet
+  )
 
   # --- Hierarchical Data Detection & Validation ---
   # Data is hierarchical if it's a list (not dataframe) AND levels are provided
@@ -567,6 +571,19 @@ because <- function(
     dummy_vars <- character(0)
     if (!is.null(attr(data, "categorical_vars"))) {
       cat_vars <- attr(data, "categorical_vars")
+
+      # Extract RHS variables (predictors) from fixed equations to filter dummies
+      rhs_vars <- unique(unlist(lapply(equations, function(eq) {
+        if (length(eq) == 3) {
+          all.vars(eq[[3]])
+        } else {
+          character(0)
+        }
+      })))
+
+      # Only generate dummies for variables used as predictors
+      cat_vars <- cat_vars[names(cat_vars) %in% rhs_vars]
+
       dummy_vars <- unlist(lapply(cat_vars, function(x) x$dummies))
     }
 
@@ -2423,7 +2440,11 @@ because <- function(
 #' @param quiet Logical; whether to suppress informational messages
 #' @return The modified data object with categorical_vars attribute
 #' @keywords internal
-preprocess_categorical_vars <- function(data, quiet = FALSE) {
+preprocess_categorical_vars <- function(
+  data,
+  exclude_cols = NULL,
+  quiet = FALSE
+) {
   if (is.null(data)) {
     return(NULL)
   }
@@ -2435,7 +2456,11 @@ preprocess_categorical_vars <- function(data, quiet = FALSE) {
     # Process each element (usually levels in hierarchy)
     for (i in seq_along(data)) {
       if (is.data.frame(data[[i]])) {
-        processed <- preprocess_categorical_vars(data[[i]], quiet = quiet)
+        processed <- preprocess_categorical_vars(
+          data[[i]],
+          exclude_cols = exclude_cols,
+          quiet = quiet
+        )
         data[[i]] <- processed
         # Collect categorical vars metadata
         level_cat_vars <- attr(processed, "categorical_vars")
@@ -2467,6 +2492,9 @@ preprocess_categorical_vars <- function(data, quiet = FALSE) {
 
     col_names <- names(data)[char_cols]
     for (col in col_names) {
+      if (!is.null(exclude_cols) && col %in% exclude_cols) {
+        next
+      }
       # Convert to factor first to get levels
       f_vals <- factor(data[[col]])
       levels <- levels(f_vals)

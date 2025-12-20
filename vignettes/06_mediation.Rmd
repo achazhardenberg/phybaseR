@@ -1,0 +1,98 @@
+---
+title: "06. Automated Mediation Analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{06. Automated Mediation Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+    collapse = TRUE,
+    comment = "#>"
+)
+```
+
+# Introduction
+
+Causal inference often requires investigating *how* an effect occurs. Does $X$ affect $Y$ directly, or does it work through a mediator $M$?
+
+The `because` package provides a fully Bayesian automated mediation analysis tool, `because_mediation()`, which decomposes the Total Effect of an exposure on an outcome into: 1. **Direct Effect**: The effect of $X \to Y$ not mediated by other variables in the graph. 2. **Indirect Effect(s)**: The effect propagated through intermediate variables ($X \to M \to Y$).
+
+This is calculated by multiplying the posterior distributions of coefficients along each path, preserving full uncertainty quantification.
+
+# Example: Rhino Model (`sem8`)
+
+Once again we will use the **Rhinogradentia** dataset to investigate the causal drivers of **Dispersal Distance (DD)**.
+
+## 1. Load Package and Data
+
+```{r setup}
+library(because)
+
+# Load package data
+# Note: In a vignette context before installation, data() might be tricky,
+# but assuming standard execution, these should be available.
+data(rhino.dat)
+data(rhino.tree)
+```
+
+## 2. Fit the Structural Equation Model
+
+We define the `sem8` structure from Gonzalez-Voyer & von Hardenberg (2014): **Body Mass (BM)** increases **Nose Length (NL)** which is also influenced by Range Size (RS). \* **Nose Length (NL)** increases **Range Size (RS)**. \* **Body Mass (BM)** *also* directly affects **Litter Size (LS)**.
+
+We want to investigate the effect of **Body Mass (BM)** on **Dispersal Distance (DD)**. There is no direct link `BM -> DD` in the model definition, so any effect MUST be mediated by **Nose Length (NL)**.
+
+```{r fit_model}
+# Define the structural equations (sem8)
+sem8_eq <- list(
+    LS ~ BM,
+    NL ~ BM + RS,
+    DD ~ NL
+)
+
+# Fit the model
+fit <- because(
+    equations = sem8_eq,
+    data = rhino.dat,
+    structure = rhino.tree,
+    id_col = "SP",# Map species names
+  n.iter = 1000  #We run a short run just for                        demonstration run it longer for                    real analyses!
+)
+```
+
+## 3. Perform Mediation Analysis
+
+We analyze the effect of **Body Mass (BM)** on **Dispersal Distance (DD)**.
+
+```{r mediation}
+# Run Automated Mediation Analysis for BM -> DD
+med_results <- because_mediation(fit, exposure = "BM", outcome = "DD")
+```
+
+### Inspect the Summary
+
+The summary table provides the posterior mean, standard deviation, and credible intervals for the Total, Direct, and Total Indirect effects.
+
+```{r summary}
+med_results$summary
+```
+
+**Interpretation:** \* **Total Effect**: The overall causal impact of BM on DD. \* **Direct Effect**: The path `BM -> DD`. \* **Indirect Effect**: The path `BM -> NL -> DD` (plus any others if they existed).
+
+If the **Indirect Effect** is substantial and its credible interval excludes zero, we have evidence of mediation.
+
+### Inspect Individual Paths
+
+If there were multiple indirect paths (e.g., `BM -> LS -> NL -> RS`), `because_mediation` would list each one separately.
+
+```{r paths}
+med_results$paths
+```
+
+This table shows exactly which causal pathways contribute to the relationship.
+
+## Technical Note
+
+The function calculates the indirect effect as the product of coefficients along the path: $$ \text{Indirect} = \beta_{BM \to NL} \times \beta_{NL \to DD} $$ This assumes linear relationships. For non-linear or generalized linear models (e.g., Binomial), this product rule is an approximation of the average causal effect on the linear predictor scale.

@@ -1,5 +1,5 @@
 ---
-title: "Custom Priors and Mechanistic Modeling"
+title: "Custom Priors and Mechanistic Constraints"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Custom Priors and Mechanistic Modeling}
