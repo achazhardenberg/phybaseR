@@ -1,8 +1,8 @@
 ---
-title: "06. Automated Mediation Analysis"
+title: "Automated Mediation Analysis"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{06. Automated Mediation Analysis}
+  %\VignetteIndexEntry{Automated Mediation Analysis}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
