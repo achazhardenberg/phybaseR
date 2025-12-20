@@ -58,7 +58,7 @@ fit <- because(
     data = rhino.dat,
     structure = rhino.tree,
     id_col = "SP",# Map species names
-  n.iter = 1000  #We run a short run just for                        demonstration run it longer for                    real analyses!
+  n.iter = 1000  #We run a short run just for demonstration run it longer for real analyses!
 )
 ```
 
