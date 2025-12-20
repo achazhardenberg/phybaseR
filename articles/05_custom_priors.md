@@ -72,18 +72,18 @@ fit_default <- because(
 
 summary(fit_default)
 #>                                  Mean    SD Naive SE Time-series SE  2.5%   50%
-#> alphaGrowth_g_day               9.779 0.388    0.007          0.007 9.006 9.784
-#> beta_Growth_g_day_Temp_Centered 0.432 0.063    0.001          0.001 0.312 0.432
-#> sigmaGrowth_g_day               2.085 0.278    0.005          0.005 1.623 2.060
+#> alphaGrowth_g_day               9.776 0.390    0.007          0.007 8.973 9.778
+#> beta_Growth_g_day_Temp_Centered 0.432 0.062    0.001          0.001 0.305 0.433
+#> sigmaGrowth_g_day               2.091 0.283    0.005          0.005 1.607 2.064
 #>                                  97.5% Rhat n.eff
-#> alphaGrowth_g_day               10.550    1  3114
-#> beta_Growth_g_day_Temp_Centered  0.561    1  3000
-#> sigmaGrowth_g_day                2.702    1  2957
+#> alphaGrowth_g_day               10.534    1  3120
+#> beta_Growth_g_day_Temp_Centered  0.554    1  3016
+#> sigmaGrowth_g_day                2.743    1  3102
 #> 
 #> DIC:
 #> Mean deviance:  130.4 
-#> penalty 3.146 
-#> Penalized deviance: 133.5
+#> penalty 3.187 
+#> Penalized deviance: 133.6
 ```
 
 ### Custom Prior Model
@@ -132,17 +132,17 @@ fit_custom <- because(
 
 summary(fit_custom)
 #>                                  Mean    SD Naive SE Time-series SE  2.5%   50%
-#> alphaGrowth_g_day               9.980 0.095    0.002          0.002 9.799 9.978
-#> beta_Growth_g_day_Temp_Centered 0.471 0.038    0.001          0.001 0.398 0.470
-#> sigmaGrowth_g_day               2.065 0.274    0.005          0.005 1.610 2.040
+#> alphaGrowth_g_day               9.985 0.097    0.002          0.002 9.794 9.984
+#> beta_Growth_g_day_Temp_Centered 0.472 0.038    0.001          0.001 0.397 0.472
+#> sigmaGrowth_g_day               2.051 0.269    0.005          0.005 1.620 2.017
 #>                                  97.5% Rhat n.eff
-#> alphaGrowth_g_day               10.166    1  2902
-#> beta_Growth_g_day_Temp_Centered  0.547    1  3000
-#> sigmaGrowth_g_day                2.678    1  3096
+#> alphaGrowth_g_day               10.172    1  2804
+#> beta_Growth_g_day_Temp_Centered  0.546    1  2991
+#> sigmaGrowth_g_day                2.663    1  3000
 #> 
 #> DIC:
 #> Mean deviance:  129.6 
-#> penalty 1.508 
+#> penalty 1.487 
 #> Penalized deviance: 131.1
 ```
 
@@ -238,32 +238,32 @@ fit_mech_kleiber <- because(
 
 # Compare Estimates
 summary(fit_default_kleiber)
-#>                        Mean    SD Naive SE Time-series SE   2.5%   50%  97.5%
-#> alphaLog_MR           3.682 4.525    0.083          0.310 -5.423 3.668 12.168
-#> beta_Log_MR_Log_Mass -0.001 1.106    0.020          0.076 -2.138 0.009  2.219
-#> sigmaLog_MR           2.953 0.394    0.007          0.008  2.283 2.914  3.895
+#>                       Mean    SD Naive SE Time-series SE   2.5%   50%  97.5%
+#> alphaLog_MR          3.206 4.422    0.081          0.297 -5.524 3.145 11.973
+#> beta_Log_MR_Log_Mass 0.116 1.085    0.020          0.072 -2.015 0.136  2.249
+#> sigmaLog_MR          2.947 0.384    0.007          0.008  2.299 2.912  3.783
 #>                       Rhat n.eff
-#> alphaLog_MR          1.001   220
-#> beta_Log_MR_Log_Mass 1.001   220
-#> sigmaLog_MR          1.000  2712
+#> alphaLog_MR          1.008   218
+#> beta_Log_MR_Log_Mass 1.008   222
+#> sigmaLog_MR          1.000  2569
 #> 
 #> DIC:
-#> Mean deviance:  151.1 
-#> penalty 3.152 
-#> Penalized deviance: 154.2
+#> Mean deviance:  151.2 
+#> penalty 3.322 
+#> Penalized deviance: 154.5
 summary(fit_mech_kleiber)
 #>                       Mean    SD Naive SE Time-series SE   2.5%   50% 97.5%
-#> alphaLog_MR          1.432 1.792    0.033          0.056 -2.759 1.719 3.953
-#> beta_Log_MR_Log_Mass 0.555 0.425    0.008          0.013  0.026 0.476 1.577
-#> sigmaLog_MR          2.910 0.383    0.007          0.007  2.263 2.883 3.728
+#> alphaLog_MR          1.171 1.969    0.036          0.063 -3.345 1.516 4.013
+#> beta_Log_MR_Log_Mass 0.622 0.461    0.008          0.015  0.029 0.528 1.707
+#> sigmaLog_MR          2.921 0.384    0.007          0.007  2.273 2.871 3.777
 #>                       Rhat n.eff
-#> alphaLog_MR          1.000  1039
-#> beta_Log_MR_Log_Mass 1.000  1022
-#> sigmaLog_MR          1.001  3000
+#> alphaLog_MR          1.005  1044
+#> beta_Log_MR_Log_Mass 1.003  1009
+#> sigmaLog_MR          1.000  3000
 #> 
 #> DIC:
 #> Mean deviance:  150.5 
-#> penalty 2.252 
+#> penalty 2.27 
 #> Penalized deviance: 152.8
 
 # Visualize: Unconstrained vs. Truncated

@@ -1,4 +1,4 @@
-# 06. Automated Mediation Analysis
+# Automated Mediation Analysis
 
 ## Introduction
 
@@ -93,10 +93,10 @@ credible intervals for the Total, Direct, and Total Indirect effects.
 
 ``` r
 med_results$summary
-#>                        Type      Mean         SD     Lower    Upper
-#> 2.5%           Total Effect 0.2547159 0.04932668 0.1551591 0.362895
-#> 2.5%1         Direct Effect 0.0000000 0.00000000 0.0000000 0.000000
-#> 2.5%2 Total Indirect Effect 0.2547159 0.04932668 0.1551591 0.362895
+#>                        Type      Mean       SD    Lower     Upper
+#> 2.5%           Total Effect 0.2504835 0.054578 0.160598 0.3693712
+#> 2.5%1         Direct Effect 0.0000000 0.000000 0.000000 0.0000000
+#> 2.5%2 Total Indirect Effect 0.2504835 0.054578 0.160598 0.3693712
 ```
 
 **Interpretation:** \* **Total Effect**: The overall causal impact of BM
@@ -113,8 +113,8 @@ If there were multiple indirect paths (e.g., `BM -> LS -> NL -> RS`),
 
 ``` r
 med_results$paths
-#>                Path     Type      Mean         SD     Lower    Upper
-#> 2.5% BM -> NL -> DD Indirect 0.2547159 0.04932668 0.1551591 0.362895
+#>                Path     Type      Mean       SD    Lower     Upper
+#> 2.5% BM -> NL -> DD Indirect 0.2504835 0.054578 0.160598 0.3693712
 ```
 
 This table shows exactly which causal pathways contribute to the
