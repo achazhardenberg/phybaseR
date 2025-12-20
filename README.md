@@ -23,10 +23,10 @@
 
 ## Installation
 
-To install the **stable release** (`v0.9.6`), run:
+To install the **stable release** (`v0.9.7`), run:
 
 ``` r
-remotes::install_github("because-pkg/because@v0.9.6", build_vignettes = TRUE)
+remotes::install_github("because-pkg/because@v0.9.7", build_vignettes = TRUE)
 ```
 
 To install the **latest development version** (unstable), run:
