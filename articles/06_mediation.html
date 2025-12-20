@@ -62,7 +62,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>06. Automated Mediation Analysis</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/because-pkg/because/blob/master/vignettes/06_mediation.Rmd" class="external-link"><code>vignettes/06_mediation.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/because-pkg/because/blob/v0.9.7/vignettes/06_mediation.Rmd" class="external-link"><code>vignettes/06_mediation.Rmd</code></a></small>
       <div class="d-none name"><code>06_mediation.Rmd</code></div>
     </div>
 
@@ -165,10 +165,10 @@ and credible intervals for the Total, Direct, and Total Indirect
 effects.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">med_results</span><span class="op">$</span><span class="va">summary</span></span>
-<span><span class="co">#&gt;                        Type     Mean         SD     Lower     Upper</span></span>
-<span><span class="co">#&gt; 2.5%           Total Effect 0.252227 0.04780124 0.1730653 0.3454253</span></span>
-<span><span class="co">#&gt; 2.5%1         Direct Effect 0.000000 0.00000000 0.0000000 0.0000000</span></span>
-<span><span class="co">#&gt; 2.5%2 Total Indirect Effect 0.252227 0.04780124 0.1730653 0.3454253</span></span></code></pre></div>
+<span><span class="co">#&gt;                        Type      Mean         SD     Lower     Upper</span></span>
+<span><span class="co">#&gt; 2.5%           Total Effect 0.2495425 0.05012557 0.1673723 0.3576593</span></span>
+<span><span class="co">#&gt; 2.5%1         Direct Effect 0.0000000 0.00000000 0.0000000 0.0000000</span></span>
+<span><span class="co">#&gt; 2.5%2 Total Indirect Effect 0.2495425 0.05012557 0.1673723 0.3576593</span></span></code></pre></div>
 <p><strong>Interpretation:</strong> * <strong>Total Effect</strong>: The
 overall causal impact of BM on DD. * <strong>Direct Effect</strong>: The
 path <code>BM -&gt; DD</code>. * <strong>Indirect Effect</strong>: The
@@ -185,8 +185,8 @@ credible interval excludes zero, we have evidence of mediation.</p>
 <code>because_mediation</code> would list each one separately.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">med_results</span><span class="op">$</span><span class="va">paths</span></span>
-<span><span class="co">#&gt;                Path     Type     Mean         SD     Lower     Upper</span></span>
-<span><span class="co">#&gt; 2.5% BM -&gt; NL -&gt; DD Indirect 0.252227 0.04780124 0.1730653 0.3454253</span></span></code></pre></div>
+<span><span class="co">#&gt;                Path     Type      Mean         SD     Lower     Upper</span></span>
+<span><span class="co">#&gt; 2.5% BM -&gt; NL -&gt; DD Indirect 0.2495425 0.05012557 0.1673723 0.3576593</span></span></code></pre></div>
 <p>This table shows exactly which causal pathways contribute to the
 relationship.</p>
 </div>
