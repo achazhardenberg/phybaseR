@@ -13,7 +13,7 @@
 #'     \item "se": Expects \code{Var_mean} and \code{Var_se} in the data. The model fixes observation error: \code{Var_mean ~ dnorm(Var, 1/Var_se^2)}.
 #'     \item "reps": Expects \code{Var_obs} (matrix) and \code{N_reps_Var} (vector) in the data. The model estimates observation error: \code{Var_obs[i,j] ~ dnorm(Var[i], Var_tau)}.
 #'   }
-#' @param distribution Optional named character vector specifying the distribution for response variables.
+#' @param family Optional named character vector specifying the family/distribution for response variables.
 #'   Default is "gaussian" for all variables. Supported values: "gaussian", "binomial", "multinomial".
 #'   For "binomial" variables, the model uses a logit link and a Bernoulli likelihood, with phylogenetic correlation modeled on the latent scale.
 #' @param vars_with_na Optional character vector of response variable names that have missing data.
@@ -68,14 +68,15 @@ because_model <- function(
   vars_with_na = NULL,
   induced_correlations = NULL,
   variability = NULL,
-  distribution = NULL,
+  family = NULL,
   optimise = TRUE,
   standardize_latent = TRUE,
   poly_terms = NULL,
   latent = NULL,
   categorical_vars = NULL,
   fix_residual_variance = NULL,
-  priors = NULL
+  priors = NULL,
+  hierarchical_info = NULL
 ) {
   # Helper: returns b if a is NULL or if a is a list element that doesn't exist
   `%||%` <- function(a, b) {
@@ -89,6 +90,64 @@ because_model <- function(
     }
     return(paste0(param_name, " ~ ", default_prior))
   }
+
+  # Helper: Get hierarchical level for a variable
+  get_var_level <- function(var, h_info) {
+    if (is.null(h_info)) {
+      return(NULL)
+    }
+    for (lvl_name in names(h_info$levels)) {
+      if (var %in% h_info$levels[[lvl_name]]) {
+        return(lvl_name)
+      }
+    }
+    return(NULL) # Variable not found in any level
+  }
+
+  # Helper: Get loop bound (N or N_<Level>) for a response variable
+  get_loop_bound <- function(response, h_info) {
+    if (is.null(h_info)) {
+      return("N")
+    }
+    lvl <- get_var_level(response, h_info)
+    if (is.null(lvl)) {
+      return("N")
+    } # Fallback to N
+    return(paste0("N_", lvl))
+  }
+
+  # Helper: Get index expression for accessing a predictor from a coarser level
+  # Returns "pred[Coarser_idx_Finer[i]]" or "pred[i]" if same level
+  get_pred_index <- function(pred, response_level, h_info) {
+    if (is.null(h_info)) {
+      return(paste0(pred, "[i]"))
+    }
+
+    pred_lvl <- get_var_level(pred, h_info)
+    if (is.null(pred_lvl)) {
+      return(paste0(pred, "[i]"))
+    } # Unknown, use default
+
+    if (pred_lvl == response_level) {
+      return(paste0(pred, "[i]"))
+    }
+
+    # Predictor is from a coarser level
+    # We need the index vector: <PredLevel>_idx_<RespLevel>
+    idx_name <- paste0(pred_lvl, "_idx_", response_level)
+    return(paste0(pred, "[", idx_name, "[i]]"))
+  }
+
+  # Compute main loop N once for use throughout
+  main_loop_N <- "N"
+  if (!is.null(hierarchical_info)) {
+    h_levels <- trimws(strsplit(hierarchical_info$hierarchy, ">")[[1]])
+    finest_level <- h_levels[length(h_levels)]
+    main_loop_N <- paste0("N_", finest_level)
+  }
+
+  # Helper: Get N string (for hierarchical-aware array dimensions)
+  N_str <- function() main_loop_N
 
   has_phylo <- !is.null(structure_names) && length(structure_names) > 0
   has_random <- !is.null(random_structure_names) &&
@@ -135,10 +194,10 @@ because_model <- function(
     }
   }
 
-  # Handle distribution argument
+  # Handle family argument
   dist_list <- list()
-  if (!is.null(distribution)) {
-    dist_list <- distribution
+  if (!is.null(family)) {
+    dist_list <- family
   }
 
   param_map <- list()
@@ -191,9 +250,10 @@ because_model <- function(
     }
   }
 
+  # main_loop_N already computed above
   model_lines <- c(
     model_lines,
-    "  for (i in 1:N) {"
+    paste0("  for (i in 1:", main_loop_N, ") {")
   )
 
   # Add polynomial transformations as deterministic nodes
@@ -256,7 +316,7 @@ because_model <- function(
     response_counter[[response]] <- response_count
     suffix <- if (response_count == 1) "" else as.character(response_count)
 
-    alpha <- paste0("alpha", response, suffix)
+    alpha <- paste0("alpha_", response, suffix)
     linpred <- alpha
     for (pred in predictors) {
       key <- paste(response, pred, suffix, sep = "_")
@@ -266,7 +326,22 @@ because_model <- function(
         beta_counter[[key]] <- beta_name
       }
       beta_name <- beta_counter[[key]]
-      linpred <- paste0(linpred, " + ", beta_name, "*", pred, "[i]")
+
+      # Check if predictor itself is an occupancy variable (latent state interaction)
+      pred_dist <- dist_list[[pred]] %||% "gaussian"
+
+      # Get hierarchical-aware predictor index
+      resp_level <- get_var_level(response, hierarchical_info)
+      pred_idx <- get_pred_index(pred, resp_level, hierarchical_info)
+
+      if (pred_dist == "occupancy") {
+        # Use latent state z_Predictor instead of Predictor
+        # Replace pred in pred_idx with z_pred
+        z_pred_idx <- gsub(paste0("^", pred), paste0("z_", pred), pred_idx)
+        linpred <- paste0(linpred, " + ", beta_name, "*", z_pred_idx)
+      } else {
+        linpred <- paste0(linpred, " + ", beta_name, "*", pred_idx)
+      }
 
       # Store in parameter map
       param_map[[length(param_map) + 1]] <- list(
@@ -277,8 +352,8 @@ because_model <- function(
       )
     }
 
-    if (dist == "gaussian") {
-      mu <- paste0("mu", response, suffix)
+    if (dist == "gaussian" || dist == "occupancy" || grepl("^p_", response)) {
+      mu <- paste0("mu_", response, suffix)
       model_lines <- c(model_lines, paste0("    ", mu, "[i] <- ", linpred))
     } else if (dist == "binomial") {
       # Binomial: logit(p) = linpred + error
@@ -739,6 +814,9 @@ because_model <- function(
           "[i])"
         )
       )
+    } else if (dist == "occupancy") {
+      # No Zeros-trick or custom likelihood loop needed here
+      # The occupancy likelihood is handled in the Likelihoods section.
     } else {
       stop(paste("Unknown distribution:", dist))
     }
@@ -753,6 +831,9 @@ because_model <- function(
       next
     }
 
+    dist <- dist_list[[response]] %||% "gaussian"
+    # Note: occupancy and detection auxiliary equations are handled inside the loop
+
     for (k in 1:response_counter[[response]]) {
       suffix <- if (k == 1) "" else as.character(k)
       dist <- dist_list[[response]] %||% "gaussian"
@@ -761,7 +842,18 @@ because_model <- function(
       tau <- paste0("TAU", tolower(response), suffix)
 
       if (dist == "gaussian") {
-        mu <- paste0("mu", response, suffix)
+        # Skip likelihood generation for detection probability equations (p_Response)
+        # These are auxiliary equations for Occupancy models
+        if (grepl("^p_", response)) {
+          target_resp <- sub("^p_", "", response)
+          # Check if this target is an occupancy model response
+          is_occupancy_aux <- any(sapply(names(dist_list), function(n) {
+            (dist_list[[n]] == "occupancy") && (n == target_resp)
+          }))
+          if (is_occupancy_aux) next
+        }
+
+        mu <- paste0("mu_", response, suffix)
         tau_scalar <- paste0("tau", response, suffix)
 
         # Check if this variable has missing data
@@ -1037,17 +1129,12 @@ because_model <- function(
         err <- paste0("err_", response, suffix)
 
         if (independent) {
-          # Independent Binomial: Just error term (epsilon)
-          # err[i] ~ dnorm(0, tau_e)
-          epsilon <- paste0("epsilon_", response, suffix)
-          tau_e <- paste0("tau_e_", response, suffix)
-
+          # Independent Binomial: Standard GLM (no residual error)
           model_lines <- c(
             model_lines,
-            paste0("  # Independent residual error for binomial: ", response),
+            paste0("  # Independent (Standard GLM) for binomial: ", response),
             paste0("  for (i in 1:N) {"),
-            paste0("    ", epsilon, "[i] ~ dnorm(0, ", tau_e, ")"),
-            paste0("    ", err, "[i] <- ", epsilon, "[i]"),
+            paste0("    ", err, "[i] <- 0"),
             paste0("  }")
           )
         } else if (optimise) {
@@ -1155,20 +1242,16 @@ because_model <- function(
         K_var <- paste0("K_", response)
 
         if (independent) {
-          # Define variables for independent mode
-          epsilon <- paste0("epsilon_", response, suffix)
-          tau_e <- paste0("tau_e_", response, suffix)
-
+          # Independent Multinomial: Standard GLM
           model_lines <- c(
             model_lines,
             paste0(
-              "  # Independent residual error for multinomial: ",
+              "  # Independent (Standard GLM) for multinomial: ",
               response
             ),
             paste0("  for (k in 2:", K_var, ") {"),
             paste0("    for (i in 1:N) {"),
-            paste0("      ", epsilon, "[i, k] ~ dnorm(0, ", tau_e, "[k])"),
-            paste0("      ", err, "[i, k] <- ", epsilon, "[i, k]"),
+            paste0("      ", err, "[i, k] <- 0"),
             paste0("    }"),
             paste0("  }")
           )
@@ -1300,16 +1383,12 @@ because_model <- function(
         err <- paste0("err_", response, suffix)
 
         if (independent) {
-          # Independent Ordinal: Just error term (epsilon)
-          epsilon <- paste0("epsilon_", response, suffix)
-          tau_e <- paste0("tau_e_", response, suffix)
-
+          # Independent Ordinal: Standard GLM
           model_lines <- c(
             model_lines,
-            paste0("  # Independent residual error for ordinal: ", response),
+            paste0("  # Independent (Standard GLM) for ordinal: ", response),
             paste0("  for (i in 1:N) {"),
-            paste0("    ", epsilon, "[i] ~ dnorm(0, ", tau_e, ")"),
-            paste0("    ", err, "[i] <- ", epsilon, "[i]"),
+            paste0("    ", err, "[i] <- 0"),
             paste0("  }")
           )
         } else {
@@ -1345,16 +1424,12 @@ because_model <- function(
         err <- paste0("err_", response, suffix)
 
         if (independent) {
-          # Independent Poisson: Just error term (epsilon/overdispersion)
-          epsilon <- paste0("epsilon_", response, suffix)
-          tau_e <- paste0("tau_e_", response, suffix)
-
+          # Independent Poisson: Standard GLM (no overdispersion)
           model_lines <- c(
             model_lines,
-            paste0("  # Independent residual error for Poisson: ", response),
+            paste0("  # Independent (Standard GLM) for Poisson: ", response),
             paste0("  for (i in 1:N) {"),
-            paste0("    ", epsilon, "[i] ~ dnorm(0, ", tau_e, ")"),
-            paste0("    ", err, "[i] <- ", epsilon, "[i]"),
+            paste0("    ", err, "[i] <- 0"),
             paste0("  }")
           )
         } else if (optimise) {
@@ -1455,6 +1530,146 @@ because_model <- function(
             paste0("  }")
           )
         }
+      } else if (dist == "occupancy") {
+        # Occupancy Model (Single-Season)
+        # Process:
+        #   State: z[i] ~ dbern(psi[i]) where logit(psi) = mu_Response (reusing mu generation)
+        #   Obs:   y[i,j] ~ dbern(z[i] * p[i,j]) where logit(p) = mu_p_Response
+
+        # Determine if there is a detection model (p_Response)
+        p_name <- paste0("p_", response)
+        # Note: We assume mu_p_name is generated elsewhere if p_Response is in equations
+        # JAGS is declarative, so order doesn't matter.
+
+        # Initialize random effects accumulator for psi
+        total_u <- ""
+        if (optimise) {
+          # Phylogenetic / N-dim Structures
+          for (s_name in structure_names) {
+            s_suffix <- paste0("_", s_name)
+            u_std <- paste0("u_std_", response, suffix, s_suffix)
+            u <- paste0("u_", response, suffix, s_suffix)
+            tau_u <- paste0("tau_u_", response, suffix, s_suffix)
+
+            prec_name <- paste0("Prec_", s_name)
+            prec_index <- if (multi.tree && s_name == "phylo") {
+              paste0(prec_name, "[1:N, 1:N, K]")
+            } else {
+              paste0(prec_name, "[1:N, 1:N]")
+            }
+
+            model_lines <- c(
+              model_lines,
+              paste0(
+                "  ",
+                u_std,
+                "[1:N] ~ dmnorm(zeros[1:N], ",
+                prec_index,
+                ")"
+              ),
+              paste0(
+                "  for (i in 1:N) { ",
+                u,
+                "[i] <- ",
+                u_std,
+                "[i] / sqrt(",
+                tau_u,
+                ") }"
+              )
+            )
+            total_u <- paste0(total_u, " + ", u, "[i]")
+          }
+
+          # Random Group Structures
+          for (r_name in random_structure_names) {
+            s_suffix <- paste0("_", r_name)
+            u_std <- paste0("u_std_", response, suffix, s_suffix)
+            u <- paste0("u_", response, suffix, s_suffix)
+            tau_u <- paste0("tau_u_", response, suffix, s_suffix)
+
+            n_groups <- paste0("N_", r_name)
+            group_idx <- paste0("group_", r_name)
+            prec_name <- paste0("Prec_", r_name)
+            zeros_name <- paste0("zeros_", r_name)
+
+            model_lines <- c(
+              model_lines,
+              paste0(
+                "  ",
+                u_std,
+                "[1:",
+                n_groups,
+                "] ~ dmnorm(",
+                zeros_name,
+                "[1:",
+                n_groups,
+                "], ",
+                prec_name,
+                "[1:",
+                n_groups,
+                ", 1:",
+                n_groups,
+                "])"
+              ),
+              paste0("  for (g in 1:", n_groups, ") {"),
+              paste0("    ", u, "[g] <- ", u_std, "[g] / sqrt(", tau_u, ")"),
+              paste0("  }")
+            )
+            total_u <- paste0(total_u, " + ", u, "[", group_idx, "[i]]")
+          }
+        }
+
+        model_lines <- c(
+          model_lines,
+          paste0("  # Occupancy Model: ", response),
+          paste0("  for (i in 1:N) {"),
+          paste0(
+            "    logit(psi_",
+            response,
+            "[i]) <- mu_",
+            response,
+            suffix,
+            "[i]",
+            total_u
+          ), # Add random effects to psi
+          paste0("    z_", response, "[i] ~ dbern(psi_", response, "[i])")
+        )
+
+        # Loop over observations (replicates)
+        # We need N_reps for this variable
+        n_reps_var <- paste0("N_reps_", response, "[i]")
+
+        # Check if p_Response equation exists (by checking if mu_p_Response will be generated)
+        # Or if we should assume constant p
+        # For simplicity, if mu_p_Response exists in JAGS code, use it. But we don't know yet.
+        # Assumption: User MUST provide `p_Response ~ ...` equation if they want regression on p.
+        # If not, we might need a default intercept.
+        # Actually, if p_Response is NOT in equations, mu_p_Response won't exist.
+        # So we should define p here if needed.
+
+        # For MVP: We assume p_Response equation IS provided if you want p model.
+        # But wait, how do we link mu_p_Response to p?
+        # mu_p_Response[i] gives logit(p[i]).
+        # Or if p varies by visit? mu_p_Response[i] is vector.
+        # If covariates vary by visit? Not supported by basic linear predictor generator yet.
+        # So assume p[i] is constant across visits for now (Site-Covariates only).
+
+        model_lines <- c(
+          model_lines,
+          paste0("    logit(p_", response, "[i]) <- mu_p_", response, "[i]"), # Expected from p_Response equation
+          paste0("    for (j in 1:", n_reps_var, ") {"),
+          paste0(
+            "      ",
+            response,
+            "_obs[i, j] ~ dbern(z_",
+            response,
+            "[i] * p_",
+            response,
+            "[i])"
+          ),
+          paste0("    }")
+        )
+        model_lines <- c(model_lines, "  }")
       } else if (dist == "negbinomial" || dist == "zinb") {
         # Negative Binomial error term: err[1:N]
         # Single phylogenetic effect (like Poisson/ordinal)
@@ -1806,6 +2021,11 @@ because_model <- function(
     for (var in names(variability_list)) {
       type <- variability_list[[var]]
 
+      # Skip measurement error block for occupancy variables (handled in likelihood)
+      if (!is.null(dist_list[[var]]) && dist_list[[var]] == "occupancy") {
+        next
+      }
+
       # Ensure the variable is in the model
       if (!var %in% all_vars) {
         warning(paste(
@@ -1918,29 +2138,73 @@ because_model <- function(
       next
     }
 
-    # Skip multinomial, ordinal, poisson, and negbinomial (handled separately)
+    # Skip multinomial, ordinal (handled separately)
     dist <- dist_list[[response]] %||% "gaussian"
-    if (
-      dist == "multinomial" ||
-        dist == "ordinal"
-    ) {
+    if (dist == "multinomial" || dist == "ordinal") {
       next
+    }
+
+    # Identify if this is an occupancy auxiliary parameter
+    is_occupancy_aux <- FALSE
+    if (grepl("^p_", response)) {
+      target_resp <- sub("^p_", "", response)
+      is_occupancy_aux <- any(sapply(names(dist_list), function(n) {
+        (dist_list[[n]] == "occupancy") && (paste0("p_", n) == response)
+      }))
     }
 
     for (k in 1:response_counter[[response]]) {
       suffix <- if (k == 1) "" else as.character(k)
       # alpha prior
-      alpha_name <- paste0("alpha", response, suffix)
+      alpha_name <- paste0("alpha_", response, suffix)
+      # Determine default prior based on distribution (logit link needs tighter prior)
+      logit_dists <- c(
+        "occupancy",
+        "binomial",
+        "zip",
+        "zinb",
+        "bernoulli",
+        "multinomial",
+        "ordinal"
+      )
+      default_alpha <- "dnorm(0, 1.0E-6)"
+      if (dist %in% logit_dists || is_occupancy_aux) {
+        default_alpha <- "dnorm(0, 1)"
+      }
       model_lines <- c(
         model_lines,
-        paste0("  ", get_prior(alpha_name, "dnorm(0, 1.0E-6)"))
+        paste0("  ", get_prior(alpha_name, default_alpha))
       )
 
-      # Only generate lambda/tau priors if NOT using GLMM (missing data)
-      # For GLMM, we generate specific priors in the covariance section
       # Only generate lambda/tau priors if NOT using GLMM (missing data),
       # UNLESS we are optimizing (which uses standard priors even for missing data)
-      if (is.null(vars_with_na) || !response %in% vars_with_na || optimise) {
+      # Skip for occupancy models and their detection auxiliaries (no sigma/tau_e)
+      # Condition to enter variance generation block
+      # Basic rule: Skip if GLMM handles it (unless optimizing), or if distribution doesn't have residual variance.
+      # HOWEVER, for standard GLMMs (occupancy, binomial) with structure, we STILL need to generate tau_u (random effect variance)
+      # even if we don't need tau_e (residual).
+
+      needs_residual_variance <- !dist %in%
+        c(
+          "occupancy",
+          "binomial",
+          "zip",
+          "zinb",
+          "poisson",
+          "negbinomial",
+          "bernoulli",
+          "multinomial",
+          "ordinal"
+        )
+      needs_random_variance <- !independent &&
+        optimise &&
+        (length(structure_names) > 0 || length(random_structure_names) > 0)
+
+      if (
+        (is.null(vars_with_na) || !response %in% vars_with_na || optimise) &&
+          (needs_residual_variance || needs_random_variance) &&
+          !is_occupancy_aux
+      ) {
         if (independent) {
           # Independent Priors (only tau_e)
           # We can also generate sigma for monitoring convenience
@@ -2470,6 +2734,24 @@ because_model <- function(
 
   for (response in names(response_counter)) {
     dist <- dist_list[[response]] %||% "gaussian"
+
+    # Skip likelihood generation for detection probability equations (p_Response)
+    # These are auxiliary equations for Occupancy models
+    if (grepl("^p_", response)) {
+      target_resp <- sub("^p_", "", response)
+      # Check if this target is an occupancy model response
+      is_occupancy_aux <- any(sapply(names(dist_list), function(n) {
+        (dist_list[[n]] == "occupancy") && (paste0("p_", n) == response)
+      }))
+
+      if (is_occupancy_aux) {
+        # This is an auxiliary equation for detection probability
+        # We generate the linear predictor (mu_p_Response) but NOT a likelihood
+        # The likelihood is handled in the main occupancy block
+        next
+      }
+    }
+
     if (dist %in% c("multinomial", "ordinal")) {
       for (eq in eq_list) {
         if (eq$response == response) {
@@ -2487,9 +2769,54 @@ because_model <- function(
   unique_betas <- setdiff(unique_betas, excluded_betas)
 
   for (beta in unique_betas) {
+    # Isolate response part of beta name: beta_Response_Predictor
+    # Assuming names are strictly beta_Resp_Pred, but Resp could contain underscores if user did so.
+    # A safer way is using param_map, but we are in a simple loop here.
+    # Let's try to match against names(dist_list).
+
+    default_beta <- "dnorm(0, 1.0E-6)"
+
+    # Simple heuristic to find response name in beta string
+    found_resp <- NULL
+    for (nm in names(dist_list)) {
+      # Check if beta starts with "beta_nm_"
+      if (startsWith(beta, paste0("beta_", nm, "_"))) {
+        # Valid match, but beware of prefixes (e.g. beta_vars vs beta_var)
+        # Sort names by length descending to match longest possible response name first?
+        # For now, let's assume exact match plus underscore.
+        found_resp <- nm
+        break
+      }
+      # Also check "beta_p_nm_" for occupancy auxiliary
+      if (startsWith(beta, paste0("beta_p_", nm, "_"))) {
+        # It's an occupancy detection parameter
+        # These are logit scale -> need tight priors
+        default_beta <- "dnorm(0, 1)"
+        break
+      }
+    }
+
+    if (!is.null(found_resp)) {
+      d <- dist_list[[found_resp]] %||% "gaussian"
+      if (
+        d %in%
+          c(
+            "occupancy",
+            "binomial",
+            "zip",
+            "zinb",
+            "bernoulli",
+            "multinomial",
+            "ordinal"
+          )
+      ) {
+        default_beta <- "dnorm(0, 1)"
+      }
+    }
+
     model_lines <- c(
       model_lines,
-      paste0("  ", get_prior(beta, "dnorm(0, 1.0E-6)"))
+      paste0("  ", get_prior(beta, default_beta))
     )
   }
 
@@ -2745,7 +3072,35 @@ because_model <- function(
             )
           }
         }
-        # When optimise=TRUE, skip - using random effects instead
+        # tau_u priors for optimise=TRUE are already generated in the main priors block (lines ~2293-2311)
+        # No need to duplicate here.
+      } else if (dist == "occupancy") {
+        # Occupancy models have no residual error (binary latent state),
+        # but they MAY have phylogenetic/structure random effects.
+        # If so, we must generate priors for the structure variances.
+
+        if (optimise) {
+          for (s_name in structure_names) {
+            s_suffix <- paste0("_", s_name)
+            tau_u <- paste0("tau_u_", response, suffix, s_suffix)
+            model_lines <- c(
+              model_lines,
+              paste0("  ", tau_u, " ~ dgamma(1, 1)"),
+              paste0(
+                "  sigma_",
+                response,
+                suffix,
+                s_suffix,
+                " <- 1/sqrt(",
+                tau_u,
+                ")"
+              )
+            )
+          }
+        } else {
+          # Optimise=FALSE logic for occupancy not fully implemented yet
+          # (would require replicating marginal logic if needed)
+        }
       } else if (dist == "multinomial") {
         # Multinomial covariance
         # We need TAU[,,k] for each k
@@ -3095,10 +3450,12 @@ because_model <- function(
           }
 
           # Multiple Structures: Estimate independent variance components
-          model_lines <- c(
-            model_lines,
-            tau_line
-          )
+          if (needs_residual_variance) {
+            model_lines <- c(
+              model_lines,
+              tau_line
+            )
+          }
 
           for (s_name in structure_names) {
             s_suffix <- paste0("_", s_name)
@@ -3109,21 +3466,33 @@ because_model <- function(
               paste0("  sigma_", var, s_suffix, " <- 1/sqrt(", tau_u, ")")
             )
           }
-          model_lines <- c(
-            model_lines,
-            paste0("  sigma_", var, "_res <- 1/sqrt(tau_e_", var, ")")
-          )
+
+          if (needs_residual_variance) {
+            model_lines <- c(
+              model_lines,
+              paste0("  sigma_", var, "_res <- 1/sqrt(tau_e_", var, ")")
+            )
+          }
         } else {
           # Single Structure (Legacy behavior with lambda partitioning)
-          # This generates tau_u_var and tau_e_var matching the single-structure Gaussian block
-          model_lines <- c(
-            model_lines,
-            paste0("  lambda", var, " ~ dunif(0, 1)"),
-            paste0("  tau", var, " ~ dgamma(1, 1)"),
-            paste0("  tau_u_", var, " <- tau", var, "/lambda", var),
-            paste0("  tau_e_", var, " <- tau", var, "/(1-lambda", var, ")"),
-            paste0("  sigma", var, " <- 1/sqrt(tau", var, ")")
-          )
+          if (!needs_residual_variance) {
+            # No residual variance (e.g. occupancy), so just estimate tau_u directly
+            model_lines <- c(
+              model_lines,
+              paste0("  tau_u_", var, " ~ dgamma(1, 1)"),
+              paste0("  sigma", var, " <- 1/sqrt(tau_u_", var, ")")
+            )
+          } else {
+            # Normal Gaussian case: Partition total variance tau with lambda
+            model_lines <- c(
+              model_lines,
+              paste0("  lambda", var, " ~ dunif(0, 1)"),
+              paste0("  tau", var, " ~ dgamma(1, 1)"),
+              paste0("  tau_u_", var, " <- tau", var, "/lambda", var),
+              paste0("  tau_e_", var, " <- tau", var, "/(1-lambda", var, ")"),
+              paste0("  sigma", var, " <- 1/sqrt(tau", var, ")")
+            )
+          }
         }
       } else {
         model_lines <- c(
@@ -3186,19 +3555,7 @@ because_model <- function(
   }
 
   # Verify if "ID" is actually used in the model (e.g. for residuals or GLMMs)
-  # If not, add a dummy usage to prevent JAGS warning "Unused variable ID"
-  # This avoids clutter when 'optimise=TRUE' or for non-GLMM/non-phylogenetic models
-  if (!any(grepl("\\bID\\b", model_lines))) {
-    # Check if we are inserting it at the top or bottom. JAGS declarations order doesn't strictly matter
-    # but let's put it near the top for clarity, or just append.
-    # Appending is safer logic-wise here.
-    model_lines <- c(
-      model_lines[1], # "model {"
-      "  # Dummy usage of ID to prevent warnings for unused data",
-      "  dummy_ID <- ID[1,1]",
-      model_lines[-1]
-    )
-  }
+  # (Removed dummy usage of ID)
 
   model_lines <- c(model_lines, "}")
   model_string <- paste(model_lines, collapse = "\n")

@@ -216,7 +216,7 @@ plot_posterior(
 It is important to know what you are overriding. `because` aims to use **weakly informative** defaults that provide minimal regularization while allowing the data to dominate the posterior.
 
 | Parameter Type | Parameter Name | Default Prior | Description |
-|:-----------------|:-----------------|:-----------------|:-----------------|
+|:---|:---|:---|:---|
 | **Intercepts** | `alpha_*` | `dnorm(0, 1.0E-6)` | Wide Normal (Precision 1e-6 = Variance 1,000,000) |
 | **Coefficients** | `beta_*` | `dnorm(0, 1.0E-6)` | Wide Normal |
 | **Precision** | `tau_*` | `dgamma(1, 1)` | Gamma(1,1). Weakly informative for precision/variance components. |

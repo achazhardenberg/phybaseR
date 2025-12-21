@@ -19,8 +19,10 @@ because(
   WAIC = FALSE,
   n.adapt = n.iter/5,
   quiet = FALSE,
+  verbose = FALSE,
   dsep = FALSE,
   variability = NULL,
+  family = NULL,
   distribution = NULL,
   latent = NULL,
   latent_method = c("correlations", "explicit"),
@@ -40,15 +42,6 @@ because(
 }
 \arguments{
 \item{equations}{A list of model formulas describing the structural equation model.}
-
-\item{data}{Data for the model. Accepts:
-\itemize{
-\item \code{data.frame}: A data frame with variables as columns. Variables needed
-for the model are automatically extracted from the equations. Extra columns
-are ignored.
-\item \code{list}: A named list where each element is a vector of values
-(traditional format for backward compatibility).
-}}
 
 \item{id_col}{Character string specifying the column name in a data.frame containing
 unit identifiers (species, individuals, sites, etc.). This is used to:
@@ -103,6 +96,8 @@ WAIC is generally more appropriate than DIC for hierarchical models with latent 
 
 \item{quiet}{Logical; suppress JAGS output (default = FALSE).}
 
+\item{verbose}{Logical; if \code{TRUE}, print generated JAGS model code and data names (default = FALSE).}
+
 \item{dsep}{Logical; if \code{TRUE}, monitor only the first beta in each structural equation (used for d-separation testing).}
 
 \item{variability}{Optional specification for variables with measurement error or within-species variability.
@@ -127,7 +122,7 @@ If not specified, the package attempts to detect variability based on column nam
 \item \code{X_obs} or matrix column -> type="reps"
 }}
 
-\item{distribution}{Optional named character vector specifying the distribution for response variables.
+\item{family}{Optional named character vector specifying the family/distribution for response variables.
 Default is "gaussian" for all variables. Supported values:
 \itemize{
 \item "gaussian" (default)
@@ -138,9 +133,13 @@ Default is "gaussian" for all variables. Supported values:
 \item "negbinomial" (overdispersed count data)
 \item "zip" (zero-inflated poisson): Models excess zeros with probability \code{psi} and counts with mean \code{lambda}.
 \item "zinb" (zero-inflated negative binomial): Models excess zeros with probability \code{psi} and overdispersed counts with mean \code{mu} and size \code{r}.
+\item "occupancy": Single-season site-occupancy model.
+State process: \code{z ~ Bernoulli(psi)}.
+Observation process: \code{y ~ Bernoulli(z * p)}.
+Requires data to be a detection history matrix (sites x visits).
 }
 The model will estimate a zero-inflation probability parameter \code{psi_Response} for these distributions.
-Example: \code{distribution = c(Gregarious = "binomial")}.}
+Example: \code{family = c(Gregarious = "binomial")}.}
 
 \item{latent}{Optional character vector of latent (unmeasured) variable names.
 If specified, the model will account for induced correlations among observed
@@ -201,5 +200,5 @@ Example: \code{list(alpha_Response = "dnorm(0, 0.001)", beta_Response_Predictor 
 A list of class \code{"because"} with model output and diagnostics.
 }
 \description{
-Run a Bayesian Structural Equation Model
+This function fits a Bayesian ...
 }

@@ -14,14 +14,15 @@ because_model(
   vars_with_na = NULL,
   induced_correlations = NULL,
   variability = NULL,
-  distribution = NULL,
+  family = NULL,
   optimise = TRUE,
   standardize_latent = TRUE,
   poly_terms = NULL,
   latent = NULL,
   categorical_vars = NULL,
   fix_residual_variance = NULL,
-  priors = NULL
+  priors = NULL,
+  hierarchical_info = NULL
 )
 }
 \arguments{
@@ -46,7 +47,7 @@ If unnamed, it defaults to "se" for all specified variables.
 \item "reps": Expects \code{Var_obs} (matrix) and \code{N_reps_Var} (vector) in the data. The model estimates observation error: \code{Var_obs[i,j] ~ dnorm(Var[i], Var_tau)}.
 }}
 
-\item{distribution}{Optional named character vector specifying the distribution for response variables.
+\item{family}{Optional named character vector specifying the family/distribution for response variables.
 Default is "gaussian" for all variables. Supported values: "gaussian", "binomial", "multinomial".
 For "binomial" variables, the model uses a logit link and a Bernoulli likelihood, with phylogenetic correlation modeled on the latent scale.}
 

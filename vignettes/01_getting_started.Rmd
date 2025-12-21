@@ -38,6 +38,8 @@ autocorrelation, genetic relatedness etc.).
      Handling missing data using Bayesian imputation.
 -   [Custom Priors and Mechanistic Constraints](05_custom_priors.html):
      Incorporating prior knowledge and mechanistic constraints.
+-   [Automated Mediation Analysis](06_mediation.html):
+     Decomposing effects into direct and indirect components.
 -   *Alternative Covariance structures:*
     Spatial, genetic, social, or other correlation structures.
     *Alternative  dustribution families:* Modeling

@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>06. Automated Mediation Analysis</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">06. Automated Mediation Analysis</h1>
+
+
+
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>Causal inference often requires investigating <em>how</em> an effect
+occurs. Does <span class="math inline">\(X\)</span> affect <span class="math inline">\(Y\)</span> directly, or does it work through a
+mediator <span class="math inline">\(M\)</span>?</p>
+<p>The <code>because</code> package provides a fully Bayesian automated
+mediation analysis tool, <code>because_mediation()</code>, which
+decomposes the Total Effect of an exposure on an outcome into: 1.
+<strong>Direct Effect</strong>: The effect of <span class="math inline">\(X \to Y\)</span> not mediated by other variables
+in the graph. 2. <strong>Indirect Effect(s)</strong>: The effect
+propagated through intermediate variables (<span class="math inline">\(X
+\to M \to Y\)</span>).</p>
+<p>This is calculated by multiplying the posterior distributions of
+coefficients along each path, preserving full uncertainty
+quantification.</p>
+</div>
+<div id="example-rhino-model-sem8" class="section level1">
+<h1>Example: Rhino Model (<code>sem8</code>)</h1>
+<p>We will use the <strong>Rhino</strong> dataset (simulated evolution
+of Ceratomorpha) to investigate the causal drivers of <strong>Range Size
+(RS)</strong>.</p>
+<p>The <code>sem8</code> hypothesis posits: * <strong>Body Mass
+(BM)</strong> increases <strong>NewLineage (nl)</strong> differentiation
+(speciation). * <strong>NewLineage (nl)</strong> increases <strong>Range
+Size (RS)</strong>. * <strong>Body Mass (BM)</strong> <em>also</em>
+directly affects <strong>Range Size (RS)</strong>.</p>
+<p>We want to know: <em>How much of the effect of Body Mass on Range
+Size is mediated by Speciation (NewLineage)?</em></p>
+<div id="load-package-and-data" class="section level2">
+<h2>1. Load Package and Data</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(because)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="co"># Load package data</span></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="co"># Note: In a vignette context before installation, data() might be tricky,</span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co"># but assuming standard execution, these should be available.</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="fu">data</span>(rhino.dat)</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="fu">data</span>(rhino.tree)</span></code></pre></div>
+</div>
+<div id="fit-the-structural-equation-model" class="section level2">
+<h2>2. Fit the Structural Equation Model</h2>
+<p>We define the <code>sem8</code> structure from Gonzalez-Voyer &amp;
+von Hardenberg (2014): 1. <strong>Litter Size (LS)</strong> depends on
+<strong>Body Mass (BM)</strong>. 2. <strong>Nose Length (NL)</strong>
+depends on <strong>Body Mass (BM)</strong> and <strong>Range Size
+(RS)</strong>. 3. <strong>Dispersal Distance (DD)</strong> depends on
+<strong>Nose Length (NL)</strong>.</p>
+<p>Notice that <strong>Body Mass (BM)</strong> affects <strong>Nose
+Length (NL)</strong> both directly and (potentially) indirectly? No,
+wait. In this model, the paths are: * <code>BM -&gt; LS</code> *
+<code>BM -&gt; NL</code> * <code>RS -&gt; NL</code> *
+<code>NL -&gt; DD</code></p>
+<p>We want to investigate the effect of <strong>Body Mass (BM)</strong>
+on <strong>Dispersal Distance (DD)</strong>. There is no direct link
+<code>BM -&gt; DD</code> in the model definition, so any effect MUST be
+mediated by <strong>Nose Length (NL)</strong>.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># Define the structural equations (sem8)</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>sem8_eq <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>    LS <span class="sc">~</span> BM,</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>    NL <span class="sc">~</span> BM <span class="sc">+</span> RS,</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>    DD <span class="sc">~</span> NL</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>)</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co"># Fit the model</span></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co"># For speed in this vignette, we use a short chain and Gaussian assumption.</span></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co"># In a real analysis, you would include `structure = rhino.tree` and run longer.</span></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">because</span>(</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>    <span class="at">equations =</span> sem8_eq,</span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>    <span class="at">data =</span> rhino.dat,</span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>    <span class="at">structure =</span> rhino.tree,</span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>    <span class="at">id_col =</span> <span class="st">&quot;SP&quot;</span>, <span class="co"># Map species names</span></span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a>    <span class="at">n.iter =</span> <span class="dv">500</span>,</span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a>    <span class="at">n.burnin =</span> <span class="dv">100</span></span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a>)</span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a><span class="co">#&gt; Converted categorical &#39;SP&#39; to integers (1..100). Reference: &#39;s1&#39;</span></span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a><span class="co">#&gt; Converted data.frame to list with 104 variables: LS, BM, NL, RS, DD, SP_s10, SP_s100, SP_s11, SP_s12, SP_s13, SP_s14, SP_s15, SP_s16, SP_s17, SP_s18, SP_s19, SP_s2, SP_s20, SP_s21, SP_s22, SP_s23, SP_s24, SP_s25, SP_s26, SP_s27, SP_s28, SP_s29, SP_s3, SP_s30, SP_s31, SP_s32, SP_s33, SP_s34, SP_s35, SP_s36, SP_s37, SP_s38, SP_s39, SP_s4, SP_s40, SP_s41, SP_s42, SP_s43, SP_s44, SP_s45, SP_s46, SP_s47, SP_s48, SP_s49, SP_s5, SP_s50, SP_s51, SP_s52, SP_s53, SP_s54, SP_s55, SP_s56, SP_s57, SP_s58, SP_s59, SP_s6, SP_s60, SP_s61, SP_s62, SP_s63, SP_s64, SP_s65, SP_s66, SP_s67, SP_s68, SP_s69, SP_s7, SP_s70, SP_s71, SP_s72, SP_s73, SP_s74, SP_s75, SP_s76, SP_s77, SP_s78, SP_s79, SP_s8, SP_s80, SP_s81, SP_s82, SP_s83, SP_s84, SP_s85, SP_s86, SP_s87, SP_s88, SP_s89, SP_s9, SP_s90, SP_s91, SP_s92, SP_s93, SP_s94, SP_s95, SP_s96, SP_s97, SP_s98, SP_s99</span></span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a><span class="co">#&gt; Standardizing tree (max_bt: 3.31 -&gt; 1.0)</span></span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s10&quot; in data</span></span>
+<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s100&quot; in data</span></span>
+<span id="cb2-26"><a href="#cb2-26" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-27"><a href="#cb2-27" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s11&quot; in data</span></span>
+<span id="cb2-28"><a href="#cb2-28" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-29"><a href="#cb2-29" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s12&quot; in data</span></span>
+<span id="cb2-30"><a href="#cb2-30" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-31"><a href="#cb2-31" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s13&quot; in data</span></span>
+<span id="cb2-32"><a href="#cb2-32" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-33"><a href="#cb2-33" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s14&quot; in data</span></span>
+<span id="cb2-34"><a href="#cb2-34" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-35"><a href="#cb2-35" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s15&quot; in data</span></span>
+<span id="cb2-36"><a href="#cb2-36" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-37"><a href="#cb2-37" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s16&quot; in data</span></span>
+<span id="cb2-38"><a href="#cb2-38" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-39"><a href="#cb2-39" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s17&quot; in data</span></span>
+<span id="cb2-40"><a href="#cb2-40" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-41"><a href="#cb2-41" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s18&quot; in data</span></span>
+<span id="cb2-42"><a href="#cb2-42" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-43"><a href="#cb2-43" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s19&quot; in data</span></span>
+<span id="cb2-44"><a href="#cb2-44" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-45"><a href="#cb2-45" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s2&quot; in data</span></span>
+<span id="cb2-46"><a href="#cb2-46" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-47"><a href="#cb2-47" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s20&quot; in data</span></span>
+<span id="cb2-48"><a href="#cb2-48" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-49"><a href="#cb2-49" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s21&quot; in data</span></span>
+<span id="cb2-50"><a href="#cb2-50" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-51"><a href="#cb2-51" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s22&quot; in data</span></span>
+<span id="cb2-52"><a href="#cb2-52" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-53"><a href="#cb2-53" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s23&quot; in data</span></span>
+<span id="cb2-54"><a href="#cb2-54" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-55"><a href="#cb2-55" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s24&quot; in data</span></span>
+<span id="cb2-56"><a href="#cb2-56" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-57"><a href="#cb2-57" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s25&quot; in data</span></span>
+<span id="cb2-58"><a href="#cb2-58" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-59"><a href="#cb2-59" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s26&quot; in data</span></span>
+<span id="cb2-60"><a href="#cb2-60" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-61"><a href="#cb2-61" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s27&quot; in data</span></span>
+<span id="cb2-62"><a href="#cb2-62" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-63"><a href="#cb2-63" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s28&quot; in data</span></span>
+<span id="cb2-64"><a href="#cb2-64" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-65"><a href="#cb2-65" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s29&quot; in data</span></span>
+<span id="cb2-66"><a href="#cb2-66" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-67"><a href="#cb2-67" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s3&quot; in data</span></span>
+<span id="cb2-68"><a href="#cb2-68" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-69"><a href="#cb2-69" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s30&quot; in data</span></span>
+<span id="cb2-70"><a href="#cb2-70" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-71"><a href="#cb2-71" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s31&quot; in data</span></span>
+<span id="cb2-72"><a href="#cb2-72" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-73"><a href="#cb2-73" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s32&quot; in data</span></span>
+<span id="cb2-74"><a href="#cb2-74" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-75"><a href="#cb2-75" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s33&quot; in data</span></span>
+<span id="cb2-76"><a href="#cb2-76" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-77"><a href="#cb2-77" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s34&quot; in data</span></span>
+<span id="cb2-78"><a href="#cb2-78" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-79"><a href="#cb2-79" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s35&quot; in data</span></span>
+<span id="cb2-80"><a href="#cb2-80" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-81"><a href="#cb2-81" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s36&quot; in data</span></span>
+<span id="cb2-82"><a href="#cb2-82" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-83"><a href="#cb2-83" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s37&quot; in data</span></span>
+<span id="cb2-84"><a href="#cb2-84" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-85"><a href="#cb2-85" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s38&quot; in data</span></span>
+<span id="cb2-86"><a href="#cb2-86" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-87"><a href="#cb2-87" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s39&quot; in data</span></span>
+<span id="cb2-88"><a href="#cb2-88" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-89"><a href="#cb2-89" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s4&quot; in data</span></span>
+<span id="cb2-90"><a href="#cb2-90" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-91"><a href="#cb2-91" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s40&quot; in data</span></span>
+<span id="cb2-92"><a href="#cb2-92" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-93"><a href="#cb2-93" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s41&quot; in data</span></span>
+<span id="cb2-94"><a href="#cb2-94" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-95"><a href="#cb2-95" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s42&quot; in data</span></span>
+<span id="cb2-96"><a href="#cb2-96" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-97"><a href="#cb2-97" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s43&quot; in data</span></span>
+<span id="cb2-98"><a href="#cb2-98" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-99"><a href="#cb2-99" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s44&quot; in data</span></span>
+<span id="cb2-100"><a href="#cb2-100" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-101"><a href="#cb2-101" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s45&quot; in data</span></span>
+<span id="cb2-102"><a href="#cb2-102" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-103"><a href="#cb2-103" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s46&quot; in data</span></span>
+<span id="cb2-104"><a href="#cb2-104" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-105"><a href="#cb2-105" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s47&quot; in data</span></span>
+<span id="cb2-106"><a href="#cb2-106" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-107"><a href="#cb2-107" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s48&quot; in data</span></span>
+<span id="cb2-108"><a href="#cb2-108" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-109"><a href="#cb2-109" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s49&quot; in data</span></span>
+<span id="cb2-110"><a href="#cb2-110" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-111"><a href="#cb2-111" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s5&quot; in data</span></span>
+<span id="cb2-112"><a href="#cb2-112" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-113"><a href="#cb2-113" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s50&quot; in data</span></span>
+<span id="cb2-114"><a href="#cb2-114" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-115"><a href="#cb2-115" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s51&quot; in data</span></span>
+<span id="cb2-116"><a href="#cb2-116" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-117"><a href="#cb2-117" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s52&quot; in data</span></span>
+<span id="cb2-118"><a href="#cb2-118" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-119"><a href="#cb2-119" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s53&quot; in data</span></span>
+<span id="cb2-120"><a href="#cb2-120" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-121"><a href="#cb2-121" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s54&quot; in data</span></span>
+<span id="cb2-122"><a href="#cb2-122" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-123"><a href="#cb2-123" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s55&quot; in data</span></span>
+<span id="cb2-124"><a href="#cb2-124" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-125"><a href="#cb2-125" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s56&quot; in data</span></span>
+<span id="cb2-126"><a href="#cb2-126" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-127"><a href="#cb2-127" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s57&quot; in data</span></span>
+<span id="cb2-128"><a href="#cb2-128" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-129"><a href="#cb2-129" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s58&quot; in data</span></span>
+<span id="cb2-130"><a href="#cb2-130" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-131"><a href="#cb2-131" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s59&quot; in data</span></span>
+<span id="cb2-132"><a href="#cb2-132" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-133"><a href="#cb2-133" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s6&quot; in data</span></span>
+<span id="cb2-134"><a href="#cb2-134" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-135"><a href="#cb2-135" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s60&quot; in data</span></span>
+<span id="cb2-136"><a href="#cb2-136" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-137"><a href="#cb2-137" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s61&quot; in data</span></span>
+<span id="cb2-138"><a href="#cb2-138" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-139"><a href="#cb2-139" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s62&quot; in data</span></span>
+<span id="cb2-140"><a href="#cb2-140" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-141"><a href="#cb2-141" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s63&quot; in data</span></span>
+<span id="cb2-142"><a href="#cb2-142" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-143"><a href="#cb2-143" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s64&quot; in data</span></span>
+<span id="cb2-144"><a href="#cb2-144" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-145"><a href="#cb2-145" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s65&quot; in data</span></span>
+<span id="cb2-146"><a href="#cb2-146" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-147"><a href="#cb2-147" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s66&quot; in data</span></span>
+<span id="cb2-148"><a href="#cb2-148" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-149"><a href="#cb2-149" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s67&quot; in data</span></span>
+<span id="cb2-150"><a href="#cb2-150" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-151"><a href="#cb2-151" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s68&quot; in data</span></span>
+<span id="cb2-152"><a href="#cb2-152" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-153"><a href="#cb2-153" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s69&quot; in data</span></span>
+<span id="cb2-154"><a href="#cb2-154" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-155"><a href="#cb2-155" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s7&quot; in data</span></span>
+<span id="cb2-156"><a href="#cb2-156" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-157"><a href="#cb2-157" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s70&quot; in data</span></span>
+<span id="cb2-158"><a href="#cb2-158" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-159"><a href="#cb2-159" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s71&quot; in data</span></span>
+<span id="cb2-160"><a href="#cb2-160" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-161"><a href="#cb2-161" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s72&quot; in data</span></span>
+<span id="cb2-162"><a href="#cb2-162" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-163"><a href="#cb2-163" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s73&quot; in data</span></span>
+<span id="cb2-164"><a href="#cb2-164" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-165"><a href="#cb2-165" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s74&quot; in data</span></span>
+<span id="cb2-166"><a href="#cb2-166" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-167"><a href="#cb2-167" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s75&quot; in data</span></span>
+<span id="cb2-168"><a href="#cb2-168" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-169"><a href="#cb2-169" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s76&quot; in data</span></span>
+<span id="cb2-170"><a href="#cb2-170" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-171"><a href="#cb2-171" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s77&quot; in data</span></span>
+<span id="cb2-172"><a href="#cb2-172" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-173"><a href="#cb2-173" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s78&quot; in data</span></span>
+<span id="cb2-174"><a href="#cb2-174" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-175"><a href="#cb2-175" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s79&quot; in data</span></span>
+<span id="cb2-176"><a href="#cb2-176" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-177"><a href="#cb2-177" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s8&quot; in data</span></span>
+<span id="cb2-178"><a href="#cb2-178" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-179"><a href="#cb2-179" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s80&quot; in data</span></span>
+<span id="cb2-180"><a href="#cb2-180" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-181"><a href="#cb2-181" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s81&quot; in data</span></span>
+<span id="cb2-182"><a href="#cb2-182" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-183"><a href="#cb2-183" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s82&quot; in data</span></span>
+<span id="cb2-184"><a href="#cb2-184" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-185"><a href="#cb2-185" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s83&quot; in data</span></span>
+<span id="cb2-186"><a href="#cb2-186" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-187"><a href="#cb2-187" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s84&quot; in data</span></span>
+<span id="cb2-188"><a href="#cb2-188" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-189"><a href="#cb2-189" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s85&quot; in data</span></span>
+<span id="cb2-190"><a href="#cb2-190" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-191"><a href="#cb2-191" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s86&quot; in data</span></span>
+<span id="cb2-192"><a href="#cb2-192" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-193"><a href="#cb2-193" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s87&quot; in data</span></span>
+<span id="cb2-194"><a href="#cb2-194" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-195"><a href="#cb2-195" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s88&quot; in data</span></span>
+<span id="cb2-196"><a href="#cb2-196" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-197"><a href="#cb2-197" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s89&quot; in data</span></span>
+<span id="cb2-198"><a href="#cb2-198" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-199"><a href="#cb2-199" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s9&quot; in data</span></span>
+<span id="cb2-200"><a href="#cb2-200" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-201"><a href="#cb2-201" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s90&quot; in data</span></span>
+<span id="cb2-202"><a href="#cb2-202" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-203"><a href="#cb2-203" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s91&quot; in data</span></span>
+<span id="cb2-204"><a href="#cb2-204" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-205"><a href="#cb2-205" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s92&quot; in data</span></span>
+<span id="cb2-206"><a href="#cb2-206" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-207"><a href="#cb2-207" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s93&quot; in data</span></span>
+<span id="cb2-208"><a href="#cb2-208" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-209"><a href="#cb2-209" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s94&quot; in data</span></span>
+<span id="cb2-210"><a href="#cb2-210" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-211"><a href="#cb2-211" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s95&quot; in data</span></span>
+<span id="cb2-212"><a href="#cb2-212" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-213"><a href="#cb2-213" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s96&quot; in data</span></span>
+<span id="cb2-214"><a href="#cb2-214" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-215"><a href="#cb2-215" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s97&quot; in data</span></span>
+<span id="cb2-216"><a href="#cb2-216" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-217"><a href="#cb2-217" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s98&quot; in data</span></span>
+<span id="cb2-218"><a href="#cb2-218" tabindex="-1"></a><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, n.chains = n.chains, :</span></span>
+<span id="cb2-219"><a href="#cb2-219" tabindex="-1"></a><span class="co">#&gt; Unused variable &quot;SP_s99&quot; in data</span></span>
+<span id="cb2-220"><a href="#cb2-220" tabindex="-1"></a><span class="co">#&gt; Compiling model graph</span></span>
+<span id="cb2-221"><a href="#cb2-221" tabindex="-1"></a><span class="co">#&gt;    Resolving undeclared variables</span></span>
+<span id="cb2-222"><a href="#cb2-222" tabindex="-1"></a><span class="co">#&gt;    Allocating nodes</span></span>
+<span id="cb2-223"><a href="#cb2-223" tabindex="-1"></a><span class="co">#&gt; Graph information:</span></span>
+<span id="cb2-224"><a href="#cb2-224" tabindex="-1"></a><span class="co">#&gt;    Observed stochastic nodes: 300</span></span>
+<span id="cb2-225"><a href="#cb2-225" tabindex="-1"></a><span class="co">#&gt;    Unobserved stochastic nodes: 16</span></span>
+<span id="cb2-226"><a href="#cb2-226" tabindex="-1"></a><span class="co">#&gt;    Total graph size: 22546</span></span>
+<span id="cb2-227"><a href="#cb2-227" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-228"><a href="#cb2-228" tabindex="-1"></a><span class="co">#&gt; Initializing model</span></span></code></pre></div>
+</div>
+<div id="perform-mediation-analysis" class="section level2">
+<h2>3. Perform Mediation Analysis</h2>
+<p>We analyze the effect of <strong>Body Mass (BM)</strong> on
+<strong>Dispersal Distance (DD)</strong>.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Run Automated Mediation Analysis for BM -&gt; DD</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>med_results <span class="ot">&lt;-</span> <span class="fu">because_mediation</span>(fit, <span class="at">exposure =</span> <span class="st">&quot;BM&quot;</span>, <span class="at">outcome =</span> <span class="st">&quot;DD&quot;</span>)</span></code></pre></div>
+<div id="inspect-the-summary" class="section level3">
+<h3>Inspect the Summary</h3>
+<p>The summary table provides the posterior mean, standard deviation,
+and credible intervals for the Total, Direct, and Total Indirect
+effects.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">print</span>(med_results<span class="sc">$</span>summary)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="co">#&gt;                        Type      Mean         SD     Lower     Upper</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="co">#&gt; 2.5%           Total Effect 0.2509495 0.04741817 0.1724486 0.3304719</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co">#&gt; 2.5%1         Direct Effect 0.0000000 0.00000000 0.0000000 0.0000000</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co">#&gt; 2.5%2 Total Indirect Effect 0.2509495 0.04741817 0.1724486 0.3304719</span></span></code></pre></div>
+<p><strong>Interpretation:</strong> * <strong>Total Effect</strong>: The
+overall causal impact of BM on RS. * <strong>Direct Effect</strong>: The
+path <code>BM -&gt; RS</code>. * <strong>Indirect Effect</strong>: The
+path <code>BM -&gt; NL -&gt; RS</code> (plus any others if they
+existed).</p>
+<p>If the <strong>Indirect Effect</strong> is substantial and its
+credible interval excludes zero, we have evidence of mediation.</p>
+</div>
+<div id="inspect-individual-paths" class="section level3">
+<h3>Inspect Individual Paths</h3>
+<p>If there were multiple indirect paths (e.g.,
+<code>BM -&gt; LS -&gt; NL -&gt; RS</code>),
+<code>because_mediation</code> would list each one separately.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">print</span>(med_results<span class="sc">$</span>paths)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="co">#&gt;                Path     Type      Mean         SD     Lower     Upper</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#&gt; 2.5% BM -&gt; NL -&gt; DD Indirect 0.2509495 0.04741817 0.1724486 0.3304719</span></span></code></pre></div>
+<p>This table shows exactly which causal pathways contribute to the
+relationship.</p>
+</div>
+</div>
+<div id="technical-note" class="section level2">
+<h2>Technical Note</h2>
+<p>The function calculates the indirect effect as the product of
+coefficients along the path: <span class="math display">\[
+\text{Indirect} = \beta_{BM \to NL} \times \beta_{NL \to RS} \]</span>
+This assumes linear relationships. For non-linear or generalized linear
+models (e.g., Binomial), this product rule is an approximation of the
+average causal effect on the linear predictor scale.</p>
+<p>For complex non-linear mediation (e.g., where magnitude depends on
+the level of <span class="math inline">\(M\)</span>), use the
+<code>because_do</code> intervention framework (coming soon) to simulate
+counterfactuals directly.</p>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

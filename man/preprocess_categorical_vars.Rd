@@ -4,7 +4,13 @@
 \alias{preprocess_categorical_vars}
 \title{Preprocess categorical variables (character/factor) to integer codes and dummies}
 \usage{
-preprocess_categorical_vars(data, quiet = FALSE)
+preprocess_categorical_vars(
+  data,
+  target_vars = NULL,
+  dummy_vars = NULL,
+  exclude_cols = NULL,
+  quiet = FALSE
+)
 }
 \arguments{
 \item{data}{A data.frame or list of data.frames}

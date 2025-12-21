@@ -1,13 +1,13 @@
-#' Run a Bayesian Structural Equation Model
+#' @importFrom stats dist
+#' @importFrom utils read.csv
+#' @importFrom ape vcv
+#' @importFrom methods is
+#' @importFrom rjags jags.model
 #'
-#' @param data Data for the model. Accepts:
-#'   \itemize{
-#'     \item \code{data.frame}: A data frame with variables as columns. Variables needed
-#'           for the model are automatically extracted from the equations. Extra columns
-#'           are ignored.
-#'     \item \code{list}: A named list where each element is a vector of values
-#'           (traditional format for backward compatibility).
-#'   }
+#' @title Run a Bayesian Structural Equation Model
+#'
+#' @description
+#' This function fits a Bayesian ...
 #' @param equations A list of model formulas describing the structural equation model.
 #' @param id_col Character string specifying the column name in a data.frame containing
 #'   unit identifiers (species, individuals, sites, etc.). This is used to:
@@ -50,6 +50,7 @@
 #'   WAIC is generally more appropriate than DIC for hierarchical models with latent variables.
 #' @param n.adapt Number of adaptation iterations (default = n.iter / 5).
 #' @param quiet Logical; suppress JAGS output (default = FALSE).
+#' @param verbose Logical; if \code{TRUE}, print generated JAGS model code and data names (default = FALSE).
 #' @param dsep Logical; if \code{TRUE}, monitor only the first beta in each structural equation (used for d-separation testing).
 #' @param variability Optional specification for variables with measurement error or within-species variability.
 #'   \strong{Global Setting}:
@@ -72,7 +73,7 @@
 #'     \item \code{X_se} -> type="se"
 #'     \item \code{X_obs} or matrix column -> type="reps"
 #'   }
-#' @param distribution Optional named character vector specifying the distribution for response variables.
+#' @param family Optional named character vector specifying the family/distribution for response variables.
 #'   Default is "gaussian" for all variables. Supported values:
 #'   \itemize{
 #'     \item "gaussian" (default)
@@ -83,9 +84,13 @@
 #'     \item "negbinomial" (overdispersed count data)
 #'     \item "zip" (zero-inflated poisson): Models excess zeros with probability \code{psi} and counts with mean \code{lambda}.
 #'     \item "zinb" (zero-inflated negative binomial): Models excess zeros with probability \code{psi} and overdispersed counts with mean \code{mu} and size \code{r}.
+#'     \item "occupancy": Single-season site-occupancy model.
+#'           State process: \code{z ~ Bernoulli(psi)}.
+#'           Observation process: \code{y ~ Bernoulli(z * p)}.
+#'           Requires data to be a detection history matrix (sites x visits).
 #'   }
 #'   The model will estimate a zero-inflation probability parameter \code{psi_Response} for these distributions.
-#'   Example: \code{distribution = c(Gregarious = "binomial")}.
+#'   Example: \code{family = c(Gregarious = "binomial")}.
 #' @param latent Optional character vector of latent (unmeasured) variable names.
 #'   If specified, the model will account for induced correlations among observed
 #'   variables that share these latent common causes.
@@ -151,8 +156,10 @@ because <- function(
   WAIC = FALSE,
   n.adapt = n.iter / 5,
   quiet = FALSE,
+  verbose = FALSE,
   dsep = FALSE,
   variability = NULL,
+  family = NULL,
   distribution = NULL,
   latent = NULL,
   latent_method = c("correlations", "explicit"),
@@ -209,45 +216,153 @@ because <- function(
     stop("Argument 'equations' must be provided.")
   }
 
+  # --- Backward Compatibility: distribution -> family ---
+  if (!is.null(distribution)) {
+    warning(
+      "Argument 'distribution' is deprecated and will be removed in future versions. Please use 'family' instead."
+    )
+    if (is.null(family)) {
+      family <- distribution
+    }
+  }
+
+  # --- Auto-Stacking (Multispecies Input) ---
+  # If data is a list containing species-specific matrices (and equation is generic Y ~ ...),
+  # convert to a single stacked dataframe (Long Format) with (1|SpeciesID).
+  stack_res <- auto_stack_multispecies_data(data, equations, quiet = quiet)
+  if (stack_res$is_stacked) {
+    data <- stack_res$data
+
+    # Append random effect for SpeciesID
+    if (!is.null(stack_res$random_part)) {
+      if (is.null(random)) {
+        random <- as.formula(paste("~", stack_res$random_part))
+      } else {
+        r_str <- deparse(random)
+        if (grepl("^~", r_str)) {
+          r_str <- sub("^~", "", r_str)
+        }
+        # Avoid duplicating if user already added it?
+        if (!grepl("SpeciesID", r_str)) {
+          random <- as.formula(paste("~", r_str, stack_res$random_part))
+        }
+      }
+      if (!quiet) {
+        message("Auto-Stacking added random effect: ", stack_res$random_part)
+      }
+    }
+  }
+
+  # --- Selective Variable Collection ---
+  # To avoid memory issues with large datasets, we only process variables needed by the model.
+
+  # 1. Identify all variables used in equations (fixed + random)
+  all_eq_vars <- unique(unlist(lapply(equations, all.vars)))
+
+  # 2. Identify variables in global random effects
+  global_random_vars <- if (!is.null(random)) {
+    if (inherits(random, "formula")) {
+      all.vars(random)
+    } else {
+      unique(unlist(lapply(random, all.vars)))
+    }
+  } else {
+    character(0)
+  }
+
+  # 3. Identify categorical predictors that need dummy variables
+  # These are variables on the RHS of fixed-effect formulas
+  parsed_random_temp <- extract_random_effects(equations)
+  fixed_eqs_temp <- parsed_random_temp$fixed_equations
+  fixed_predictors <- unique(unlist(lapply(fixed_eqs_temp, function(eq) {
+    if (length(eq) == 3) all.vars(eq[[3]]) else character(0)
+  })))
+
+  # 4. Combine all needed variables
+  model_vars <- unique(c(
+    all_eq_vars,
+    global_random_vars,
+    id_col,
+    if (!is.null(family)) names(family),
+    if (!is.null(variability) && !is.character(variability)) names(variability)
+  ))
+
+  # 5. Filter data frame early to save memory if it's a data.frame
+  if (is.data.frame(data)) {
+    available_vars <- intersect(names(data), model_vars)
+    if (length(available_vars) > 0) {
+      if (!quiet && ncol(data) > length(available_vars)) {
+        message(sprintf(
+          "Filtering data to %d relevant columns (out of %d) to optimize memory.",
+          length(available_vars),
+          ncol(data)
+        ))
+      }
+      # Keep only relevant columns
+      data <- data[, available_vars, drop = FALSE]
+    }
+  }
+
   # --- Automatic Data Cleaning (Handle Character/Factor Columns) ---
   data <- preprocess_categorical_vars(
     data,
+    target_vars = model_vars,
+    dummy_vars = fixed_predictors, # Categorical fixed predictors need dummies
     exclude_cols = id_col,
     quiet = quiet
   )
 
   # --- Hierarchical Data Detection & Validation ---
-  # Data is hierarchical if it's a list (not dataframe) AND levels are provided
-  is_hierarchical <- is.list(data) && !is.data.frame(data) && !is.null(levels)
+  # Data is hierarchical if it's a list (not dataframe)
+  is_list_data <- is.list(data) && !is.data.frame(data)
+  is_hierarchical <- FALSE
   hierarchical_info <- NULL
 
-  if (is_hierarchical) {
-    # Validate hierarchical data structure
-    validate_hierarchical_data(data, levels, hierarchy, link_vars)
+  if (is_list_data) {
+    # Get all variables from equations for auto-detection
+    eq_vars <- unique(unlist(lapply(equations, all.vars)))
 
-    # Try to infer hierarchy from random effects if not provided
-    if (is.null(hierarchy)) {
-      hierarchy <- parse_hierarchy_from_random(random, data)
+    # Auto-detect if levels not provided
+    if (is.null(levels)) {
+      auto_result <- auto_detect_hierarchical(data, eq_vars, quiet = quiet)
+      levels <- auto_result$levels
+
+      # Use auto-detected hierarchy/link_vars if not explicitly provided
       if (is.null(hierarchy)) {
-        stop(
-          "Hierarchical data detected but 'hierarchy' not specified. ",
-          "Provide either:\n",
-          "  1. 'hierarchy' argument (e.g., \"site_year > individual\"), or\n",
-          "  2. Nested random effects (e.g., ~(1|site/individual))"
-        )
+        hierarchy <- auto_result$hierarchy
+      }
+      if (is.null(link_vars)) {
+        link_vars <- auto_result$link_vars
       }
     }
 
-    # Store hierarchical info for later use
-    hierarchical_info <- list(
-      data = data,
-      levels = levels,
-      hierarchy = hierarchy,
-      link_vars = link_vars
-    )
+    # Now validate (with either provided or auto-detected values)
+    if (!is.null(levels) && length(levels) > 0) {
+      is_hierarchical <- TRUE
+      validate_hierarchical_data(data, levels, hierarchy, link_vars)
+      # Try to infer hierarchy from random effects if still not set
+      if (is.null(hierarchy)) {
+        hierarchy <- parse_hierarchy_from_random(random, data)
+        if (is.null(hierarchy)) {
+          stop(
+            "Hierarchical data detected but 'hierarchy' not specified. ",
+            "Provide either:\n",
+            "  1. 'hierarchy' argument (e.g., \"site_year > individual\"), or\n",
+            "  2. Nested random effects (e.g., ~(1|site/individual))"
+          )
+        }
+      }
+      # Store hierarchical info for later use
+      hierarchical_info <- list(
+        data = data,
+        levels = levels,
+        hierarchy = hierarchy,
+        link_vars = link_vars
+      )
 
-    if (!quiet) {
-      message("Hierarchical data structure detected: ", hierarchy)
+      if (!quiet) {
+        message("Hierarchical data structure detected: ", hierarchy)
+      }
     }
   } else {
     # Single-level data - ensure levels/hierarchy not mistakenly provided
@@ -401,26 +516,63 @@ because <- function(
       eq_vars <- setdiff(eq_vars, latent)
     }
 
-    # Get assembled dataset with all needed variables
-    data <- get_data_for_variables(
-      eq_vars,
-      hierarchical_info$data,
-      hierarchical_info$levels,
-      hierarchical_info$hierarchy,
-      hierarchical_info$link_vars
-    )
+    # Ensure base variables for polynomials are included (JAGS computes Age^2 from Age)
+    # AND derived variables are excluded (so they aren't passed as data)
+    if (!is.null(all_poly_terms)) {
+      base_poly_vars <- sapply(all_poly_terms, function(x) x$base_var)
+      derived_poly_vars <- sapply(all_poly_terms, function(x) x$internal_name)
 
-    # Update original_data for later use
-    original_data <- data
+      eq_vars <- unique(c(eq_vars, base_poly_vars))
+      eq_vars <- setdiff(eq_vars, derived_poly_vars)
+    }
 
-    if (!quiet) {
-      message(
-        "Assembled hierarchical data: ",
-        nrow(data),
-        " observations, ",
-        ncol(data),
-        " variables"
+    if (optimise && is_hierarchical) {
+      # NEW PATH: Fully Hierarchical (Separate Loops)
+      # Do NOT flatten. Prepare separate vectors and indices.
+
+      prep_res <- prepare_hierarchical_jags_data(hierarchical_info, eq_vars)
+      data <- prep_res$data_list
+
+      # Add sample sizes to data list
+      data <- c(data, prep_res$n_vec)
+
+      if (!quiet) {
+        message(
+          "Prepared hierarchical data for JAGS: ",
+          paste(
+            names(prep_res$n_vec),
+            unlist(prep_res$n_vec),
+            sep = "=",
+            collapse = ", "
+          )
+        )
+      }
+
+      # original_data remains the list of dataframes for safety
+      original_data <- hierarchical_info$data
+    } else {
+      # OLD PATH: Flatten everything (or if not optimised?)
+      # Get assembled dataset with all needed variables
+      data <- get_data_for_variables(
+        eq_vars,
+        hierarchical_info$data,
+        hierarchical_info$levels,
+        hierarchical_info$hierarchy,
+        hierarchical_info$link_vars
       )
+
+      # Update original_data for later use
+      original_data <- data
+
+      if (!quiet) {
+        message(
+          "Assembled hierarchical data (flattened): ",
+          nrow(data),
+          " observations, ",
+          ncol(data),
+          " variables"
+        )
+      }
     }
   }
 
@@ -496,7 +648,20 @@ because <- function(
         }
 
         # Check for missing variables that were expected to be formatted
+        # Filter variability/family to variables actually in current equations
+        # to avoid 'missing reps' errors for irrelevant variables in sub-models (e.g. d-sep tests)
+        all_vars <- unique(c(
+          names(equations),
+          unlist(lapply(equations, all.vars))
+        ))
+        # Include versions with p_ removed for variability/dist matching
+        clean_vars <- sub("^p_", "", all_vars)
+        relevant_vars <- unique(c(all_vars, clean_vars))
+
         missing_reps <- setdiff(reps_vars, names(formatted_list))
+        # Only error if the missing variable is actually relevant to our equations
+        missing_reps <- intersect(missing_reps, relevant_vars)
+
         if (length(missing_reps) > 0) {
           stop(paste(
             "The following variables were identified for 'reps' processing (from equations) but were NOT found in the data:",
@@ -817,7 +982,10 @@ because <- function(
     }
   }
 
-  data$ID <- diag(N)
+  # Only add N x N identity matrix if needed for phylogenetic/latent models
+  if (length(structures) > 0 || (!is.null(latent) && length(latent) > 0)) {
+    data$ID <- diag(N)
+  }
   if (
     !is.null(latent_method) &&
       latent_method == "correlations" &&
@@ -829,33 +997,33 @@ because <- function(
   data$N <- N
 
   # Handle multinomial and ordinal data
-  if (!is.null(distribution)) {
-    # If distribution is provided but unnamed, try to auto-assign if there is only one response
-    if (is.null(names(distribution))) {
+  if (!is.null(family)) {
+    # If family is provided but unnamed, try to auto-assign if there is only one response
+    if (is.null(names(family))) {
       response_vars <- unique(sapply(equations, function(eq) all.vars(eq[[2]])))
-      if (length(distribution) == 1 && length(response_vars) == 1) {
-        names(distribution) <- response_vars
+      if (length(family) == 1 && length(response_vars) == 1) {
+        names(family) <- response_vars
         message(sprintf(
-          "Auto-assigned distribution '%s' to response variable '%s'",
-          distribution,
+          "Auto-assigned family '%s' to response variable '%s'",
+          family,
           response_vars
         ))
-      } else if (length(distribution) == length(response_vars)) {
+      } else if (length(family) == length(response_vars)) {
         # Riskier, but if lengths match, assume order
         # Better to warn and ask for names.
         warning(
-          "Argument 'distribution' is unnamed. Please provide a named vector like c(Response = 'binomial'). Assuming defaults (Gaussian) for safety."
+          "Argument 'family' is unnamed. Please provide a named vector like c(Response = 'binomial'). Assuming defaults (Gaussian) for safety."
         )
       } else {
         warning(
-          "Argument 'distribution' is unnamed and length does not match response variables. Ignoring."
+          "Argument 'family' is unnamed and length does not match response variables. Ignoring."
         )
       }
     }
 
     # Auto-fix residual variance for non-Gaussian distributions if not specified
-    for (var in names(distribution)) {
-      dist <- distribution[[var]]
+    for (var in names(family)) {
+      dist <- family[[var]]
       if (dist %in% c("binomial", "multinomial", "ordinal")) {
         should_fix <- FALSE
         if (is.null(fix_residual_variance)) {
@@ -888,11 +1056,11 @@ because <- function(
       }
     }
 
-    for (var in names(distribution)) {
-      if (distribution[[var]] %in% c("multinomial", "ordinal")) {
+    for (var in names(family)) {
+      if (family[[var]] %in% c("multinomial", "ordinal")) {
         if (!var %in% names(data)) {
           stop(paste(
-            distribution[[var]],
+            family[[var]],
             "variable",
             var,
             "not found in data."
@@ -910,7 +1078,7 @@ because <- function(
           data[[var]] <- as.integer(val)
         }
 
-        if (distribution[[var]] == "multinomial" && K < 3) {
+        if (family[[var]] == "multinomial" && K < 3) {
           warning(paste(
             "Multinomial variable",
             var,
@@ -918,7 +1086,7 @@ because <- function(
           ))
         }
 
-        if (distribution[[var]] == "ordinal" && K < 3) {
+        if (family[[var]] == "ordinal" && K < 3) {
           warning(paste(
             "Ordinal variable",
             var,
@@ -935,7 +1103,7 @@ because <- function(
               "Auto-detected K_%s = %d from %s variable '%s'",
               var,
               K,
-              distribution[[var]],
+              family[[var]],
               var
             ))
           }
@@ -944,9 +1112,9 @@ because <- function(
     }
   }
 
-  if (!is.null(distribution)) {
-    for (var_name in names(distribution)) {
-      dist_type <- distribution[[var_name]]
+  if (!is.null(family)) {
+    for (var_name in names(family)) {
+      dist_type <- family[[var_name]]
       if (dist_type %in% c("zip", "zinb")) {
         zeros_name <- paste0("zeros_", var_name)
         if (is.null(data[[zeros_name]])) {
@@ -1020,6 +1188,22 @@ because <- function(
     # Skip if already in manual variability specification
     if (!is.null(variability) && var %in% c(names(variability), variability)) {
       next
+    }
+
+    # Priority 0: Occupancy Model -> Force "reps" (matrix/long format required)
+    if (
+      !is.null(family) &&
+        var %in% names(family) &&
+        family[[var]] == "occupancy"
+    ) {
+      auto_variability[[var]] <- "reps"
+      if (!quiet) {
+        message(sprintf(
+          "Auto-detected: '%s' is an occupancy variable -> using 'reps' mode for detection history",
+          var
+        ))
+      }
+      next # Skip further checks
     }
 
     # Check for SE pattern (X_se)
@@ -1171,10 +1355,63 @@ because <- function(
 
         # Check if obs column exists
         if (!obs_col %in% names(data)) {
-          if (var_name %in% names(data) && is.matrix(data[[var_name]])) {
-            # Rename var to var_obs
-            data[[obs_col]] <- data[[var_name]]
+          # Also allow data.frame (as user detection histories often come as DF)
+          # Case 1: Matrix or Data Frame (Single Species or explicit multi-dimensional)
+          if (
+            var_name %in%
+              names(data) &&
+              (is.matrix(data[[var_name]]) || is.data.frame(data[[var_name]]))
+          ) {
+            data[[obs_col]] <- as.matrix(data[[var_name]])
             data[[var_name]] <- NULL
+          } else if (
+            var_name %in%
+              names(data) &&
+              is.list(data[[var_name]]) &&
+              !is.data.frame(data[[var_name]])
+          ) {
+            # Case 2: List of Matrices (Multispecies Bundle)
+            # Verify elements are matrices/dfs
+            elem_valid <- all(sapply(data[[var_name]], function(x) {
+              is.matrix(x) || is.data.frame(x)
+            }))
+            if (!elem_valid) {
+              stop(
+                "Elements of '",
+                var_name,
+                "' list must be matrices or data frames."
+              )
+            }
+
+            # Convert to 3D Array [Sites, Reps, Species]
+            # Assumption: All matrices have same dimensions
+            tryCatch(
+              {
+                # Convert all to matrices first
+                mat_list <- lapply(data[[var_name]], as.matrix)
+                arr_3d <- simplify2array(mat_list)
+                data[[obs_col]] <- arr_3d
+                data[[var_name]] <- NULL
+
+                if (!quiet) {
+                  message(
+                    "Converted list of matrices '",
+                    var_name,
+                    "' to 3D array (",
+                    paste(dim(arr_3d), collapse = "x"),
+                    ")."
+                  )
+                }
+              },
+              error = function(e) {
+                stop(
+                  "Failed to convert list '",
+                  var_name,
+                  "' to 3D array. Ensure all matrices have identical dimensions. Error: ",
+                  e$message
+                )
+              }
+            )
           } else {
             stop(paste(
               "Variable",
@@ -1283,6 +1520,7 @@ because <- function(
       } else {
         NULL
       },
+      family = family,
       quiet = !dsep
     )
 
@@ -1361,6 +1599,33 @@ because <- function(
         }
       }
 
+      # Filter variability/distribution to only variables in the test equation
+      # This prevents 'missing reps' errors for variables not in the current test (e.g. Y in Habitat~Wind)
+      test_eq_vars <- all.vars(test_eq)
+      # Include p_Y for occupancy matching if p_Y is in equation
+      test_eq_vars_clean <- unique(c(
+        test_eq_vars,
+        sub("^p_", "", test_eq_vars)
+      ))
+
+      sub_variability <- if (!is.null(variability)) {
+        variability[names(variability) %in% test_eq_vars_clean]
+      } else {
+        NULL
+      }
+      sub_family <- if (!is.null(family)) {
+        family[names(family) %in% test_eq_vars_clean]
+      } else {
+        NULL
+      }
+
+      if (length(sub_variability) == 0) {
+        sub_variability <- NULL
+      }
+      if (length(sub_family) == 0) {
+        sub_family <- NULL
+      }
+
       # Run model for this single test
       # We pass dsep=FALSE to treat it as a standard model run
       # We pass parallel=FALSE to avoid nested parallelism
@@ -1376,10 +1641,10 @@ because <- function(
         DIC = FALSE, # DIC not needed for d-sep tests
         WAIC = FALSE,
         n.adapt = n.adapt,
-        quiet = FALSE, # Suppress output for individual runs (temporarily ENABLED)
+        quiet = quiet, # Restore user quiet setting for d-sep sub-runs
         dsep = FALSE,
-        variability = variability,
-        distribution = distribution,
+        variability = sub_variability,
+        family = sub_family,
         fix_residual_variance = fix_residual_variance,
         latent = NULL, # D-sep tests are on observed variables only
         latent_method = latent_method,
@@ -1387,7 +1652,10 @@ because <- function(
         n.cores = 1,
         cl = NULL,
         ic_recompile = ic_recompile,
-        random = random # Pass global random effects to d-sep tests
+        random = random, # Pass global random effects to d-sep tests
+        levels = levels, # Pass hierarchical info
+        hierarchy = hierarchy,
+        link_vars = link_vars
       )
 
       # Extract samples, map, and model
@@ -1427,7 +1695,7 @@ because <- function(
           "n.thin",
           "n.adapt",
           "variability",
-          "distribution",
+          "family",
           "latent",
           "latent_method",
           "ic_recompile"
@@ -1668,6 +1936,7 @@ because <- function(
           latent = latent,
           random_terms = random_terms,
           hierarchical_info = hierarchical_info,
+          family = family,
           quiet = !dsep
         )
         induced_cors <- dsep_result$correlations
@@ -1843,7 +2112,7 @@ because <- function(
     equations = equations,
     multi.tree = is_multiple,
     variability = variability_list,
-    distribution = distribution,
+    family = family,
     vars_with_na = response_vars_with_na,
     induced_correlations = induced_cors,
     latent = latent,
@@ -1858,7 +2127,12 @@ because <- function(
     } else {
       NULL
     },
-    priors = priors
+    priors = priors,
+    hierarchical_info = if (is_hierarchical && optimise) {
+      hierarchical_info
+    } else {
+      NULL
+    }
   )
 
   model_string <- model_output$model
@@ -1920,7 +2194,37 @@ because <- function(
       out <- grep("(<-|~)", out, value = TRUE)
       # Extract parameter name, ignoring array indices like [k]
       # This regex captures only the base variable name
-      gsub("^\\s*(\\w+)(?:\\[.*\\])?\\s*(<-|~).*", "\\1", out)
+      # Handle standard assignment: var <- ... or var ~ ...
+      # AND assignment inside link function: logit(var) <- ...
+      # Regex:
+      # 1. Optional link function: (?:logit|log|cloglog|probit)?
+      # 2. Optional opening paren: \(?
+      # 3. Capture Group 1 (Variable Name): (\w+)
+      # 4. Optional array index: (?:\[.*\])?
+      # 5. Optional closing paren: \)?
+      # 6. Assignment op: \s*(<-|~)
+
+      # We extract the first capture group.
+
+      # Clean line to just the LHS part implies
+      matches <- regmatches(
+        out,
+        regexec(
+          "(?:logit|log|cloglog|probit)?\\(?\\s*(\\w+)(?:\\[.*\\])?\\)?\\s*(?:<-|~)",
+          out
+        )
+      )
+
+      # Create vector of matches
+      res <- sapply(matches, function(m) {
+        if (length(m) >= 2) m[2] else NA
+      })
+
+      # Ensure it's a character vector (remove NAs and unlist if needed)
+      if (length(res) == 0) {
+        return(character(0))
+      }
+      return(as.character(na.omit(res)))
     }
 
     # Extract all parameters
@@ -1931,7 +2235,9 @@ because <- function(
       extract_names("^\\s*tau"),
       extract_names("^\\s*rho"),
       extract_names("^\\s*sigma"),
-      extract_names("^\\s*psi"),
+      extract_names("^\\s*z_"),
+      extract_names("(^|\\W)p_"),
+      extract_names("(^|\\W)psi"),
       extract_names("^\\s*r_"),
       extract_names("^\\s*cutpoint")
     ))
@@ -1972,7 +2278,9 @@ because <- function(
           grepl("^rho", all_params) | # Induced correlations
           grepl("^sigma", all_params) | # Variance components
           grepl("^rho", all_params) | # Induced correlations
-          grepl("^psi", all_params) | # Zero-inflation probability
+          grepl("^psi", all_params) | # Zero-inflation or occupancy probability
+          grepl("^p_", all_params) | # Detection probability
+          grepl("^z_", all_params) | # Latent state
           grepl("^r_", all_params) | # Negative Binomial size
           grepl("^cutpoint", all_params) | # Ordinal cutpoints
           (grepl("^lambda", all_params) &
@@ -1991,7 +2299,19 @@ because <- function(
 
       # Only add them if they are in the model (obviously)
       if (length(response_vars_all) > 0) {
-        monitor <- unique(c(monitor, response_vars_all))
+        # For occupancy models, the response itself (Y) is NOT a node,
+        # but z_Y is. Map accordingly.
+        adj_response_vars <- sapply(response_vars_all, function(v) {
+          if (
+            !is.null(family) &&
+              !is.null(family[[v]]) &&
+              family[[v]] == "occupancy"
+          ) {
+            return(paste0("z_", v))
+          }
+          return(v)
+        })
+        monitor <- unique(c(monitor, adj_response_vars))
       }
     }
   }
@@ -2040,6 +2360,21 @@ because <- function(
     }
   }
 
+  # Automatic inits for occupancy models (z must be 1 where observations are 1)
+  occupancy_inits <- list()
+  if (!is.null(family)) {
+    for (var_name in names(family)) {
+      if (family[[var_name]] == "occupancy") {
+        # Robust initialization: z=1 everywhere
+        # This is compatible with all data (y=0 or y=1) and ensures correct length
+        if ("N" %in% names(data)) {
+          z_init <- rep(1, data$N)
+          occupancy_inits[[paste0("z_", var_name)]] <- z_init
+        }
+      }
+    }
+  }
+
   # Run MCMC chains (parallel or sequential)
   if (parallel && n.cores > 1 && n.chains > 1) {
     # Parallel execution
@@ -2076,9 +2411,12 @@ because <- function(
 
       # Compile model for this chain
       # Explicitly set RNG seed to ensure chains are different
-      inits_list <- list(
-        .RNG.name = "base::Wichmann-Hill",
-        .RNG.seed = 12345 + chain_id
+      inits_list <- c(
+        occupancy_inits,
+        list(
+          .RNG.name = "base::Wichmann-Hill",
+          .RNG.seed = 12345 + chain_id
+        )
       )
 
       model <- rjags::jags.model(
@@ -2159,9 +2497,33 @@ because <- function(
 
     model <- tryCatch(
       {
+        # DEBUG: Print model and data names
+        if (verbose) {
+          cat("\n--- JAGS MODEL STRING ---\n", model_string, "\n")
+        }
+        if (verbose) {
+          cat(
+            "\n--- DATA LIST NAMES ---\n",
+            paste(names(data), collapse = ", "),
+            "\n"
+          )
+        }
+
+        # Combine with occupancy inits
+        inits_list <- lapply(1:n.chains, function(i) {
+          c(
+            occupancy_inits,
+            list(
+              .RNG.name = "base::Wichmann-Hill",
+              .RNG.seed = 12345 + i
+            )
+          )
+        })
+
         rjags::jags.model(
           model_file,
           data = data,
+          inits = inits_list,
           n.chains = n.chains,
           n.adapt = n.adapt,
           quiet = quiet
@@ -2329,7 +2691,10 @@ because <- function(
       random = random,
       structure = structure,
       data = original_data, # Store original data too for safety
-      latent = latent
+      latent = latent,
+      distribution = distribution,
+      family = family,
+      variability = variability
     ),
     samples = samples,
     summary = sum_stats,
@@ -2339,7 +2704,12 @@ because <- function(
     dsep_tests = dsep_tests,
     dsep_results = dsep_results,
     parameter_map = parameter_map,
-    induced_correlations = induced_cors
+    induced_correlations = induced_cors,
+    stacked_data = if (exists("stack_res") && stack_res$is_stacked) {
+      stack_res$data
+    } else {
+      NULL
+    }
   )
 
   # Check if we can store species/unit identifiers for easy reference
@@ -2442,6 +2812,8 @@ because <- function(
 #' @keywords internal
 preprocess_categorical_vars <- function(
   data,
+  target_vars = NULL,
+  dummy_vars = NULL,
   exclude_cols = NULL,
   quiet = FALSE
 ) {
@@ -2458,8 +2830,10 @@ preprocess_categorical_vars <- function(
       if (is.data.frame(data[[i]])) {
         processed <- preprocess_categorical_vars(
           data[[i]],
+          target_vars = target_vars,
+          dummy_vars = dummy_vars,
           exclude_cols = exclude_cols,
-          quiet = quiet
+          quiet = TRUE # Suppress output for recursive calls to avoid noise
         )
         data[[i]] <- processed
         # Collect categorical vars metadata
@@ -2483,14 +2857,28 @@ preprocess_categorical_vars <- function(
     return(data)
   }
 
-  char_cols <- sapply(data, function(x) is.character(x) || is.factor(x))
+  # Determine which columns to check
+  check_cols <- if (!is.null(target_vars)) {
+    intersect(names(data), target_vars)
+  } else {
+    names(data)
+  }
+
+  if (length(check_cols) == 0) {
+    return(data)
+  }
+
+  char_cols <- sapply(data[check_cols], function(x) {
+    is.character(x) || is.factor(x)
+  })
+
   if (any(char_cols)) {
     categorical_vars <- list()
     if (!is.null(attr(data, "categorical_vars"))) {
       categorical_vars <- attr(data, "categorical_vars")
     }
 
-    col_names <- names(data)[char_cols]
+    col_names <- check_cols[char_cols]
     for (col in col_names) {
       if (!is.null(exclude_cols) && col %in% exclude_cols) {
         next
@@ -2518,21 +2906,36 @@ preprocess_categorical_vars <- function(
         # Convert to integer codes for JAGS
         data[[col]] <- as.integer(f_vals)
 
-        # Generate Dummy Variables explicitly
+        # Generate Dummy Variables explicitly ONLY if requested
         # This is required so JAGS can find 'sex_m' etc.
-        for (k in 2:length(levels)) {
-          lev_name <- levels[k]
-          dummy_col_name <- paste0(col, "_", lev_name)
-          # Create binary column
-          data[[dummy_col_name]] <- as.numeric(data[[col]] == k)
+        # We only do this for variables used as fixed predictors to save memory.
+        if (is.null(dummy_vars) || col %in% dummy_vars) {
+          if (!quiet && length(levels) > 500) {
+            message(sprintf(
+              "Generating %d dummy variables for '%s'... this may take a moment.",
+              length(levels) - 1,
+              col
+            ))
+          }
+          for (k in 2:length(levels)) {
+            lev_name <- levels[k]
+            dummy_col_name <- paste0(col, "_", lev_name)
+            # Create binary column
+            data[[dummy_col_name]] <- as.numeric(data[[col]] == k)
+          }
         }
 
         if (!quiet) {
           message(sprintf(
-            "Converted categorical '%s' to integers (1..%d). Reference: '%s'",
+            "Converted categorical '%s' to integers (1..%d). Reference: '%s'%s",
             col,
             length(levels),
-            levels[1]
+            levels[1],
+            if (is.null(dummy_vars) || col %in% dummy_vars) {
+              ""
+            } else {
+              " (Dummies skipped)"
+            }
           ))
         }
       }

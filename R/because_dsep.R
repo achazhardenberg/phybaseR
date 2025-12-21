@@ -69,6 +69,7 @@ because_dsep <- function(
   hierarchical_info = NULL,
   poly_terms = NULL,
   categorical_vars = NULL,
+  family = NULL,
   quiet = FALSE
 ) {
   # If no latents, use standard DAG d-separation
@@ -79,6 +80,7 @@ because_dsep <- function(
       hierarchical_info = hierarchical_info,
       poly_terms = poly_terms,
       categorical_vars = categorical_vars,
+      family = family,
       quiet = quiet
     ))
   }
@@ -91,6 +93,7 @@ because_dsep <- function(
     hierarchical_info = hierarchical_info,
     poly_terms = poly_terms,
     categorical_vars = categorical_vars,
+    family = family,
     quiet = quiet
   ))
 }
@@ -102,6 +105,7 @@ dsep_standard <- function(
   hierarchical_info = NULL,
   poly_terms = NULL,
   categorical_vars = NULL,
+  family = NULL,
   quiet = FALSE
 ) {
   # Extract grouping variables from random terms to exclude from DAG
@@ -225,8 +229,30 @@ dsep_with_latents <- function(
   hierarchical_info = NULL,
   poly_terms = NULL,
   categorical_vars = NULL,
+  family = NULL,
   quiet = FALSE
 ) {
+  # --- Occupancy/Measurement Error Injection ---
+  # To make d-separation useful for occupancy models, we must include the
+  # observation process in the DAG. Otherwise, Y and p_Y (latents) are pruned,
+  # leaving only tests among covariates.
+  # We inject Y_obs <- Y + p_Y for each occupancy variable.
+  augmented_equations <- equations
+  if (!is.null(family)) {
+    occ_vars <- names(family)[family == "occupancy"]
+    for (ov in occ_vars) {
+      # Check if p_ov exists in equations or latent
+      p_name <- paste0("p_", ov)
+      if (p_name %in% latent) {
+        # Create formula: ov_obs ~ ov + p_ov
+        # Note: ov_obs is the observed data name used in DAG
+        obs_name <- paste0(ov, "_obs")
+        f_obs <- stats::as.formula(paste(obs_name, "~", ov, "+", p_name))
+        augmented_equations <- c(augmented_equations, list(f_obs))
+      }
+    }
+  }
+
   # Extract grouping variables from random terms to exclude from DAG
   grouping_vars <- NULL
   if (length(random_terms) > 0) {
@@ -251,7 +277,7 @@ dsep_with_latents <- function(
   exclude_vars <- c(grouping_vars, poly_internal_vars)
 
   # Convert equations to ggm DAG format (excluding grouping & polynomial variables)
-  dag <- equations_to_dag(equations, exclude_vars = exclude_vars)
+  dag <- equations_to_dag(augmented_equations, exclude_vars = exclude_vars)
 
   # Always suppress DAG.to.MAG output - we'll print our own filtered version
   invisible(capture.output(
