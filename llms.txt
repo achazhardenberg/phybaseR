@@ -93,6 +93,8 @@ Sampler) installed on your machine.
   : Calculate WAIC with Standard Errors for a Because Model
 - [`extract_imputed()`](https://because-pkg.github.io/because/reference/extract_imputed.md)
   : Extract Imputed Values for Missing Data
+- [`extract_latent()`](https://because-pkg.github.io/because/reference/extract_latent.md)
+  : Extract Latent Parameters from a because Model
 - [`plot_dag()`](https://because-pkg.github.io/because/reference/plot_dag.md)
   : Plot DAG from Equations or Fitted Model
 - [`plot_posterior()`](https://because-pkg.github.io/because/reference/plot_posterior.md)

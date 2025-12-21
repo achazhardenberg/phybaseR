@@ -65,13 +65,15 @@ fit <- because(
 )
 #> Converted data.frame to list with 5 variables: LS, BM, NL, RS, DD
 #> Standardizing tree (max_bt: 3.31 -> 1.0)
+#> Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :
+#> Unused variable "ID" in data
 #> Compiling model graph
 #>    Resolving undeclared variables
 #>    Allocating nodes
 #> Graph information:
 #>    Observed stochastic nodes: 300
 #>    Unobserved stochastic nodes: 16
-#>    Total graph size: 22546
+#>    Total graph size: 12546
 #> 
 #> Initializing model
 ```
@@ -93,10 +95,10 @@ credible intervals for the Total, Direct, and Total Indirect effects.
 
 ``` r
 med_results$summary
-#>                        Type      Mean       SD    Lower     Upper
-#> 2.5%           Total Effect 0.2504835 0.054578 0.160598 0.3693712
-#> 2.5%1         Direct Effect 0.0000000 0.000000 0.000000 0.0000000
-#> 2.5%2 Total Indirect Effect 0.2504835 0.054578 0.160598 0.3693712
+#>                        Type      Mean         SD     Lower     Upper
+#> 2.5%           Total Effect 0.2535185 0.05278859 0.1679066 0.3619408
+#> 2.5%1         Direct Effect 0.0000000 0.00000000 0.0000000 0.0000000
+#> 2.5%2 Total Indirect Effect 0.2535185 0.05278859 0.1679066 0.3619408
 ```
 
 **Interpretation:** \* **Total Effect**: The overall causal impact of BM
@@ -113,8 +115,8 @@ If there were multiple indirect paths (e.g., `BM -> LS -> NL -> RS`),
 
 ``` r
 med_results$paths
-#>                Path     Type      Mean       SD    Lower     Upper
-#> 2.5% BM -> NL -> DD Indirect 0.2504835 0.054578 0.160598 0.3693712
+#>                Path     Type      Mean         SD     Lower     Upper
+#> 2.5% BM -> NL -> DD Indirect 0.2535185 0.05278859 0.1679066 0.3619408
 ```
 
 This table shows exactly which causal pathways contribute to the

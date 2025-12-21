@@ -6,7 +6,13 @@ dummies
 ## Usage
 
 ``` r
-preprocess_categorical_vars(data, quiet = FALSE)
+preprocess_categorical_vars(
+  data,
+  target_vars = NULL,
+  dummy_vars = NULL,
+  exclude_cols = NULL,
+  quiet = FALSE
+)
 ```
 
 ## Arguments

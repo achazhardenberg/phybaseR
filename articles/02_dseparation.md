@@ -297,6 +297,13 @@ expected. Note that as we standardized all variables prior to analysis,
 the path coefficients can be interpreted as standardized effects (ie
 their relative strength can be compared directly).
 
+We can now use the function `plot_dag` to plot the DAG of the fitted
+model with the estimated path coefficients:
+
+``` r
+plot_dag(fit_storks_final)
+```
+
 ### A note on the notation used for the parameter names in the summary output
 
 In the summary output above, the parameter names follow a specific

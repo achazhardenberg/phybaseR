@@ -1,6 +1,6 @@
 # Run a Bayesian Structural Equation Model
 
-Run a Bayesian Structural Equation Model
+This function fits a Bayesian ...
 
 ## Usage
 
@@ -20,8 +20,10 @@ because(
   WAIC = FALSE,
   n.adapt = n.iter/5,
   quiet = FALSE,
+  verbose = FALSE,
   dsep = FALSE,
   variability = NULL,
+  family = NULL,
   distribution = NULL,
   latent = NULL,
   latent_method = c("correlations", "explicit"),
@@ -45,17 +47,6 @@ because(
 - equations:
 
   A list of model formulas describing the structural equation model.
-
-- data:
-
-  Data for the model. Accepts:
-
-  - `data.frame`: A data frame with variables as columns. Variables
-    needed for the model are automatically extracted from the equations.
-    Extra columns are ignored.
-
-  - `list`: A named list where each element is a vector of values
-    (traditional format for backward compatibility).
 
 - id_col:
 
@@ -152,6 +143,11 @@ because(
 
   Logical; suppress JAGS output (default = FALSE).
 
+- verbose:
+
+  Logical; if `TRUE`, print generated JAGS model code and data names
+  (default = FALSE).
+
 - dsep:
 
   Logical; if `TRUE`, monitor only the first beta in each structural
@@ -186,9 +182,9 @@ because(
 
   - `X_obs` or matrix column -\> type="reps"
 
-- distribution:
+- family:
 
-  Optional named character vector specifying the distribution for
+  Optional named character vector specifying the family/distribution for
   response variables. Default is "gaussian" for all variables. Supported
   values:
 
@@ -211,9 +207,13 @@ because(
     probability `psi` and overdispersed counts with mean `mu` and size
     `r`.
 
+  - "occupancy": Single-season site-occupancy model. State process:
+    `z ~ Bernoulli(psi)`. Observation process: `y ~ Bernoulli(z * p)`.
+    Requires data to be a detection history matrix (sites x visits).
+
   The model will estimate a zero-inflation probability parameter
   `psi_Response` for these distributions. Example:
-  `distribution = c(Gregarious = "binomial")`.
+  `family = c(Gregarious = "binomial")`.
 
 - latent:
 

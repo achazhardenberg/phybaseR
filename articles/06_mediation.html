@@ -139,13 +139,15 @@ mediated by <strong>Nose Length (NL)</strong>.</p>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Converted data.frame to list with 5 variables: LS, BM, NL, RS, DD</span></span>
 <span><span class="co">#&gt; Standardizing tree (max_bt: 3.31 -&gt; 1.0)</span></span>
+<span><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :</span></span>
+<span><span class="co">#&gt; Unused variable "ID" in data</span></span>
 <span><span class="co">#&gt; Compiling model graph</span></span>
 <span><span class="co">#&gt;    Resolving undeclared variables</span></span>
 <span><span class="co">#&gt;    Allocating nodes</span></span>
 <span><span class="co">#&gt; Graph information:</span></span>
 <span><span class="co">#&gt;    Observed stochastic nodes: 300</span></span>
 <span><span class="co">#&gt;    Unobserved stochastic nodes: 16</span></span>
-<span><span class="co">#&gt;    Total graph size: 22546</span></span>
+<span><span class="co">#&gt;    Total graph size: 12546</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Initializing model</span></span></code></pre></div>
 </div>
@@ -165,10 +167,10 @@ and credible intervals for the Total, Direct, and Total Indirect
 effects.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">med_results</span><span class="op">$</span><span class="va">summary</span></span>
-<span><span class="co">#&gt;                        Type      Mean       SD    Lower     Upper</span></span>
-<span><span class="co">#&gt; 2.5%           Total Effect 0.2504835 0.054578 0.160598 0.3693712</span></span>
-<span><span class="co">#&gt; 2.5%1         Direct Effect 0.0000000 0.000000 0.000000 0.0000000</span></span>
-<span><span class="co">#&gt; 2.5%2 Total Indirect Effect 0.2504835 0.054578 0.160598 0.3693712</span></span></code></pre></div>
+<span><span class="co">#&gt;                        Type      Mean         SD     Lower     Upper</span></span>
+<span><span class="co">#&gt; 2.5%           Total Effect 0.2535185 0.05278859 0.1679066 0.3619408</span></span>
+<span><span class="co">#&gt; 2.5%1         Direct Effect 0.0000000 0.00000000 0.0000000 0.0000000</span></span>
+<span><span class="co">#&gt; 2.5%2 Total Indirect Effect 0.2535185 0.05278859 0.1679066 0.3619408</span></span></code></pre></div>
 <p><strong>Interpretation:</strong> * <strong>Total Effect</strong>: The
 overall causal impact of BM on DD. * <strong>Direct Effect</strong>: The
 path <code>BM -&gt; DD</code>. * <strong>Indirect Effect</strong>: The
@@ -185,8 +187,8 @@ credible interval excludes zero, we have evidence of mediation.</p>
 <code>because_mediation</code> would list each one separately.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">med_results</span><span class="op">$</span><span class="va">paths</span></span>
-<span><span class="co">#&gt;                Path     Type      Mean       SD    Lower     Upper</span></span>
-<span><span class="co">#&gt; 2.5% BM -&gt; NL -&gt; DD Indirect 0.2504835 0.054578 0.160598 0.3693712</span></span></code></pre></div>
+<span><span class="co">#&gt;                Path     Type      Mean         SD     Lower     Upper</span></span>
+<span><span class="co">#&gt; 2.5% BM -&gt; NL -&gt; DD Indirect 0.2535185 0.05278859 0.1679066 0.3619408</span></span></code></pre></div>
 <p>This table shows exactly which causal pathways contribute to the
 relationship.</p>
 </div>

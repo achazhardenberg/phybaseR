@@ -66,23 +66,23 @@ fit_default <- because(
 #> Graph information:
 #>    Observed stochastic nodes: 30
 #>    Unobserved stochastic nodes: 3
-#>    Total graph size: 1059
+#>    Total graph size: 159
 #> 
 #> Initializing model
 
 summary(fit_default)
 #>                                  Mean    SD Naive SE Time-series SE  2.5%   50%
-#> alphaGrowth_g_day               9.776 0.390    0.007          0.007 8.973 9.778
-#> beta_Growth_g_day_Temp_Centered 0.432 0.062    0.001          0.001 0.305 0.433
-#> sigmaGrowth_g_day               2.091 0.283    0.005          0.005 1.607 2.064
-#>                                  97.5% Rhat n.eff
-#> alphaGrowth_g_day               10.534    1  3120
-#> beta_Growth_g_day_Temp_Centered  0.554    1  3016
-#> sigmaGrowth_g_day                2.743    1  3102
+#> alpha_Growth_g_day              9.770 0.387    0.007          0.007 9.008 9.772
+#> beta_Growth_g_day_Temp_Centered 0.432 0.062    0.001          0.001 0.312 0.430
+#> sigmaGrowth_g_day               2.083 0.275    0.005          0.005 1.628 2.060
+#>                                  97.5%  Rhat n.eff
+#> alpha_Growth_g_day              10.518 1.001  3165
+#> beta_Growth_g_day_Temp_Centered  0.550 1.000  3000
+#> sigmaGrowth_g_day                2.703 1.000  3000
 #> 
 #> DIC:
 #> Mean deviance:  130.4 
-#> penalty 3.187 
+#> penalty 3.165 
 #> Penalized deviance: 133.6
 ```
 
@@ -126,24 +126,24 @@ fit_custom <- because(
 #> Graph information:
 #>    Observed stochastic nodes: 30
 #>    Unobserved stochastic nodes: 3
-#>    Total graph size: 1061
+#>    Total graph size: 161
 #> 
 #> Initializing model
 
 summary(fit_custom)
 #>                                  Mean    SD Naive SE Time-series SE  2.5%   50%
-#> alphaGrowth_g_day               9.985 0.097    0.002          0.002 9.794 9.984
-#> beta_Growth_g_day_Temp_Centered 0.472 0.038    0.001          0.001 0.397 0.472
-#> sigmaGrowth_g_day               2.051 0.269    0.005          0.005 1.620 2.017
-#>                                  97.5% Rhat n.eff
-#> alphaGrowth_g_day               10.172    1  2804
-#> beta_Growth_g_day_Temp_Centered  0.546    1  2991
-#> sigmaGrowth_g_day                2.663    1  3000
+#> alpha_Growth_g_day              9.756 0.386    0.007          0.007 8.992 9.760
+#> beta_Growth_g_day_Temp_Centered 0.472 0.039    0.001          0.001 0.398 0.471
+#> sigmaGrowth_g_day               2.077 0.272    0.005          0.005 1.629 2.051
+#>                                  97.5%  Rhat n.eff
+#> alpha_Growth_g_day              10.500 1.001  3168
+#> beta_Growth_g_day_Temp_Centered  0.546 1.000  3000
+#> sigmaGrowth_g_day                2.696 1.000  3000
 #> 
 #> DIC:
-#> Mean deviance:  129.6 
-#> penalty 1.487 
-#> Penalized deviance: 131.1
+#> Mean deviance:  130.2 
+#> penalty 2.521 
+#> Penalized deviance: 132.7
 ```
 
 Notice how the credible intervals for the custom model will be tighter
@@ -214,7 +214,7 @@ fit_default_kleiber <- because(
 #> Graph information:
 #>    Observed stochastic nodes: 30
 #>    Unobserved stochastic nodes: 3
-#>    Total graph size: 1059
+#>    Total graph size: 159
 #> 
 #> Initializing model
 
@@ -232,39 +232,39 @@ fit_mech_kleiber <- because(
 #> Graph information:
 #>    Observed stochastic nodes: 30
 #>    Unobserved stochastic nodes: 3
-#>    Total graph size: 1059
+#>    Total graph size: 159
 #> 
 #> Initializing model
 
 # Compare Estimates
 summary(fit_default_kleiber)
 #>                       Mean    SD Naive SE Time-series SE   2.5%   50%  97.5%
-#> alphaLog_MR          3.206 4.422    0.081          0.297 -5.524 3.145 11.973
-#> beta_Log_MR_Log_Mass 0.116 1.085    0.020          0.072 -2.015 0.136  2.249
-#> sigmaLog_MR          2.947 0.384    0.007          0.008  2.299 2.912  3.783
+#> alpha_Log_MR         3.240 4.189    0.076          0.264 -5.155 3.253 11.523
+#> beta_Log_MR_Log_Mass 0.111 1.023    0.019          0.066 -1.947 0.097  2.171
+#> sigmaLog_MR          2.927 0.384    0.007          0.007  2.288 2.895  3.808
 #>                       Rhat n.eff
-#> alphaLog_MR          1.008   218
-#> beta_Log_MR_Log_Mass 1.008   222
-#> sigmaLog_MR          1.000  2569
+#> alpha_Log_MR         1.004   259
+#> beta_Log_MR_Log_Mass 1.004   250
+#> sigmaLog_MR          1.000  2895
 #> 
 #> DIC:
-#> Mean deviance:  151.2 
-#> penalty 3.322 
+#> Mean deviance:  151.3 
+#> penalty 3.266 
 #> Penalized deviance: 154.5
 summary(fit_mech_kleiber)
 #>                       Mean    SD Naive SE Time-series SE   2.5%   50% 97.5%
-#> alphaLog_MR          1.171 1.969    0.036          0.063 -3.345 1.516 4.013
-#> beta_Log_MR_Log_Mass 0.622 0.461    0.008          0.015  0.029 0.528 1.707
-#> sigmaLog_MR          2.921 0.384    0.007          0.007  2.273 2.871 3.777
+#> alpha_Log_MR         1.282 1.923    0.035          0.064 -3.394 1.646 4.018
+#> beta_Log_MR_Log_Mass 0.595 0.453    0.008          0.015  0.024 0.494 1.703
+#> sigmaLog_MR          2.909 0.383    0.007          0.007  2.294 2.883 3.781
 #>                       Rhat n.eff
-#> alphaLog_MR          1.005  1044
-#> beta_Log_MR_Log_Mass 1.003  1009
-#> sigmaLog_MR          1.000  3000
+#> alpha_Log_MR         1.001   969
+#> beta_Log_MR_Log_Mass 1.001  1003
+#> sigmaLog_MR          1.000  3165
 #> 
 #> DIC:
-#> Mean deviance:  150.5 
-#> penalty 2.27 
-#> Penalized deviance: 152.8
+#> Mean deviance:  150.6 
+#> penalty 2.305 
+#> Penalized deviance: 152.9
 
 # Visualize: Unconstrained vs. Truncated
 plot_posterior(
@@ -389,26 +389,24 @@ fit_check$model
 #> JAGS model:
 #> 
 #> model {
-#>   # Dummy usage of ID to prevent warnings for unused data
-#>   dummy_ID <- ID[1,1]
 #>   # Structural equations
 #>   for (i in 1:N) {
 #> 
-#>     muGrowth_g_day[i] <- alphaGrowth_g_day + beta_Growth_g_day_Temp_Centered*Temp_Centered[i]
+#>     mu_Growth_g_day[i] <- alpha_Growth_g_day + beta_Growth_g_day_Temp_Centered*Temp_Centered[i]
 #>   }
 #>   # Multivariate normal likelihoods
 #>   for (i in 1:N) {
-#>     Growth_g_day[i] ~ dnorm(muGrowth_g_day[i], tau_e_Growth_g_day)
-#>     log_lik_Growth_g_day[i] <- logdensity.norm(Growth_g_day[i], muGrowth_g_day[i], tau_e_Growth_g_day)
+#>     Growth_g_day[i] ~ dnorm(mu_Growth_g_day[i], tau_e_Growth_g_day)
+#>     log_lik_Growth_g_day[i] <- logdensity.norm(Growth_g_day[i], mu_Growth_g_day[i], tau_e_Growth_g_day)
 #>   }
 #>   # Priors for structural parameters
-#>   alphaGrowth_g_day ~ dnorm(0, 1.0E-6)
+#>   alpha_Growth_g_day ~ dnorm(0, 1.0E-6)
 #>   tau_e_Growth_g_day ~ dgamma(1, 1)
 #>   sigmaGrowth_g_day <- 1/sqrt(tau_e_Growth_g_day)
 #>   beta_Growth_g_day_Temp_Centered ~ dnorm(0, 1.0E-6)
 #> }
 #> Fully observed variables:
-#>  Growth_g_day ID N Temp_Centered dummy_ID
+#>  Growth_g_day N Temp_Centered
 ```
 
 \`\`\`

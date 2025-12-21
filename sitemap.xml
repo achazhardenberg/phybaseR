@@ -1,5 +1,6 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://because-pkg.github.io/because/404.html</loc></url>
+<url><loc>https://because-pkg.github.io/because/ROADMAP.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/articles/01_getting_started.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/articles/02_dseparation.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/articles/03_phylogenetic_models.html</loc></url>
@@ -11,6 +12,8 @@
 <url><loc>https://because-pkg.github.io/because/index.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/RhinoMulti.dat.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/RhinoMulti_se.dat.html</loc></url>
+<url><loc>https://because-pkg.github.io/because/reference/auto_detect_hierarchical.html</loc></url>
+<url><loc>https://because-pkg.github.io/because/reference/auto_stack_multispecies_data.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/because.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/because_compare.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/because_dsep.html</loc></url>
@@ -28,6 +31,7 @@
 <url><loc>https://because-pkg.github.io/because/reference/extract_bidirected_edges.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/extract_deterministic_terms.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/extract_imputed.html</loc></url>
+<url><loc>https://because-pkg.github.io/because/reference/extract_latent.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/extract_polynomial_terms.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/generate_deterministic_jags.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/generate_polynomial_jags.html</loc></url>
@@ -39,6 +43,7 @@
 <url><loc>https://because-pkg.github.io/because/reference/parse_hierarchy_from_random.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/plot_dag.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/plot_posterior.html</loc></url>
+<url><loc>https://because-pkg.github.io/because/reference/prepare_hierarchical_jags_data.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/preprocess_categorical_vars.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/print.summary.because.html</loc></url>
 <url><loc>https://because-pkg.github.io/because/reference/rhino.dat.html</loc></url>

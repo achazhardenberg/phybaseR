@@ -17,6 +17,7 @@ because_dsep(
   hierarchical_info = NULL,
   poly_terms = NULL,
   categorical_vars = NULL,
+  family = NULL,
   quiet = FALSE
 )
 ```

@@ -19,14 +19,15 @@ because_model(
   vars_with_na = NULL,
   induced_correlations = NULL,
   variability = NULL,
-  distribution = NULL,
+  family = NULL,
   optimise = TRUE,
   standardize_latent = TRUE,
   poly_terms = NULL,
   latent = NULL,
   categorical_vars = NULL,
   fix_residual_variance = NULL,
-  priors = NULL
+  priors = NULL,
+  hierarchical_info = NULL
 )
 ```
 
@@ -73,9 +74,9 @@ because_model(
     data. The model estimates observation error:
     `Var_obs[i,j] ~ dnorm(Var[i], Var_tau)`.
 
-- distribution:
+- family:
 
-  Optional named character vector specifying the distribution for
+  Optional named character vector specifying the family/distribution for
   response variables. Default is "gaussian" for all variables. Supported
   values: "gaussian", "binomial", "multinomial". For "binomial"
   variables, the model uses a logit link and a Bernoulli likelihood,
@@ -144,61 +145,59 @@ The generated model includes:
 eqs <- list(BR ~ BM, S ~ BR, G ~ BR, L ~ BR)
 cat(because_model(eqs, multi.tree = TRUE)$model)
 #> model {
-#>   # Dummy usage of ID to prevent warnings for unused data
-#>   dummy_ID <- ID[1,1]
 #>   # Structural equations
 #>   for (i in 1:N) {
 #> 
-#>     muBR[i] <- alphaBR + beta_BR_BM*BM[i]
-#>     muS[i] <- alphaS + beta_S_BR*BR[i]
-#>     muG[i] <- alphaG + beta_G_BR*BR[i]
-#>     muL[i] <- alphaL + beta_L_BR*BR[i]
+#>     mu_BR[i] <- alpha_BR + beta_BR_BM*BM[i]
+#>     mu_S[i] <- alpha_S + beta_S_BR*BR[i]
+#>     mu_G[i] <- alpha_G + beta_G_BR*BR[i]
+#>     mu_L[i] <- alpha_L + beta_L_BR*BR[i]
 #>   }
 #>   # Multivariate normal likelihoods
 #>   u_std_BR_phylo[1:N] ~ dmnorm(zeros[1:N], Prec_phylo[1:N, 1:N, K])
 #>   for (i in 1:N) { u_BR_phylo[i] <- u_std_BR_phylo[i] / sqrt(tau_u_BR_phylo) }
 #>   for (i in 1:N) {
-#>     BR[i] ~ dnorm(muBR[i] + u_BR_phylo[i], tau_e_BR)
-#>     log_lik_BR[i] <- logdensity.norm(BR[i], muBR[i] + u_BR_phylo[i], tau_e_BR)
+#>     BR[i] ~ dnorm(mu_BR[i] + u_BR_phylo[i], tau_e_BR)
+#>     log_lik_BR[i] <- logdensity.norm(BR[i], mu_BR[i] + u_BR_phylo[i], tau_e_BR)
 #>   }
 #>   u_std_S_phylo[1:N] ~ dmnorm(zeros[1:N], Prec_phylo[1:N, 1:N, K])
 #>   for (i in 1:N) { u_S_phylo[i] <- u_std_S_phylo[i] / sqrt(tau_u_S_phylo) }
 #>   for (i in 1:N) {
-#>     S[i] ~ dnorm(muS[i] + u_S_phylo[i], tau_e_S)
-#>     log_lik_S[i] <- logdensity.norm(S[i], muS[i] + u_S_phylo[i], tau_e_S)
+#>     S[i] ~ dnorm(mu_S[i] + u_S_phylo[i], tau_e_S)
+#>     log_lik_S[i] <- logdensity.norm(S[i], mu_S[i] + u_S_phylo[i], tau_e_S)
 #>   }
 #>   u_std_G_phylo[1:N] ~ dmnorm(zeros[1:N], Prec_phylo[1:N, 1:N, K])
 #>   for (i in 1:N) { u_G_phylo[i] <- u_std_G_phylo[i] / sqrt(tau_u_G_phylo) }
 #>   for (i in 1:N) {
-#>     G[i] ~ dnorm(muG[i] + u_G_phylo[i], tau_e_G)
-#>     log_lik_G[i] <- logdensity.norm(G[i], muG[i] + u_G_phylo[i], tau_e_G)
+#>     G[i] ~ dnorm(mu_G[i] + u_G_phylo[i], tau_e_G)
+#>     log_lik_G[i] <- logdensity.norm(G[i], mu_G[i] + u_G_phylo[i], tau_e_G)
 #>   }
 #>   u_std_L_phylo[1:N] ~ dmnorm(zeros[1:N], Prec_phylo[1:N, 1:N, K])
 #>   for (i in 1:N) { u_L_phylo[i] <- u_std_L_phylo[i] / sqrt(tau_u_L_phylo) }
 #>   for (i in 1:N) {
-#>     L[i] ~ dnorm(muL[i] + u_L_phylo[i], tau_e_L)
-#>     log_lik_L[i] <- logdensity.norm(L[i], muL[i] + u_L_phylo[i], tau_e_L)
+#>     L[i] ~ dnorm(mu_L[i] + u_L_phylo[i], tau_e_L)
+#>     log_lik_L[i] <- logdensity.norm(L[i], mu_L[i] + u_L_phylo[i], tau_e_L)
 #>   }
 #>   # Priors for structural parameters
-#>   alphaBR ~ dnorm(0, 1.0E-6)
+#>   alpha_BR ~ dnorm(0, 1.0E-6)
 #>   tau_e_BR ~ dgamma(1, 1)
 #>   tau_u_BR_phylo ~ dgamma(1, 1)
 #>   sigma_BR_phylo <- 1/sqrt(tau_u_BR_phylo)
 #>   lambdaBR <- (1/tau_u_BR_phylo) / ((1/tau_u_BR_phylo) + (1/tau_e_BR))
 #>   sigma_BR_res <- 1/sqrt(tau_e_BR)
-#>   alphaS ~ dnorm(0, 1.0E-6)
+#>   alpha_S ~ dnorm(0, 1.0E-6)
 #>   tau_e_S ~ dgamma(1, 1)
 #>   tau_u_S_phylo ~ dgamma(1, 1)
 #>   sigma_S_phylo <- 1/sqrt(tau_u_S_phylo)
 #>   lambdaS <- (1/tau_u_S_phylo) / ((1/tau_u_S_phylo) + (1/tau_e_S))
 #>   sigma_S_res <- 1/sqrt(tau_e_S)
-#>   alphaG ~ dnorm(0, 1.0E-6)
+#>   alpha_G ~ dnorm(0, 1.0E-6)
 #>   tau_e_G ~ dgamma(1, 1)
 #>   tau_u_G_phylo ~ dgamma(1, 1)
 #>   sigma_G_phylo <- 1/sqrt(tau_u_G_phylo)
 #>   lambdaG <- (1/tau_u_G_phylo) / ((1/tau_u_G_phylo) + (1/tau_e_G))
 #>   sigma_G_res <- 1/sqrt(tau_e_G)
-#>   alphaL ~ dnorm(0, 1.0E-6)
+#>   alpha_L ~ dnorm(0, 1.0E-6)
 #>   tau_e_L ~ dgamma(1, 1)
 #>   tau_u_L_phylo ~ dgamma(1, 1)
 #>   sigma_L_phylo <- 1/sqrt(tau_u_L_phylo)

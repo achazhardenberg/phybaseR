@@ -24,6 +24,9 @@ autocorrelation, genetic relatedness etc.).
 - [Custom Priors and Mechanistic
   Constraints](https://because-pkg.github.io/because/articles/05_custom_priors.md):
   Incorporating prior knowledge and mechanistic constraints.
+- [Automated Mediation
+  Analysis](https://because-pkg.github.io/because/articles/06_mediation.md):
+  Decomposing effects into direct and indirect components.
 - *Alternative Covariance structures:* Spatial, genetic, social, or
   other correlation structures. *Alternative dustribution families:*
   Modeling non-Gaussian data.

@@ -62,14 +62,15 @@ Missing values are handled both in the response and predictor variables treating
 <span>  vars_with_na <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  induced_correlations <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  variability <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  distribution <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  family <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  optimise <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  standardize_latent <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  poly_terms <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  latent <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  categorical_vars <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fix_residual_variance <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  priors <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  priors <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  hierarchical_info <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -108,8 +109,8 @@ If unnamed, it defaults to "se" for all specified variables.</p><ul><li><p>"se":
 </ul></dd>
 
 
-<dt id="arg-distribution">distribution<a class="anchor" aria-label="anchor" href="#arg-distribution"></a></dt>
-<dd><p>Optional named character vector specifying the distribution for response variables.
+<dt id="arg-family">family<a class="anchor" aria-label="anchor" href="#arg-family"></a></dt>
+<dd><p>Optional named character vector specifying the family/distribution for response variables.
 Default is "gaussian" for all variables. Supported values: "gaussian", "binomial", "multinomial".
 For "binomial" variables, the model uses a logit link and a Bernoulli likelihood, with phylogenetic correlation modeled on the latent scale.</p></dd>
 
@@ -157,61 +158,59 @@ If FALSE, use original marginal covariance formulation.</p></dd>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">eqs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">BR</span> <span class="op">~</span> <span class="va">BM</span>, <span class="va">S</span> <span class="op">~</span> <span class="va">BR</span>, <span class="va">G</span> <span class="op">~</span> <span class="va">BR</span>, <span class="va">L</span> <span class="op">~</span> <span class="va">BR</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu">because_model</span><span class="op">(</span><span class="va">eqs</span>, multi.tree <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> model {</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   # Dummy usage of ID to prevent warnings for unused data</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   dummy_ID &lt;- ID[1,1]</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   # Structural equations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   for (i in 1:N) {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     muBR[i] &lt;- alphaBR + beta_BR_BM*BM[i]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     muS[i] &lt;- alphaS + beta_S_BR*BR[i]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     muG[i] &lt;- alphaG + beta_G_BR*BR[i]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     muL[i] &lt;- alphaL + beta_L_BR*BR[i]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     mu_BR[i] &lt;- alpha_BR + beta_BR_BM*BM[i]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     mu_S[i] &lt;- alpha_S + beta_S_BR*BR[i]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     mu_G[i] &lt;- alpha_G + beta_G_BR*BR[i]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     mu_L[i] &lt;- alpha_L + beta_L_BR*BR[i]</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   # Multivariate normal likelihoods</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   u_std_BR_phylo[1:N] ~ dmnorm(zeros[1:N], Prec_phylo[1:N, 1:N, K])</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   for (i in 1:N) { u_BR_phylo[i] &lt;- u_std_BR_phylo[i] / sqrt(tau_u_BR_phylo) }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   for (i in 1:N) {</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     BR[i] ~ dnorm(muBR[i] + u_BR_phylo[i], tau_e_BR)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     log_lik_BR[i] &lt;- logdensity.norm(BR[i], muBR[i] + u_BR_phylo[i], tau_e_BR)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     BR[i] ~ dnorm(mu_BR[i] + u_BR_phylo[i], tau_e_BR)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     log_lik_BR[i] &lt;- logdensity.norm(BR[i], mu_BR[i] + u_BR_phylo[i], tau_e_BR)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   u_std_S_phylo[1:N] ~ dmnorm(zeros[1:N], Prec_phylo[1:N, 1:N, K])</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   for (i in 1:N) { u_S_phylo[i] &lt;- u_std_S_phylo[i] / sqrt(tau_u_S_phylo) }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   for (i in 1:N) {</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     S[i] ~ dnorm(muS[i] + u_S_phylo[i], tau_e_S)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     log_lik_S[i] &lt;- logdensity.norm(S[i], muS[i] + u_S_phylo[i], tau_e_S)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     S[i] ~ dnorm(mu_S[i] + u_S_phylo[i], tau_e_S)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     log_lik_S[i] &lt;- logdensity.norm(S[i], mu_S[i] + u_S_phylo[i], tau_e_S)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   u_std_G_phylo[1:N] ~ dmnorm(zeros[1:N], Prec_phylo[1:N, 1:N, K])</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   for (i in 1:N) { u_G_phylo[i] &lt;- u_std_G_phylo[i] / sqrt(tau_u_G_phylo) }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   for (i in 1:N) {</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     G[i] ~ dnorm(muG[i] + u_G_phylo[i], tau_e_G)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     log_lik_G[i] &lt;- logdensity.norm(G[i], muG[i] + u_G_phylo[i], tau_e_G)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     G[i] ~ dnorm(mu_G[i] + u_G_phylo[i], tau_e_G)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     log_lik_G[i] &lt;- logdensity.norm(G[i], mu_G[i] + u_G_phylo[i], tau_e_G)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   u_std_L_phylo[1:N] ~ dmnorm(zeros[1:N], Prec_phylo[1:N, 1:N, K])</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   for (i in 1:N) { u_L_phylo[i] &lt;- u_std_L_phylo[i] / sqrt(tau_u_L_phylo) }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   for (i in 1:N) {</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     L[i] ~ dnorm(muL[i] + u_L_phylo[i], tau_e_L)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     log_lik_L[i] &lt;- logdensity.norm(L[i], muL[i] + u_L_phylo[i], tau_e_L)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     L[i] ~ dnorm(mu_L[i] + u_L_phylo[i], tau_e_L)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     log_lik_L[i] &lt;- logdensity.norm(L[i], mu_L[i] + u_L_phylo[i], tau_e_L)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   # Priors for structural parameters</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   alphaBR ~ dnorm(0, 1.0E-6)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   alpha_BR ~ dnorm(0, 1.0E-6)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   tau_e_BR ~ dgamma(1, 1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   tau_u_BR_phylo ~ dgamma(1, 1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   sigma_BR_phylo &lt;- 1/sqrt(tau_u_BR_phylo)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   lambdaBR &lt;- (1/tau_u_BR_phylo) / ((1/tau_u_BR_phylo) + (1/tau_e_BR))</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   sigma_BR_res &lt;- 1/sqrt(tau_e_BR)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   alphaS ~ dnorm(0, 1.0E-6)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   alpha_S ~ dnorm(0, 1.0E-6)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   tau_e_S ~ dgamma(1, 1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   tau_u_S_phylo ~ dgamma(1, 1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   sigma_S_phylo &lt;- 1/sqrt(tau_u_S_phylo)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   lambdaS &lt;- (1/tau_u_S_phylo) / ((1/tau_u_S_phylo) + (1/tau_e_S))</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   sigma_S_res &lt;- 1/sqrt(tau_e_S)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   alphaG ~ dnorm(0, 1.0E-6)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   alpha_G ~ dnorm(0, 1.0E-6)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   tau_e_G ~ dgamma(1, 1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   tau_u_G_phylo ~ dgamma(1, 1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   sigma_G_phylo &lt;- 1/sqrt(tau_u_G_phylo)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   lambdaG &lt;- (1/tau_u_G_phylo) / ((1/tau_u_G_phylo) + (1/tau_e_G))</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   sigma_G_res &lt;- 1/sqrt(tau_e_G)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   alphaL ~ dnorm(0, 1.0E-6)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   alpha_L ~ dnorm(0, 1.0E-6)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   tau_e_L ~ dgamma(1, 1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   tau_u_L_phylo ~ dgamma(1, 1)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   sigma_L_phylo &lt;- 1/sqrt(tau_u_L_phylo)</span>
