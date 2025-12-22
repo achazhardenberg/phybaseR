@@ -5,29 +5,33 @@
 #'
 #' @param data A data.frame in long format with one row per observation.
 #' @param species_col Name of the column containing species identifiers (default: "SP").
-#' @param tree A phylogenetic tree (class \code{phylo}). Required to determine species order.
+#' @param tree A phylogenetic tree (class \code{phylo}). Optional. If provided, determines species order.
 #'
 #' @return A named list where each element is either:
 #'   \itemize{
 #'     \item A numeric vector (if all species have exactly 1 observation)
 #'     \item A numeric matrix with species in rows and replicates in columns
 #'   }
-#'   Species are ordered to match \code{tree$tip.label}.
+#'   Species are ordered to match \code{tree$tip.label} (if provided) or sorted alphabetically.
 #'
 #' @details
 #' This function handles:
 #' \itemize{
 #'   \item Different numbers of replicates per species (creates rectangular matrix with NA padding)
 #'   \item Missing values (NA)
-#'   \item Automatic alignment with phylogenetic tree tip labels
+#'   \item Automatic alignment with phylogenetic tree tip labels (if provided)
 #' }
 #'
 #' When species have different numbers of replicates, the function creates a matrix
 #' with dimensions (number of species) x (maximum number of replicates).
 #' Species with fewer replicates are padded with NA values.
 #'
+#' If a tree is provided:
 #' Species in the tree but not in the data will have all NA values.
 #' Species in the data but not in the tree will be excluded with a warning.
+#'
+#' If no tree is provided:
+#' All species in the data are included, sorted alphabetically by their ID.
 #'
 #' @examples
 #' \dontrun{
@@ -38,15 +42,16 @@
 #'   NL = c(0.5, 0.6, NA, 0.7, 0.8, 0.9)
 #' )
 #'
+#' # With tree
 #' tree <- ape::read.tree(text = "(sp1:1,sp2:1,sp3:1);")
 #' data_list <- because_format_data(data_long, species_col = "SP", tree = tree)
 #'
-#' # Use with because
-#' fit <- because(data = data_list, tree = tree, equations = list(NL ~ BM))
+#' # Without tree (general repeated measures)
+#' data_list_no_tree <- because_format_data(data_long, species_col = "SP")
 #' }
 #'
 #' @export
-because_format_data <- function(data, species_col = "SP", tree) {
+because_format_data <- function(data, species_col = "SP", tree = NULL) {
     # Validate inputs
     if (!is.data.frame(data)) {
         stop("'data' must be a data.frame")
@@ -56,11 +61,7 @@ because_format_data <- function(data, species_col = "SP", tree) {
         stop(sprintf("Species column '%s' not found in data", species_col))
     }
 
-    if (missing(tree) || is.null(tree)) {
-        stop("'tree' is required to determine species order")
-    }
-
-    if (!inherits(tree, "phylo")) {
+    if (!is.null(tree) && !inherits(tree, "phylo")) {
         stop("'tree' must be a phylo object")
     }
 
@@ -117,26 +118,33 @@ because_format_data <- function(data, species_col = "SP", tree) {
 
     # Check for species alignment
     data_species <- unique(data[[species_col]])
-    tree_species <- tree$tip.label
-    n_species <- length(tree_species)
 
-    missing_in_tree <- setdiff(data_species, tree_species)
-    missing_in_data <- setdiff(tree_species, data_species)
+    if (!is.null(tree)) {
+        reference_labels <- tree$tip.label
+        n_species <- length(reference_labels)
 
-    if (length(missing_in_tree) > 0) {
-        warning(sprintf(
-            "Species in data but not in tree (will be excluded): %s",
-            paste(missing_in_tree, collapse = ", ")
-        ))
-        # Filter out species not in tree
-        data <- data[data[[species_col]] %in% tree_species, ]
-    }
+        missing_in_tree <- setdiff(data_species, reference_labels)
+        missing_in_data <- setdiff(reference_labels, data_species)
 
-    if (length(missing_in_data) > 0) {
-        message(sprintf(
-            "Species in tree but not in data (will have NA values): %s",
-            paste(missing_in_data, collapse = ", ")
-        ))
+        if (length(missing_in_tree) > 0) {
+            warning(sprintf(
+                "Species in data but not in tree (will be excluded): %s",
+                paste(missing_in_tree, collapse = ", ")
+            ))
+            # Filter out species not in tree
+            data <- data[data[[species_col]] %in% reference_labels, ]
+        }
+
+        if (length(missing_in_data) > 0) {
+            message(sprintf(
+                "Species in tree but not in data (will have NA values): %s",
+                paste(missing_in_data, collapse = ", ")
+            ))
+        }
+    } else {
+        # No tree: use species in data, sorted
+        reference_labels <- sort(data_species)
+        n_species <- length(reference_labels)
     }
 
     # Count observations per species
@@ -148,15 +156,15 @@ because_format_data <- function(data, species_col = "SP", tree) {
 
     # Process each trait
     for (trait in trait_cols) {
-        # Create matrix: rows = species (in tree order), columns = replicates
+        # Create matrix: rows = species (in reference order), columns = replicates
         trait_matrix <- matrix(NA, nrow = n_species, ncol = max_reps)
-        rownames(trait_matrix) <- tree_species
+        rownames(trait_matrix) <- reference_labels
 
         # Fill matrix with observations
         is_constant <- TRUE
 
-        for (i in seq_along(tree_species)) {
-            sp <- tree_species[i]
+        for (i in seq_along(reference_labels)) {
+            sp <- reference_labels[i]
 
             if (sp %in% names(obs_counts)) {
                 # Get observations for this species

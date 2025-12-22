@@ -1,0 +1,56 @@
+=== Running Reproduction ===
+No tree provided. Running standard (non-phylogenetic) SEM.
+Auto-detected: 'Dingo' is an occupancy variable -> using 'reps' mode for detection history
+Auto-detected: 'Fox' is an occupancy variable -> using 'reps' mode for detection history
+Note: WAIC and DIC are not computed for d-separation tests (not needed for conditional independence testing).
+Generating d-separation tests...
+Basis Set for DAG: 
+I(X,Y|Z) means X is d-separated from Y given the set Z in the DAG 
+I( cover_high , protected |  ) 
+I( cover_high , p_Dingo |  ) 
+I( p_Fox , protected | cover_high, SiteID ) 
+I( p_Fox , Fox | cover_high, protected, SiteID ) 
+I( p_Fox , Dingo | cover_high, protected, SiteID ) 
+I( p_Fox , p_Dingo | cover_high, SiteID ) 
+I( protected , p_Dingo |  ) 
+I( Fox , Dingo | cover_high, protected, SiteID ) 
+I( Fox , p_Dingo | cover_high, protected, SiteID ) 
+I( Dingo , p_Dingo | cover_high, protected, SiteID ) 
+Running 10 d-separation tests sequentially...
+  Test 1/10: cover_high ~ protected
+    Monitoring: beta_cover_high_protected
+D-sep test eq: cover_high ~ protected
+No tree provided. Running standard (non-phylogenetic) SEM.
+Compiling model graph
+   Resolving undeclared variables
+Deleting model
+
+
+CRITICAL JAGS ERROR during compilation:
+RUNTIME ERROR:
+Compilation error on line 8.
+Unknown variable N_SiteID
+Either supply values for this variable with the data
+or define it  on the left hand side of a relation.
+
+
+Check your model code syntax or data dimensions.
+
+Catch Error:  RUNTIME ERROR:
+Compilation error on line 8.
+Unknown variable N_SiteID
+Either supply values for this variable with the data
+or define it  on the left hand side of a relation.
+
+ 
+Warning messages:
+1: In rjags::jags.model(model_file, data = data, inits = inits_list,  :
+  Unused variable "Dingo" in data
+2: In rjags::jags.model(model_file, data = data, inits = inits_list,  :
+  Unused variable "Dingo_obs" in data
+3: In rjags::jags.model(model_file, data = data, inits = inits_list,  :
+  Unused variable "Fox" in data
+4: In rjags::jags.model(model_file, data = data, inits = inits_list,  :
+  Unused variable "Fox_obs" in data
+5: In rjags::jags.model(model_file, data = data, inits = inits_list,  :
+  Unused variable "SiteID" in data

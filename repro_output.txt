@@ -1,0 +1,180 @@
+=== Running Debug Reproduction ===
+No tree provided. Running standard (non-phylogenetic) SEM.
+Auto-detected: 'Dingo' is an occupancy variable -> using 'reps' mode for detection history
+Auto-detected: 'Fox' is an occupancy variable -> using 'reps' mode for detection history
+Note: WAIC and DIC are not computed for d-separation tests (not needed for conditional independence testing).
+DEBUG: Initial potential_latents: Dingo, p_Dingo, Fox, p_Fox
+DEBUG: vars_in_equations: Dingo, protected, cover_high, p_Dingo, Fox, p_Fox
+DEBUG: occ_vars found: Dingo, Fox
+Generating d-separation tests...
+DEBUG: Calling because_dsep
+DEBUG: Equations passed: Dingo ~ protected + cover_high; p_Dingo ~ 1; Fox ~ protected + cover_high; p_Fox ~ cover_high
+DEBUG: Latent passed: 
+Basis Set for DAG: 
+I(X,Y|Z) means X is d-separated from Y given the set Z in the DAG 
+I( cover_high , protected |  ) 
+I( cover_high , p_Dingo |  ) 
+I( p_Fox , protected | cover_high ) 
+I( p_Fox , Fox | cover_high, protected ) 
+I( p_Fox , Dingo | cover_high, protected ) 
+I( p_Fox , p_Dingo | cover_high ) 
+I( protected , p_Dingo |  ) 
+I( Fox , Dingo | cover_high, protected ) 
+I( Fox , p_Dingo | cover_high, protected ) 
+I( Dingo , p_Dingo | cover_high, protected ) 
+Running 10 d-separation tests sequentially...
+  Test 1/10: cover_high ~ protected
+    Monitoring: beta_cover_high_protected
+D-sep test eq: cover_high ~ protected
+No tree provided. Running standard (non-phylogenetic) SEM.
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 100
+   Unobserved stochastic nodes: 3
+   Total graph size: 313
+
+Initializing model
+
+  Test 2/10: cover_high ~ p_Dingo
+    Monitoring: beta_cover_high_p_Dingo
+D-sep test eq: cover_high ~ p_Dingo
+No tree provided. Running standard (non-phylogenetic) SEM.
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 400
+   Unobserved stochastic nodes: 107
+   Total graph size: 1594
+
+Initializing model
+
+  Test 3/10: p_Fox ~ protected + cover_high
+    Monitoring: beta_p_Fox_protected, beta_p_Fox_cover_high
+D-sep test eq: p_Fox ~ protected + cover_high
+No tree provided. Running standard (non-phylogenetic) SEM.
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 300
+   Unobserved stochastic nodes: 106
+   Total graph size: 1787
+
+Initializing model
+
+  Test 4/10: p_Fox ~ Fox + cover_high + protected
+    Monitoring: beta_p_Fox_Fox, beta_p_Fox_cover_high, beta_p_Fox_protected
+D-sep test eq: p_Fox ~ Fox + cover_high + protected
+No tree provided. Running standard (non-phylogenetic) SEM.
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 300
+   Unobserved stochastic nodes: 107
+   Total graph size: 1888
+
+Initializing model
+
+  Test 5/10: p_Fox ~ Dingo + cover_high + protected
+    Monitoring: beta_p_Fox_Dingo, beta_p_Fox_cover_high, beta_p_Fox_protected
+D-sep test eq: p_Fox ~ Dingo + cover_high + protected
+No tree provided. Running standard (non-phylogenetic) SEM.
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 600
+   Unobserved stochastic nodes: 211
+   Total graph size: 3171
+
+Initializing model
+
+  Test 6/10: p_Fox ~ p_Dingo + cover_high
+    Monitoring: beta_p_Fox_p_Dingo, beta_p_Fox_cover_high
+D-sep test eq: p_Fox ~ p_Dingo + cover_high
+No tree provided. Running standard (non-phylogenetic) SEM.
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 600
+   Unobserved stochastic nodes: 210
+   Total graph size: 3069
+
+Initializing model
+
+  Test 7/10: protected ~ p_Dingo
+    Monitoring: beta_protected_p_Dingo
+D-sep test eq: protected ~ p_Dingo
+No tree provided. Running standard (non-phylogenetic) SEM.
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 400
+   Unobserved stochastic nodes: 107
+   Total graph size: 1496
+
+Initializing model
+
+  Test 8/10: Fox ~ Dingo + cover_high + protected
+    Monitoring: beta_Fox_Dingo, beta_Fox_cover_high, beta_Fox_protected
+D-sep test eq: Fox ~ Dingo + cover_high + protected
+No tree provided. Running standard (non-phylogenetic) SEM.
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 600
+   Unobserved stochastic nodes: 210
+   Total graph size: 3168
+
+Initializing model
+
+  Test 9/10: Fox ~ p_Dingo + cover_high + protected
+    Monitoring: beta_Fox_p_Dingo, beta_Fox_cover_high, beta_Fox_protected
+D-sep test eq: Fox ~ p_Dingo + cover_high + protected
+No tree provided. Running standard (non-phylogenetic) SEM.
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 600
+   Unobserved stochastic nodes: 210
+   Total graph size: 3069
+
+Initializing model
+
+  Test 10/10: Dingo ~ p_Dingo + cover_high + protected
+    Monitoring: beta_Dingo_p_Dingo, beta_Dingo_cover_high, beta_Dingo_protected
+D-sep test eq: Dingo ~ p_Dingo + cover_high + protected
+No tree provided. Running standard (non-phylogenetic) SEM.
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 300
+   Unobserved stochastic nodes: 105
+   Total graph size: 1488
+
+Initializing model
+
+Warning messages:
+1: In rjags::jags.model(model_file, data = data, inits = inits_list,  :
+  Unused variable "Dingo" in data
+2: In rjags::jags.model(model_file, data = data, inits = inits_list,  :
+  Unused variable "Fox" in data
+3: In rjags::jags.model(model_file, data = data, inits = inits_list,  :
+  Unused variable "Fox" in data
+4: In rjags::jags.model(model_file, data = data, inits = inits_list,  :
+  Unused variable "Dingo" in data
+5: In rjags::jags.model(model_file, data = data, inits = inits_list,  :
+  Unused variable "Dingo" in data
+6: In rjags::jags.model(model_file, data = data, inits = inits_list,  :
+  Unused variable "Fox" in data
+7: In rjags::jags.model(model_file, data = data, inits = inits_list,  :
+  Unused variable "Fox" in data

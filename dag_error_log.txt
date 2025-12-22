@@ -1,0 +1,83 @@
+[1] "Running d-separation test to inspect basis set..."
+No tree provided. Running standard (non-phylogenetic) SEM.
+Note: Variables not in data (may be latent/derived): p_Dingo, p_Fox, psi_Dingo
+Converted data.frame to list with 8 variables: Dingo, protected, cover_high, Fox, group_SiteID, Prec_SiteID, zeros_SiteID, N_SiteID
+Auto-detected: 'Dingo' is an occupancy variable -> using 'reps' mode for detection history
+Auto-detected: 'Fox' is an occupancy variable -> using 'reps' mode for detection history
+Note: WAIC and DIC are not computed for d-separation tests (not needed for conditional independence testing).
+Generating d-separation tests...
+Basis Set for DAG: 
+I(X,Y|Z) means X is d-separated from Y given the set Z in the DAG 
+I( psi_Dingo , cover_high |  ) 
+I( psi_Dingo , protected |  ) 
+I( psi_Dingo , psi_Fox | cover_high, protected ) 
+I( psi_Dingo , cover_high | protected ) 
+I( cover_high , protected |  ) 
+I( p_Dingo , cover_high | SiteID ) 
+I( p_Fox , protected | psi_Dingo, cover_high, SiteID ) 
+I( p_Fox , psi_Dingo | cover_high, protected, SiteID ) 
+I( p_Fox , p_Dingo | psi_Dingo, cover_high, SiteID ) 
+I( p_Dingo , protected | SiteID ) 
+I( Fox , psi_Dingo | cover_high, protected, SiteID ) 
+I( p_Dingo , psi_Fox | cover_high, protected, SiteID ) 
+Running 8 d-separation tests sequentially...
+  Test 1/8: cover_high ~ protected
+    Monitoring: beta_cover_high_protected
+D-sep test eq: cover_high ~ protected
+No tree provided. Running standard (non-phylogenetic) SEM.
+Filtering data to 3 relevant columns (out of 5) to optimize memory.
+Converted data.frame to list with 6 variables: cover_high, protected, group_SiteID, Prec_SiteID, zeros_SiteID, N_SiteID
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 100
+   Unobserved stochastic nodes: 5
+   Total graph size: 919
+
+Initializing model
+
+  Test 2/8: p_Dingo ~ cover_high + (1 | SiteID)
+    Monitoring: beta_p_Dingo_cover_high
+D-sep test eq: p_Dingo ~ cover_high + (1 | SiteID)
+No tree provided. Running standard (non-phylogenetic) SEM.
+Filtering data to 4 relevant columns (out of 5) to optimize memory.
+Note: Variables not in data (may be latent/derived): p_Dingo
+Converted data.frame to list with 7 variables: cover_high, Dingo, protected, group_SiteID, Prec_SiteID, zeros_SiteID, N_SiteID
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 300
+   Unobserved stochastic nodes: 108
+   Total graph size: 2456
+
+Initializing model
+
+  Test 3/8: p_Fox ~ protected + psi_Dingo + cover_high + (1 | SiteID)
+    Monitoring: beta_p_Fox_protected, beta_p_Fox_psi_Dingo, beta_p_Fox_cover_high
+D-sep test eq: p_Fox ~ protected + psi_Dingo + cover_high + (1 | SiteID)
+No tree provided. Running standard (non-phylogenetic) SEM.
+Note: Variables not in data (may be latent/derived): p_Fox, psi_Dingo, p_Dingo
+Converted data.frame to list with 8 variables: protected, cover_high, Fox, Dingo, group_SiteID, Prec_SiteID, zeros_SiteID, N_SiteID
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 600
+   Unobserved stochastic nodes: 217
+   Total graph size: 3988
+
+Initializing model
+
+  Test 4/8: p_Fox ~ psi_Dingo + psi_Dingo + cover_high + protected + (1 |   Test 4/8:     SiteID)
+    Monitoring: beta_p_Fox_psi_Dingo, beta_p_Fox_cover_high, beta_p_Fox_protected
+D-sep test eq: p_Fox ~ psi_Dingo + psi_Dingo + cover_high + protected + (1 | D-sep test eq:     SiteID)
+<simpleError in run_single_dsep_test(i, test_eq, current_monitor): 'list' object cannot be coerced to type 'logical'>
+Warning messages:
+1: In because(data = test_data, tree = tree, equations = dsep_equations,  :
+  Variability 'reps' specified but no tree provided. Automatic formatting requires a tree to order species rows. Assuming data is already aggregated or user handles index mapping.
+2: In because(data = test_data, tree = tree, equations = dsep_equations,  :
+  Variability 'reps' specified but no tree provided. Automatic formatting requires a tree to order species rows. Assuming data is already aggregated or user handles index mapping.
+3: In any(sapply(dsep_equations, function(e) { :
+  coercing argument of type 'list' to logical

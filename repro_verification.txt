@@ -1,0 +1,116 @@
+=== Running Reproduction ===
+No tree provided. Running standard (non-phylogenetic) SEM.
+Filtering data to 5 relevant columns (out of 7) to optimize memory.
+Note: Variables not in data (may be latent/derived): p_Dingo, p_Fox
+Converted data.frame to list with 8 variables: Dingo, protected, cover_high, Fox, group_SiteID, Prec_SiteID, zeros_SiteID, N_SiteID
+Auto-detected: 'Dingo' is an occupancy variable -> using 'reps' mode for detection history
+Auto-detected: 'Fox' is an occupancy variable -> using 'reps' mode for detection history
+Note: WAIC and DIC are not computed for d-separation tests (not needed for conditional independence testing).
+Generating d-separation tests...
+Basis Set for DAG: 
+I(X,Y|Z) means X is d-separated from Y given the set Z in the DAG 
+I( cover_high , protected |  ) 
+I( p_Dingo , cover_high | SiteID ) 
+I( p_Fox , protected | cover_high, SiteID ) 
+I( p_Fox , psi_Dingo | cover_high, protected, SiteID ) 
+I( p_Fox , p_Dingo | cover_high, SiteID ) 
+I( p_Dingo , protected | SiteID ) 
+I( Fox , psi_Dingo | cover_high, protected, SiteID ) 
+I( p_Dingo , psi_Fox | cover_high, protected, SiteID ) 
+Running 8 d-separation tests sequentially...
+  Test 1/8: cover_high ~ protected
+    Monitoring: beta_cover_high_protected
+D-sep test eq: cover_high ~ protected
+No tree provided. Running standard (non-phylogenetic) SEM.
+Filtering data to 3 relevant columns (out of 5) to optimize memory.
+Converted data.frame to list with 6 variables: cover_high, protected, group_SiteID, Prec_SiteID, zeros_SiteID, N_SiteID
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 40
+   Unobserved stochastic nodes: 5
+   Total graph size: 1940
+
+Initializing model
+
+NOTE: Stopping adaptation
+
+
+  Test 2/8: p_Dingo ~ cover_high + (1 | SiteID)
+    Monitoring: beta_p_Dingo_cover_high
+D-sep test eq: p_Dingo ~ cover_high + (1 | SiteID)
+No tree provided. Running standard (non-phylogenetic) SEM.
+Filtering data to 4 relevant columns (out of 5) to optimize memory.
+Note: Variables not in data (may be latent/derived): p_Dingo
+Converted data.frame to list with 7 variables: cover_high, Dingo, protected, group_SiteID, Prec_SiteID, zeros_SiteID, N_SiteID
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 120
+   Unobserved stochastic nodes: 48
+   Total graph size: 2527
+
+Initializing model
+
+NOTE: Stopping adaptation
+
+
+  Test 3/8: p_Fox ~ protected + cover_high + (1 | SiteID)
+    Monitoring: beta_p_Fox_protected, beta_p_Fox_cover_high
+D-sep test eq: p_Fox ~ protected + cover_high + (1 | SiteID)
+No tree provided. Running standard (non-phylogenetic) SEM.
+Filtering data to 4 relevant columns (out of 5) to optimize memory.
+Note: Variables not in data (may be latent/derived): p_Fox
+Converted data.frame to list with 7 variables: protected, cover_high, Fox, group_SiteID, Prec_SiteID, zeros_SiteID, N_SiteID
+Compiling model graph
+   Resolving undeclared variables
+   Allocating nodes
+Graph information:
+   Observed stochastic nodes: 120
+   Unobserved stochastic nodes: 49
+   Total graph size: 2528
+
+Initializing model
+
+NOTE: Stopping adaptation
+
+
+  Test 4/8: p_Fox ~ psi_Dingo + cover_high + protected + (1 | SiteID)
+    Monitoring: beta_p_Fox_psi_Dingo, beta_p_Fox_cover_high, beta_p_Fox_protected
+D-sep test eq: p_Fox ~ psi_Dingo + cover_high + protected + (1 | SiteID)
+No tree provided. Running standard (non-phylogenetic) SEM.
+Note: Variables not in data (may be latent/derived): p_Fox, psi_Dingo, p_Dingo
+Converted data.frame to list with 8 variables: cover_high, protected, Fox, Dingo, group_SiteID, Prec_SiteID, zeros_SiteID, N_SiteID
+Compiling model graph
+   Resolving undeclared variables
+Deleting model
+
+
+CRITICAL JAGS ERROR during compilation:
+RUNTIME ERROR:
+Compilation error on line 39.
+Dimension mismatch in subset expression of Dingo
+
+
+Check your model code syntax or data dimensions.
+
+Catch Error:  RUNTIME ERROR:
+Compilation error on line 39.
+Dimension mismatch in subset expression of Dingo
+
+ 
+Warning messages:
+1: In rjags::jags.model(model_file, data = data, inits = inits_list,  :
+  Adaptation incomplete
+2: In because(data = test_data, tree = tree, equations = dsep_equations,  :
+  Variability 'reps' specified but no tree provided. Automatic formatting requires a tree to order species rows. Assuming data is already aggregated or user handles index mapping.
+3: In rjags::jags.model(model_file, data = data, inits = inits_list,  :
+  Adaptation incomplete
+4: In because(data = test_data, tree = tree, equations = dsep_equations,  :
+  Variability 'reps' specified but no tree provided. Automatic formatting requires a tree to order species rows. Assuming data is already aggregated or user handles index mapping.
+5: In rjags::jags.model(model_file, data = data, inits = inits_list,  :
+  Adaptation incomplete
+6: In because(data = test_data, tree = tree, equations = dsep_equations,  :
+  Variability 'reps' specified but no tree provided. Automatic formatting requires a tree to order species rows. Assuming data is already aggregated or user handles index mapping.
