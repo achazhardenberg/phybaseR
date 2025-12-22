@@ -18,7 +18,7 @@ fit <- because(
         Y_cont ~ X,
         Y_count ~ X
     ),
-    distribution = list(
+    family = list(
         Y_cont = "gaussian",
         Y_count = "poisson"
     ),

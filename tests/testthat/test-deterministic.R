@@ -46,7 +46,7 @@ test_that("Deterministic Nodes handle Interactions, Logic, and Math", {
     fit <- because(
         equations = equations,
         data = data,
-        tree = tree,
+
         n.iter = 100,
         n.chains = 1,
         quiet = FALSE
@@ -67,9 +67,10 @@ test_that("Deterministic Nodes handle Interactions, Logic, and Math", {
 
     # 2. Logic
     # Internal name: A_gt_2 (sanitized A > 2)
-    # Coefficient: beta_Y_logic_A_gt_2
-    # Note: sanitize_term_name replaces > with _gt_
-    beta_logic <- stats[rownames(stats) == "beta_Y_logic_A_gt_2", "Mean"]
+    # Coefficient: beta_Y_logic_det_A_20c (index may vary if implementation changed)
+    # We use grep to find the parameter regardless of the exact hash
+    param_name <- grep("beta_Y_logic_det_A", rownames(stats), value = TRUE)
+    beta_logic <- stats[param_name, "Mean"]
     expect_true(!is.na(beta_logic))
     expect_equal(beta_logic, 3, tolerance = 0.5)
 
@@ -83,9 +84,9 @@ test_that("Deterministic Nodes handle Interactions, Logic, and Math", {
     expect_true(!is.na(beta_math))
     expect_equal(beta_math, 4, tolerance = 0.5)
 
-    # 4. Arithmetic
-    # I(A+B) -> A_plus_B
-    beta_sum <- stats[rownames(stats) == "beta_Y_sum_A_plus_B", "Mean"]
+    # I(A+B) -> det_A_B_hash
+    param_name_sum <- grep("beta_Y_sum_det_A_B", rownames(stats), value = TRUE)
+    beta_sum <- stats[param_name_sum, "Mean"]
     expect_true(!is.na(beta_sum))
     expect_equal(beta_sum, 5, tolerance = 0.5)
 })

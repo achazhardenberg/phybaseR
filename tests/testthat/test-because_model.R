@@ -38,7 +38,7 @@ test_that("because_model handles binomial variables", {
 
     model_output <- because_model(
         equations,
-        distribution = distribution
+        family = distribution
     )
 
     expect_match(model_output$model, "dbern")

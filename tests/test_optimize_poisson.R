@@ -47,7 +47,7 @@ fit_opt <- because(
     data = data,
     tree = tree,
     equations = equations,
-    distribution = c(Y = "poisson"),
+    family = c(Y = "poisson"),
     optimise = TRUE,
     n.iter = 2000,
     n.burnin = 1000,

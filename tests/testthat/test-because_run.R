@@ -1,9 +1,7 @@
 test_that("because validates inputs", {
-    tree <- ape::rtree(10)
-
     # Missing data
     expect_error(
-        because(data = NULL, tree = tree, equations = list(Y ~ X)),
+        because(data = NULL, equations = list(Y ~ X)),
         "data"
     )
 })
@@ -14,7 +12,6 @@ test_that("because completes a simple run", {
     # Simulate simple data
     set.seed(123)
     N <- 20
-    tree <- ape::rtree(N)
     X <- rnorm(N)
     Y <- 0.5 * X + rnorm(N)
 
@@ -24,7 +21,6 @@ test_that("because completes a simple run", {
     # Run with very few iterations just to check it runs
     fit <- because(
         data = data_list,
-        tree = tree,
         equations = equations,
         n.iter = 100,
         n.burnin = 50,

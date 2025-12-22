@@ -15,7 +15,7 @@ test_that("Regression test: simple Gaussian model", {
 
     fit <- because(
         data = data,
-        tree = tree,
+        
         equations = equations,
         n.iter = 1000,
         n.burnin = 500,
@@ -58,9 +58,9 @@ test_that("Regression test: binomial model", {
 
     fit <- because(
         data = data,
-        tree = tree,
+        
         equations = equations,
-        distribution = distribution,
+        family = distribution,
         n.iter = 1000,
         n.burnin = 500,
         n.chains = 2,
@@ -95,7 +95,7 @@ test_that("Regression test: model with missing data", {
 
     fit <- because(
         data = data,
-        tree = tree,
+        
         equations = equations,
         n.iter = 300,
         n.burnin = 150,

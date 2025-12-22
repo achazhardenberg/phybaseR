@@ -14,7 +14,7 @@ fit <- because(
     data = df,
     id_col = "SP",
     equations = list(Y ~ X),
-    distribution = list(Y = "poisson"),
+    family = list(Y = "poisson"),
     WAIC = TRUE,
     n.chains = 2,
     n.iter = 1000,

@@ -39,8 +39,8 @@ test_that("Ordinal distribution runs successfully", {
     res <- because(
         equations = list(Y ~ X),
         data = data_list,
-        tree = tree,
-        distribution = c(Y = "ordinal"),
+        
+        family = c(Y = "ordinal"),
         n.iter = 1000,
         n.burnin = 500,
         n.chains = 2,

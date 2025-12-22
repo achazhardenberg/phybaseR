@@ -78,16 +78,24 @@ because_compare <- function(
     } else if (length(dots) >= 1 && is_spec_list(dots[[1]])) {
         # Check first positional argument (if model_specs was NULL)
         specs <- dots[[1]]
+
+        # Only pull data/tree from UNNAMED positional arguments
+        # names(dots) for unnamed is ""
+        unnamed_indices <- which(names(dots) == "" | is.null(names(dots)))
+        # Filter out specs itself (index 1)
+        unnamed_indices <- setdiff(unnamed_indices, 1)
+
         # Attempt to retrieve data/tree from dots or named args
         if (!is.null(data)) {
             run_data <- data
-        } else if (length(dots) >= 2) {
-            run_data <- dots[[2]]
+        } else if (length(unnamed_indices) >= 1) {
+            run_data <- dots[[unnamed_indices[1]]]
         }
+
         if (!is.null(tree)) {
             run_tree <- tree
-        } else if (length(dots) >= 3) {
-            run_tree <- dots[[3]]
+        } else if (length(unnamed_indices) >= 2) {
+            run_tree <- dots[[unnamed_indices[2]]]
         }
     }
 

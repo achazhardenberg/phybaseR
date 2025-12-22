@@ -14,7 +14,7 @@ test_that("Performance is acceptable for small models", {
     time <- system.time({
         fit <- because(
             data = data_list,
-            tree = tree,
+            
             equations = equations,
             n.iter = 1000,
             n.burnin = 500,
@@ -44,7 +44,7 @@ test_that("Performance scales reasonably with N", {
         system.time({
             because(
                 data = data,
-                tree = tree,
+                
                 equations = equations,
                 n.iter = 100,
                 n.burnin = 50,

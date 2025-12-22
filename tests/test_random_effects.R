@@ -129,7 +129,7 @@ test_that("Random Effects with Poisson Distribution", {
     fit <- because(
         equations = list(Y ~ 1 + (1 | Group)),
         data = df,
-        distribution = list(Y = "poisson"),
+        family = list(Y = "poisson"),
         n.chains = 1,
         n.iter = 1000,
         n.burnin = 200,

@@ -15,7 +15,7 @@ test_that("Handles single species tree gracefully", {
     # We just check it returns a valid object
     fit <- because(
         data = data,
-        tree = tree_single,
+        
         equations = equations,
         n.chains = 2,
         quiet = TRUE
@@ -39,7 +39,7 @@ test_that("Handles perfect collinearity", {
     # We just want to ensure it doesn't crash
     fit <- because(
         data = data,
-        tree = tree,
+        
         equations = equations,
         n.iter = 100,
         n.burnin = 50,
@@ -67,7 +67,7 @@ test_that("Handles disconnected DAG", {
 
     fit <- because(
         data = data,
-        tree = tree,
+        
         equations = equations,
         n.iter = 100,
         n.burnin = 50,

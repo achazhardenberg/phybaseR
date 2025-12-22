@@ -4,7 +4,7 @@ test_that("because_loo works with valid model", {
 
     # Setup: Minimal model with WAIC=TRUE (generates log_lik)
     set.seed(123)
-    tree <- ape::rtree(10)
+    
     X <- rnorm(10)
     Y <- 0.5 * X + rnorm(10)
     data <- list(X = X, Y = Y, N = 10)
@@ -12,7 +12,7 @@ test_that("because_loo works with valid model", {
 
     fit <- because(
         data = data,
-        tree = tree,
+
         equations = equations,
         n.iter = 100,
         n.burnin = 50,
@@ -44,7 +44,7 @@ test_that("because_loo throws error if WAIC=FALSE (no log_lik)", {
 
     # Setup: Model WITHOUT WAIC=TRUE
     set.seed(456)
-    tree <- ape::rtree(10)
+    
     X <- rnorm(10)
     Y <- 0.5 * X + rnorm(10)
     data <- list(X = X, Y = Y, N = 10)
@@ -52,7 +52,7 @@ test_that("because_loo throws error if WAIC=FALSE (no log_lik)", {
 
     fit_no_waic <- because(
         data = data,
-        tree = tree,
+
         equations = equations,
         n.iter = 50,
         n.burnin = 10,
@@ -61,10 +61,10 @@ test_that("because_loo throws error if WAIC=FALSE (no log_lik)", {
         WAIC = FALSE
     )
 
-    # Expect success (with message about refitting)
+    # Expect success (with message about calculating log_lik)
     expect_message(
         loo_res <- because_loo(fit_no_waic),
-        "Refitting model"
+        "Pointwise log-likelihoods not found"
     )
 
     expect_s3_class(loo_res, "loo")

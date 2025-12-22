@@ -13,7 +13,7 @@ test_that("Parallel chains run successfully", {
     # Run with parallel execution
     fit_parallel <- because(
         data = data_list,
-        tree = tree,
+        
         equations = equations,
         n.iter = 200,
         n.burnin = 100,
@@ -45,7 +45,7 @@ test_that("Sequential and parallel produce compatible results", {
     # Sequential
     fit_seq <- because(
         data = data_list,
-        tree = tree,
+        
         equations = equations,
         n.iter = 200,
         n.burnin = 100,
@@ -57,7 +57,7 @@ test_that("Sequential and parallel produce compatible results", {
     # Parallel
     fit_par <- because(
         data = data_list,
-        tree = tree,
+        
         equations = equations,
         n.iter = 200,
         n.burnin = 100,
@@ -97,7 +97,7 @@ test_that("Parallel=FALSE with n.cores>1 still runs sequentially", {
     # This should run sequentially even though n.cores=4
     fit <- because(
         data = data_list,
-        tree = tree,
+        
         equations = equations,
         n.iter = 100,
         n.burnin = 50,

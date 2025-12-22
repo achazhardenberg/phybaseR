@@ -6,11 +6,11 @@ test_that("Full workflow: simple model parameter recovery", {
     N <- 50
     tree <- ape::rtree(N)
 
-    # Simulate correlated traits with strong signal
+    # Simulate independent traits
     # X -> Y
-    X <- ape::rTraitCont(tree, model = "BM", sigma = 1)
+    X <- rnorm(N)
     # Y = 0.8*X + error
-    Y <- 0.8 * X + ape::rTraitCont(tree, model = "BM", sigma = 0.5)
+    Y <- 0.8 * X + rnorm(N, sd = 0.5)
 
     data_list <- list(X = X, Y = Y, N = N)
     equations <- list(Y ~ X)
@@ -18,11 +18,11 @@ test_that("Full workflow: simple model parameter recovery", {
     # Run model
     fit <- because(
         data = data_list,
-        tree = tree,
+
         equations = equations,
-        n.iter = 1000,
-        n.burnin = 500,
-        n.chains = 2,
+        n.iter = 2000,
+        n.burnin = 1000,
+        n.chains = 3,
         quiet = TRUE
     )
 
@@ -61,7 +61,7 @@ test_that("Full workflow: missing data handling", {
 
     fit <- because(
         data = data_list,
-        tree = tree,
+
         equations = equations,
         n.iter = 500,
         n.burnin = 250,

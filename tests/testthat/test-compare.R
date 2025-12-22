@@ -3,7 +3,6 @@ test_that("because_compare runs multiple models and returns comparison", {
 
     set.seed(123)
     N <- 20
-    tree <- ape::rtree(N)
     X <- rnorm(N)
     Z <- rnorm(N)
     Y <- 0.5 * X + 0.3 * Z + rnorm(N)
@@ -20,7 +19,6 @@ test_that("because_compare runs multiple models and returns comparison", {
     res_seq <- because_compare(
         models,
         data_list,
-        tree,
         n.cores = 1,
         n.iter = 1000, # Increased iterations for stable WAIC
         n.burnin = 500,
@@ -48,7 +46,6 @@ test_that("because_compare runs multiple models and returns comparison", {
     res_par <- because_compare(
         models,
         data_list,
-        tree,
         n.cores = 2,
         n.iter = 1000,
         n.burnin = 500,
@@ -72,7 +69,7 @@ test_that("because_compare runs multiple models and returns comparison", {
 
 test_that("because_compare handles errors gracefully", {
     expect_error(
-        because_compare(list(), list(), ape::rtree(10)),
+        because_compare(list(), list()),
         "No fitted 'because' models provided"
     )
 })

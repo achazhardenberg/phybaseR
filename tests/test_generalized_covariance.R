@@ -87,7 +87,7 @@ fit_multinom <- because(
     data = data_cat,
     tree = NULL,
     equations = list(cat ~ x),
-    distribution = c(cat = "multinomial"),
+    family = c(cat = "multinomial"),
     n.iter = 1000,
     quiet = FALSE
 )

@@ -150,7 +150,7 @@ run_test("Poisson model with count data", {
         data = df,
         id_col = "SP",
         equations = list(Y ~ X),
-        distribution = list(Y = "poisson"),
+        family = list(Y = "poisson"),
         WAIC = TRUE,
         n.chains = 2,
         n.iter = 1000,
@@ -185,7 +185,7 @@ run_test("Binomial model with binary data", {
         data = df,
         id_col = "SP",
         equations = list(Y ~ X),
-        distribution = list(Y = "binomial"),
+        family = list(Y = "binomial"),
         WAIC = TRUE,
         n.chains = 2,
         n.iter = 1000,
@@ -400,7 +400,7 @@ run_test("Mixed distribution model (Gaussian + Poisson)", {
             Y_cont ~ X,
             Y_count ~ X
         ),
-        distribution = list(
+        family = list(
             Y_cont = "gaussian",
             Y_count = "poisson"
         ),

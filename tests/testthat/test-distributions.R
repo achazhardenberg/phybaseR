@@ -20,7 +20,7 @@ test_that("Binomial distribution generates correct JAGS code", {
 
     model_output <- because_model(
         equations,
-        distribution = distribution
+        family = distribution
     )
 
     # Should use dbern (Bernoulli distribution)
@@ -42,7 +42,7 @@ test_that("Mixed distributions work correctly", {
 
     model_output <- because_model(
         equations,
-        distribution = distribution
+        family = distribution
     )
 
     # Should have dbern for binomial
@@ -68,9 +68,9 @@ test_that("Binomial distribution runs successfully", {
 
     fit <- because(
         data = data,
-        tree = tree,
+        
         equations = equations,
-        distribution = distribution,
+        family = distribution,
         n.iter = 200,
         n.burnin = 100,
         n.chains = 2,

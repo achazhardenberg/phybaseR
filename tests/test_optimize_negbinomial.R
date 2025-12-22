@@ -52,7 +52,7 @@ fit_opt <- because(
     data = data,
     tree = tree,
     equations = equations,
-    distribution = c(Y = "negbinomial"),
+    family = c(Y = "negbinomial"),
     optimise = TRUE,
     n.iter = 2000,
     n.burnin = 1000,

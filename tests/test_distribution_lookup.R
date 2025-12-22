@@ -48,7 +48,7 @@ fit_ordinal <- because(
     n.iter = 500,
     n.chains = 1,
     equations = list(IUCN ~ X, Y ~ X),
-    distribution = c(IUCN = "ordinal") # Y distribution not specified!
+    family = c(IUCN = "ordinal") # Y distribution not specified!
 )
 
 cat("\n✓ SUCCESS: Model ran without error\n")

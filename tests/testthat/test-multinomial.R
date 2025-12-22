@@ -13,13 +13,13 @@ test_that("Multinomial distribution runs successfully", {
     # Latent 1 (Cat 2 vs 1)
     beta1_0 <- 0.5
     beta1_1 <- 1.2
-    phy1 <- MASS::mvrnorm(1, mu = rep(0, N), Sigma = 0.8 * C + diag(0.1, N))
+    phy1 <- rnorm(N, sd = 0.5)
     L1 <- beta1_0 + beta1_1 * X + phy1
 
     # Latent 2 (Cat 3 vs 1)
     beta2_0 <- -0.5
     beta2_1 <- -0.8
-    phy2 <- MASS::mvrnorm(1, mu = rep(0, N), Sigma = 0.5 * C + diag(0.1, N))
+    phy2 <- rnorm(N, sd = 0.5)
     L2 <- beta2_0 + beta2_1 * X + phy2
 
     # Softmax
@@ -41,8 +41,8 @@ test_that("Multinomial distribution runs successfully", {
     res <- because(
         equations = list(Y ~ X),
         data = data_list,
-        tree = tree,
-        distribution = c(Y = "multinomial"),
+        
+        family = c(Y = "multinomial"),
         n.iter = 1000,
         n.burnin = 500,
         n.chains = 2,

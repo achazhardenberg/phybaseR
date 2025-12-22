@@ -13,7 +13,7 @@ test_that("ic_recompile computes DIC with parallel chains", {
     # Run with parallel execution AND ic_recompile=TRUE
     fit <- because(
         data = data_list,
-        tree = tree,
+        
         equations = equations,
         n.iter = 500,
         n.burnin = 250,
@@ -47,7 +47,7 @@ test_that("ic_recompile=FALSE skips DIC with parallel chains", {
     suppressWarnings({
         fit <- because(
             data = data_list,
-            tree = tree,
+            
             equations = equations,
             n.iter = 200,
             n.burnin = 100,

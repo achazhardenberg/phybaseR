@@ -22,7 +22,7 @@ fit_bin <- because(
     data = data_bin,
     tree = tree,
     equations = list(Gregarious ~ X),
-    distribution = c(Gregarious = "binomial"),
+    family = c(Gregarious = "binomial"),
     n.chains = 3,
     n.iter = 2000,
     n.burnin = 1000,

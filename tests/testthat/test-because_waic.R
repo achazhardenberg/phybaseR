@@ -3,7 +3,6 @@ test_that("because_waic calculates WAIC correctly", {
 
     # Setup: Run a minimal model to get a valid because object with an rjags model
     set.seed(123)
-    tree <- ape::rtree(10)
     X <- rnorm(10)
     Y <- 0.5 * X + rnorm(10)
     data <- list(X = X, Y = Y, N = 10)
@@ -11,7 +10,6 @@ test_that("because_waic calculates WAIC correctly", {
 
     fit <- because(
         data = data,
-        tree = tree,
         equations = equations,
         n.iter = 100,
         n.burnin = 50,
@@ -34,7 +32,6 @@ test_that("because_waic auto-refits when WAIC=FALSE", {
     skip_on_cran()
 
     set.seed(123)
-    tree <- ape::rtree(10)
     X <- rnorm(10)
     Y <- 0.5 * X + rnorm(10)
     data <- list(X = X, Y = Y, N = 10)
@@ -42,7 +39,6 @@ test_that("because_waic auto-refits when WAIC=FALSE", {
 
     fit_no_waic <- because(
         data = data,
-        tree = tree,
         equations = equations,
         n.iter = 50,
         n.burnin = 10,
