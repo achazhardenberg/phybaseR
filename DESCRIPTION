@@ -20,7 +20,6 @@ Encoding: UTF-8
 LazyData: true
 Imports:
     rjags,
-    ape,
     coda,
     stats,
     parallel,
@@ -31,6 +30,9 @@ Depends:
 RoxygenNote: 7.3.3
 Roxygen: list(markdown = TRUE)
 Suggests: 
+    ape,
+    because.phylo,
+    because.occupancy,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0),
@@ -46,3 +48,4 @@ Suggests:
 VignetteBuilder: knitr, rmarkdown
 URL: https://because-pkg.github.io/because/, https://github.com/because-pkg/because
 BugReports: https://github.com/because-pkg/because/issues
+

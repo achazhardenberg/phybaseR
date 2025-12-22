@@ -10,14 +10,14 @@ because(
   id_col = NULL,
   structure = NULL,
   tree = NULL,
-  monitor = NULL,
+  monitor = "interpretable",
   n.chains = 3,
   n.iter = 12500,
-  n.burnin = n.iter/5,
+  n.burnin = floor(n.iter/5),
   n.thin = 10,
   DIC = TRUE,
   WAIC = FALSE,
-  n.adapt = n.iter/5,
+  n.adapt = floor(n.iter/5),
   quiet = FALSE,
   verbose = FALSE,
   dsep = FALSE,
@@ -25,10 +25,10 @@ because(
   family = NULL,
   distribution = NULL,
   latent = NULL,
-  latent_method = c("correlations", "explicit"),
+  latent_method = "correlations",
   standardize_latent = TRUE,
   parallel = FALSE,
-  n.cores = 1,
+  n.cores = parallel::detectCores() - 1,
   cl = NULL,
   ic_recompile = TRUE,
   optimise = TRUE,
@@ -37,7 +37,8 @@ because(
   hierarchy = NULL,
   link_vars = NULL,
   fix_residual_variance = NULL,
-  priors = NULL
+  priors = NULL,
+  reuse_models = NULL
 )
 }
 \arguments{
@@ -195,9 +196,20 @@ Example: \code{c(response_var = 1)}.}
 \item{priors}{Optional named list of character strings specifying custom priors for specific parameters.
 Enables overriding default uninformative priors.
 Example: \code{list(alpha_Response = "dnorm(0, 0.001)", beta_Response_Predictor = "dnorm(1, 10)")}.}
+
+\item{reuse_models}{List of previously fitted 'because' models to scan for reusable d-separation test results.
+If a test in the current run matches a test in a reused model (same formula), the result is copied
+instead of re-running JAGS. \strong{Note}: Computing standard is consistent data is the user's responsibility.}
 }
 \value{
-A list of class \code{"because"} with model output and diagnostics.
+An object of class \code{"because"} containing:
+\item{samples}{MCMC samples (mcmc.list).}
+\item{parameter_map}{Data frame mapping parameter names to model variables.}
+\item{model}{JAGS model code.}
+\item{summary}{Summary of posterior samples.}
+\item{dsep_results}{List of d-separation test results (if dsep=TRUE).}
+\item{DIC}{Deviance Information Criterion (if DIC=TRUE).}
+\item{WAIC}{Watanabe-Akaike Information Criterion (if WAIC=TRUE).}
 }
 \description{
 This function fits a Bayesian ...

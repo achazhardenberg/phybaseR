@@ -63,6 +63,7 @@ because_model <- function(
   multi.tree = FALSE,
   latent_method = "correlations",
   structure_names = "phylo",
+  structures = NULL,
   random_structure_names = NULL,
   random_terms = list(),
   vars_with_na = NULL,
@@ -149,10 +150,14 @@ because_model <- function(
   # Helper: Get N string (for hierarchical-aware array dimensions)
   N_str <- function() main_loop_N
 
-  has_phylo <- !is.null(structure_names) && length(structure_names) > 0
+  has_structure <- !is.null(structure_names) && length(structure_names) > 0
   has_random <- !is.null(random_structure_names) &&
     length(random_structure_names) > 0
-  independent <- !has_phylo && !has_random
+  independent <- !has_structure && !has_random
+
+  # Flag for multi-structure (e.g., multiPhylo with 3D precision arrays)
+  # This applies to ANY structure type when multi.tree is TRUE
+  is_multi_structure <- multi.tree
 
   beta_counter <- list()
   response_counter <- list()
@@ -208,6 +213,20 @@ because_model <- function(
     "  # Structural equations"
   )
 
+  # --- Generic Structure Setup ---
+  if (!is.null(structures)) {
+    for (s_name in names(structures)) {
+      # Dispatch to S3 generic
+      def <- jags_structure_definition(
+        structures[[s_name]],
+        optimize = optimise
+      )
+      if (!is.null(def$setup_code)) {
+        model_lines <- c(model_lines, def$setup_code)
+      }
+    }
+  }
+
   # --- Handle Exogenous Latent Variables ---
   # These are variables with variability (latent) but NOT response variables (no equation)
   # JAGS needs a prior for them (e.g. X[i] ~ dnorm(0, 1.0E-06))
@@ -222,7 +241,8 @@ because_model <- function(
     vars_with_variability <- names(variability_list)
     exogenous_vars <- setdiff(vars_with_variability, all_responses)
 
-    if (multi.tree) {
+    # Legacy Multi-tree Setup (Fallback if structures not provided)
+    if (multi.tree && is.null(structures)) {
       model_lines <- c(
         model_lines,
         "  # Multi-tree sampling",
@@ -950,7 +970,7 @@ because_model <- function(
               tau_u <- paste0("tau_u_", response, suffix, s_suffix)
 
               prec_name <- paste0("Prec_", s_name)
-              prec_index <- if (multi.tree && s_name == "phylo") {
+              prec_index <- if (multi.tree && is_multi_structure) {
                 paste0(prec_name, "[1:N, 1:N, K]")
               } else {
                 paste0(prec_name, "[1:N, 1:N]")
@@ -1153,7 +1173,7 @@ because_model <- function(
             tau_u <- paste0("tau_u_", response, suffix, s_suffix)
 
             prec_name <- paste0("Prec_", s_name)
-            prec_index <- if (multi.tree && s_name == "phylo") {
+            prec_index <- if (multi.tree && is_multi_structure) {
               paste0(prec_name, "[1:N, 1:N, K]")
             } else {
               paste0(prec_name, "[1:N, 1:N]")
@@ -1277,7 +1297,7 @@ because_model <- function(
             tau_u <- paste0("tau_u_", response, suffix, s_suffix)
 
             prec_name <- paste0("Prec_", s_name)
-            prec_index <- if (multi.tree && s_name == "phylo") {
+            prec_index <- if (multi.tree && is_multi_structure) {
               paste0(prec_name, "[1:N, 1:N, k]")
             } else {
               paste0(prec_name, "[1:N, 1:N]")
@@ -1400,11 +1420,17 @@ because_model <- function(
           tau_u <- paste0("tau_u_", response, suffix)
           tau_e <- paste0("tau_e_", response, suffix)
 
-          # Handle multi-tree
-          prec_index <- if (multi.tree) {
-            "Prec_phylo[1:N, 1:N, K]"
+          # Handle multi-tree with generic structure naming
+          s_name <- if (length(structure_names) > 0) {
+            structure_names[1]
           } else {
-            "Prec_phylo[1:N, 1:N]"
+            "struct"
+          }
+          prec_name <- paste0("Prec_", s_name)
+          prec_index <- if (is_multi_structure) {
+            paste0(prec_name, "[1:N, 1:N, K]")
+          } else {
+            paste0(prec_name, "[1:N, 1:N]")
           }
 
           model_lines <- c(
@@ -1448,7 +1474,7 @@ because_model <- function(
             tau_u <- paste0("tau_u_", response, suffix, s_suffix)
 
             prec_name <- paste0("Prec_", s_name)
-            prec_index <- if (multi.tree && s_name == "phylo") {
+            prec_index <- if (multi.tree && is_multi_structure) {
               paste0(prec_name, "[1:N, 1:N, K]")
             } else {
               paste0(prec_name, "[1:N, 1:N]")
@@ -1514,11 +1540,17 @@ because_model <- function(
             total_u <- paste0(total_u, " + ", u, "[", group_idx, "[i]]")
           }
 
-          # Handle multi-tree
-          prec_index <- if (multi.tree) {
-            "Prec_phylo[1:N, 1:N, K]"
+          # Handle multi-tree with generic structure naming
+          s_name <- if (length(structure_names) > 0) {
+            structure_names[1]
           } else {
-            "Prec_phylo[1:N, 1:N]"
+            "struct"
+          }
+          prec_name <- paste0("Prec_", s_name)
+          prec_index <- if (is_multi_structure) {
+            paste0(prec_name, "[1:N, 1:N, K]")
+          } else {
+            paste0(prec_name, "[1:N, 1:N]")
           }
 
           model_lines <- c(
@@ -1543,85 +1575,33 @@ because_model <- function(
 
         # Initialize random effects accumulator for psi
         total_u <- ""
-        if (optimise) {
-          # Phylogenetic / N-dim Structures
-          for (s_name in structure_names) {
-            s_suffix <- paste0("_", s_name)
-            u_std <- paste0("u_std_", response, suffix, s_suffix)
-            u <- paste0("u_", response, suffix, s_suffix)
+        # Initialize structure effect accumulator
+        total_u <- ""
+        if (optimise && !is.null(structures)) {
+          for (s_name in names(structures)) {
+            s_suffix <- if (length(structures) > 1) paste0("_", s_name) else ""
+            u_var <- paste0("u_", response, suffix, s_suffix)
             tau_u <- paste0("tau_u_", response, suffix, s_suffix)
 
-            prec_name <- paste0("Prec_", s_name)
-            prec_index <- if (multi.tree && s_name == "phylo") {
-              paste0(prec_name, "[1:N, 1:N, K]")
-            } else {
-              paste0(prec_name, "[1:N, 1:N]")
+            # Structure Generic
+            def <- jags_structure_definition(
+              structures[[s_name]],
+              variable_name = u_var,
+              optimize = optimise,
+              precision_parameter = tau_u
+            )
+
+            if (!is.null(def$error_prior)) {
+              model_lines <- c(model_lines, def$error_prior)
             }
-
-            model_lines <- c(
-              model_lines,
-              paste0(
-                "  ",
-                u_std,
-                "[1:N] ~ dmnorm(zeros[1:N], ",
-                prec_index,
-                ")"
-              ),
-              paste0(
-                "  for (i in 1:N) { ",
-                u,
-                "[i] <- ",
-                u_std,
-                "[i] / sqrt(",
-                tau_u,
-                ") }"
-              )
-            )
-            total_u <- paste0(total_u, " + ", u, "[i]")
-          }
-
-          # Random Group Structures
-          for (r_name in random_structure_names) {
-            s_suffix <- paste0("_", r_name)
-            u_std <- paste0("u_std_", response, suffix, s_suffix)
-            u <- paste0("u_", response, suffix, s_suffix)
-            tau_u <- paste0("tau_u_", response, suffix, s_suffix)
-
-            n_groups <- paste0("N_", r_name)
-            group_idx <- paste0("group_", r_name)
-            prec_name <- paste0("Prec_", r_name)
-            zeros_name <- paste0("zeros_", r_name)
-
-            model_lines <- c(
-              model_lines,
-              paste0(
-                "  ",
-                u_std,
-                "[1:",
-                n_groups,
-                "] ~ dmnorm(",
-                zeros_name,
-                "[1:",
-                n_groups,
-                "], ",
-                prec_name,
-                "[1:",
-                n_groups,
-                ", 1:",
-                n_groups,
-                "])"
-              ),
-              paste0("  for (g in 1:", n_groups, ") {"),
-              paste0("    ", u, "[g] <- ", u_std, "[g] / sqrt(", tau_u, ")"),
-              paste0("  }")
-            )
-            total_u <- paste0(total_u, " + ", u, "[", group_idx, "[i]]")
+            total_u <- paste0(total_u, " + ", u_var, "[i]")
           }
         }
 
+        # Start Observation Loop and Link Psi
         model_lines <- c(
           model_lines,
-          paste0("  # Occupancy Model: ", response),
+          paste0("  # Occupancy Model for ", response),
           paste0("  for (i in 1:N) {"),
           paste0(
             "    logit(psi_",
@@ -1631,66 +1611,28 @@ because_model <- function(
             suffix,
             "[i]",
             total_u
-          ), # Add random effects to psi
-          paste0("    z_", response, "[i] ~ dbern(psi_", response, "[i])")
-        )
-
-        # Loop over observations (replicates)
-        # We need N_reps for this variable
-        n_reps_var <- paste0("N_reps_", response, "[i]")
-
-        # Check if p_Response equation exists (by checking if mu_p_Response will be generated)
-        # Or if we should assume constant p
-        # For simplicity, if mu_p_Response exists in JAGS code, use it. But we don't know yet.
-        # Assumption: User MUST provide `p_Response ~ ...` equation if they want regression on p.
-        # If not, we might need a default intercept.
-        # Actually, if p_Response is NOT in equations, mu_p_Response won't exist.
-        # So we should define p here if needed.
-
-        # For MVP: We assume p_Response equation IS provided if you want p model.
-        # But wait, how do we link mu_p_Response to p?
-        # mu_p_Response[i] gives logit(p[i]).
-        # Or if p varies by visit? mu_p_Response[i] is vector.
-        # If covariates vary by visit? Not supported by basic linear predictor generator yet.
-        # So assume p[i] is constant across visits for now (Site-Covariates only).
-
-        model_lines <- c(
-          model_lines,
-          paste0("    logit(p_", response, "[i]) <- mu_p_", response, "[i]"), # Expected from p_Response equation
-          paste0("    for (j in 1:", n_reps_var, ") {"),
-          paste0(
-            "      ",
-            response,
-            "_obs[i, j] ~ dbern(z_",
-            response,
-            "[i] * p_",
-            response,
-            "[i])"
-          ),
-          # Add log-likelihood calculation for WAIC
-          paste0(
-            "      lik_matrix_",
-            response,
-            "[i, j] <- logdensity.bern(",
-            response,
-            "_obs[i, j], z_",
-            response,
-            "[i] * p_",
-            response,
-            "[i])"
-          ),
-          paste0("    }"),
-          # Sum log-likelihoods for this site i
-          paste0(
-            "    log_lik_",
-            response,
-            "[i] <- sum(lik_matrix_",
-            response,
-            "[i, 1:",
-            n_reps_var,
-            "])"
           )
         )
+
+        # Family Generic Dispatch
+        fam_obj <- get_family_object(dist)
+
+        # Locate predictors for this response (needed for generic)
+        curr_pred <- NULL
+        for (eq in eq_list) {
+          if (eq$response == response) {
+            curr_pred <- eq$predictors
+            break
+          }
+        }
+
+        def <- jags_family_definition(fam_obj, response, curr_pred)
+        if (!is.null(def$model_code)) {
+          model_lines <- c(model_lines, def$model_code)
+        } else {
+          stop(paste("Unknown distribution or missing module for:", dist))
+        }
+
         model_lines <- c(model_lines, "  }")
       } else if (dist == "negbinomial" || dist == "zinb") {
         # Negative Binomial error term: err[1:N]
@@ -1712,7 +1654,7 @@ because_model <- function(
             tau_u <- paste0("tau_u_", response, suffix, s_suffix)
 
             prec_name <- paste0("Prec_", s_name)
-            prec_index <- if (multi.tree && s_name == "phylo") {
+            prec_index <- if (multi.tree && is_multi_structure) {
               paste0(prec_name, "[1:N, 1:N, K]")
             } else {
               paste0(prec_name, "[1:N, 1:N]")
@@ -1925,27 +1867,32 @@ because_model <- function(
       err_terms <- vars_error_terms[[var]]
       suffix <- if ((response_counter[[var]] %||% 0) > 1) "1" else ""
 
-      # Define Phylogenetic Error (if structure exists)
+      # Define Structure Error (if structure exists)
       phylo_term <- ""
       if (length(structure_names) > 0) {
-        err_phylo <- paste0("err_phylo_", var)
+        # Use first structure for induced correlations
+        s_name <- structure_names[1]
+        prec_name <- paste0("Prec_", s_name)
+        err_phylo <- paste0("err_", s_name, "_", var)
 
         if (optimise) {
-          # Optimised: use Prec_phylo (for MAG/induced correlations)
-          prec_index <- if (multi.tree) {
-            "Prec_phylo[1:N, 1:N, K]"
+          # Optimised: use Prec_<structure> (for MAG/induced correlations)
+          prec_index <- if (is_multi_structure) {
+            paste0(prec_name, "[1:N, 1:N, K]")
           } else {
-            "Prec_phylo[1:N, 1:N]"
+            paste0(prec_name, "[1:N, 1:N]")
           }
 
           model_lines <- c(
             model_lines,
-            paste0("  tau_phylo_", var, " ~ dgamma(1, 1)"),
+            paste0("  tau_", s_name, "_", var, " ~ dgamma(1, 1)"),
             paste0(
               "  ",
               err_phylo,
               "[1:N] ~ dmnorm(zero_vec[], ",
-              "tau_phylo_",
+              "tau_",
+              s_name,
+              "_",
               var,
               " * ",
               prec_index,
@@ -1953,23 +1900,23 @@ because_model <- function(
             )
           )
         } else {
-          # Non-optimised: use Prec_phylo equivalent (or TAU_phylo via VCV)
-          # BETTER: Use Prec_phylo directly if available (standardized approach)
-          # Check if dealing with multi.tree or single
-          prec_index <- if (multi.tree) {
-            "Prec_phylo[1:N, 1:N, K]"
+          # Non-optimised: use Prec_<structure> directly
+          prec_index <- if (is_multi_structure) {
+            paste0(prec_name, "[1:N, 1:N, K]")
           } else {
-            "Prec_phylo[1:N, 1:N]"
+            paste0(prec_name, "[1:N, 1:N]")
           }
 
           model_lines <- c(
             model_lines,
-            paste0("  tau_phylo_", var, " ~ dgamma(1, 1)"),
+            paste0("  tau_", s_name, "_", var, " ~ dgamma(1, 1)"),
             paste0(
               "  ",
               err_phylo,
               "[1:N] ~ dmnorm(zero_vec[], ",
-              "tau_phylo_",
+              "tau_",
+              s_name,
+              "_",
               var,
               " * ",
               prec_index,
@@ -2314,8 +2261,14 @@ because_model <- function(
             }
           }
 
+          # Generate Structure Priors
           for (s_name in structure_names) {
-            s_suffix <- paste0("_", s_name) # Always append suffix to match model logic
+            # Use conditional suffix logic to match model generation (generic blocks)
+            s_suffix <- if (length(structure_names) > 1) {
+              paste0("_", s_name)
+            } else {
+              ""
+            }
 
             tau_u <- paste0("tau_u_", response, suffix, s_suffix)
 
@@ -2342,7 +2295,8 @@ because_model <- function(
               !dist %in% c("negbinomial", "zinb")
           ) {
             s_name <- structure_names[1]
-            s_suffix <- paste0("_", s_name)
+            s_suffix <- "" # Conditional logic implies empty string for single structure
+
             tau_u_name <- paste0("tau_u_", response, suffix, s_suffix)
             model_lines <- c(
               model_lines,
@@ -2959,43 +2913,51 @@ because_model <- function(
           }
         }
       } else if (dist == "gaussian" && use_glmm) {
-        # GLMM covariance for latent error term
-        # err ~ dmnorm(0, tau_phylo * inv(VCV))
+        # GLMM covariance for latent error term with generic structure support
+        # err ~ dmnorm(0, tau_<structure> * inv(VCV))
+
+        s_name <- if (length(structure_names) > 0) {
+          structure_names[1]
+        } else {
+          "struct"
+        }
 
         err <- paste0("err_", response, suffix)
         mu_err <- paste0("mu_err_", response, suffix)
-        tau_phylo <- paste0("tau_phylo_", response, suffix)
+        tau_struct <- paste0("tau_", s_name, "_", response, suffix)
         tau_res <- paste0("tau_res_", response, suffix)
 
         # Priors
         model_lines <- c(
           model_lines,
           paste0("  ", tau_res, " ~ dgamma(1, 1)"),
-          paste0("  ", tau_phylo, " ~ dgamma(1, 1)"),
+          paste0("  ", tau_struct, " ~ dgamma(1, 1)"),
           # Calculate lambda for reporting
           paste0(
             "  lambda",
             response,
             suffix,
             " <- (1/",
-            tau_phylo,
+            tau_struct,
             ") / ((1/",
-            tau_phylo,
+            tau_struct,
             ") + (1/",
             tau_res,
             "))"
           )
         )
 
-        if (multi.tree) {
+        if (is_multi_structure) {
           model_lines <- c(
             model_lines,
             paste0(
-              "  TAU_phylo_",
+              "  TAU_",
+              s_name,
+              "_",
               response,
               suffix,
               " <- ",
-              tau_phylo,
+              tau_struct,
               " * inverse(multiVCV[,,K])"
             ),
             paste0(
@@ -3003,7 +2965,9 @@ because_model <- function(
               err,
               "[1:N] ~ dmnorm(",
               mu_err,
-              "[], TAU_phylo_",
+              "[], TAU_",
+              s_name,
+              "_",
               response,
               suffix,
               ")"
@@ -3013,11 +2977,13 @@ because_model <- function(
           model_lines <- c(
             model_lines,
             paste0(
-              "  TAU_phylo_",
+              "  TAU_",
+              s_name,
+              "_",
               response,
               suffix,
               " <- ",
-              tau_phylo,
+              tau_struct,
               " * inverse(VCV)"
             ),
             paste0(
@@ -3025,7 +2991,9 @@ because_model <- function(
               err,
               "[1:N] ~ dmnorm(",
               mu_err,
-              "[], TAU_phylo_",
+              "[], TAU_",
+              s_name,
+              "_",
               response,
               suffix,
               ")"
@@ -3097,32 +3065,8 @@ because_model <- function(
         # tau_u priors for optimise=TRUE are already generated in the main priors block (lines ~2293-2311)
         # No need to duplicate here.
       } else if (dist == "occupancy") {
-        # Occupancy models have no residual error (binary latent state),
-        # but they MAY have phylogenetic/structure random effects.
-        # If so, we must generate priors for the structure variances.
-
-        if (optimise) {
-          for (s_name in structure_names) {
-            s_suffix <- paste0("_", s_name)
-            tau_u <- paste0("tau_u_", response, suffix, s_suffix)
-            model_lines <- c(
-              model_lines,
-              paste0("  ", tau_u, " ~ dgamma(1, 1)"),
-              paste0(
-                "  sigma_",
-                response,
-                suffix,
-                s_suffix,
-                " <- 1/sqrt(",
-                tau_u,
-                ")"
-              )
-            )
-          }
-        } else {
-          # Optimise=FALSE logic for occupancy not fully implemented yet
-          # (would require replicating marginal logic if needed)
-        }
+        # Occupancy priors are handled by the generic loop above (lines 2243+ for structures)
+        # No specific residual variance (tau_e) needed.
       } else if (dist == "multinomial") {
         # Multinomial covariance
         # We need TAU[,,k] for each k
@@ -3210,14 +3154,19 @@ because_model <- function(
   # Covariance for correlated vars (phylogenetic part)
   # Only use VCV approach when optimise=FALSE; optimised models use eigendecomposition
   if (!is.null(induced_correlations) && !optimise) {
+    s_name <- if (length(structure_names) > 0) structure_names[1] else "struct"
     for (var in correlated_vars) {
-      if (multi.tree) {
+      if (is_multi_structure) {
         model_lines <- c(
           model_lines,
           paste0(
-            "  TAU_phylo_",
+            "  TAU_",
+            s_name,
+            "_",
             var,
-            " <- tau_phylo_",
+            " <- tau_",
+            s_name,
+            "_",
             var,
             " * inverse(multiVCV[,,K])"
           )
@@ -3225,7 +3174,17 @@ because_model <- function(
       } else {
         model_lines <- c(
           model_lines,
-          paste0("  TAU_phylo_", var, " <- tau_phylo_", var, " * inverse(VCV)")
+          paste0(
+            "  TAU_",
+            s_name,
+            "_",
+            var,
+            " <- tau_",
+            s_name,
+            "_",
+            var,
+            " * inverse(VCV)"
+          )
         )
       }
     }
@@ -3299,37 +3258,26 @@ because_model <- function(
         # Standard random effects formulation
         additive_terms <- ""
 
-        for (s_name in structure_names) {
-          s_suffix <- if (length(structure_names) > 1) {
-            paste0("_", s_name)
-          } else {
-            ""
-          }
+        if (!is.null(structures)) {
+          for (s_name in names(structures)) {
+            s_suffix <- if (length(structures) > 1) paste0("_", s_name) else ""
+            u_var <- paste0("u_", var, s_suffix)
+            tau_u <- paste0("tau_u_", var, s_suffix)
 
-          u_std <- paste0("u_std_", var, s_suffix)
-          u <- paste0("u_", var, s_suffix)
-          tau_u <- paste0("tau_u_", var, s_suffix)
-
-          prec_name <- paste0("Prec_", s_name)
-          prec_idx <- paste0(prec_name, "[1:N, 1:N]")
-          if (multi.tree && s_name == "phylo") {
-            prec_idx <- paste0(prec_name, "[1:N, 1:N, K]")
-          }
-
-          model_lines <- c(
-            model_lines,
-            paste0("  ", u_std, "[1:N] ~ dmnorm(zeros[1:N], ", prec_idx, ")"),
-            paste0(
-              "  for (i in 1:N) { ",
-              u,
-              "[i] <- ",
-              u_std,
-              "[i] / sqrt(",
-              tau_u,
-              ") }"
+            # Call Generic to define the error term u ~ dmnorm(...)
+            def <- jags_structure_definition(
+              structures[[s_name]],
+              variable_name = u_var,
+              optimize = optimise,
+              precision_parameter = tau_u
             )
-          )
-          additive_terms <- paste0(additive_terms, " + ", u, "[i]")
+
+            if (!is.null(def$error_prior)) {
+              model_lines <- c(model_lines, def$error_prior)
+            }
+
+            additive_terms <- paste0(additive_terms, " + ", u_var, "[i]")
+          }
         }
 
         tau_e <- paste0("tau_e_", var)
@@ -3517,11 +3465,56 @@ because_model <- function(
           }
         }
       } else {
+        # Single Structure Case for Imputed Variable
+        s_name <- structure_names[1]
+        s_suffix <- paste0("_", s_name)
+        tau_u <- paste0("tau_u_", var, s_suffix)
+
+        # Need to define tau_u for this variable
         model_lines <- c(
           model_lines,
-          paste0("  lambda", var, " ~ dunif(0, 1)"),
-          paste0("  tau", var, " ~ dgamma(1, 1)"),
-          paste0("  sigma", var, " <- 1/sqrt(tau", var, ")")
+          paste0("  ", tau_u, " ~ dgamma(1, 1)"),
+          paste0("  sigma_", var, s_suffix, " <- 1/sqrt(", tau_u, ")")
+        )
+
+        # Also generate tau_e if needed (same logic as above)
+        if (
+          !is.null(fix_residual_variance) &&
+            (var %in%
+              names(fix_residual_variance) ||
+              length(fix_residual_variance) == 1)
+        ) {
+          val <- if (var %in% names(fix_residual_variance)) {
+            fix_residual_variance[[var]]
+          } else {
+            fix_residual_variance[[1]]
+          }
+          prec <- 1 / val
+          model_lines <- c(
+            model_lines,
+            paste0("  tau_e_", var, " <- ", prec, " # Fixed")
+          )
+        } else {
+          model_lines <- c(
+            model_lines,
+            paste0("  tau_e_", var, " ~ dgamma(1, 1)")
+          )
+        }
+
+        # Calculate lambda for compatibility
+        model_lines <- c(
+          model_lines,
+          paste0(
+            "  lambda",
+            var,
+            " <- (1/",
+            tau_u,
+            ") / ((1/",
+            tau_u,
+            ") + (1/tau_e_",
+            var,
+            "))"
+          )
         )
       }
     }

@@ -21,7 +21,7 @@
 #' For each path, it identifies the corresponding regression coefficients (\code{beta_...})
 #' and computes their product across all MCMC samples.
 #'
-#' \strong{Note:} This assumes linear relationships for indirect effects ($\beta_1 \times \beta_2$).
+#' \strong{Note:} This assumes linear relationships for indirect effects (\eqn{\beta_1 \times \beta_2}).
 #' For non-linear models, this is an approximation of the average causal effect.
 #'
 #' @importFrom igraph graph_from_data_frame all_simple_paths as_ids

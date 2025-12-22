@@ -130,49 +130,21 @@ dsep_standard <- function(
   # Combine exclusions
   exclude_vars <- c(grouping_vars, poly_internal_vars)
 
-  # Normalize equations for DAG: Map occupancy Species to psi_Species and p_Species
-  # This ensures the DAG has the correct nodes for d-separation tests
-  # and avoids duplicate nodes (e.g. 'Fox' and 'psi_Fox').
+  # Normalize equations for DAG using Modular Family Logic
+  # Example: Map occupancy Species to psi_Species and p_Species
   norm_equations <- equations
-  if (!is.null(family) && any(family == "occupancy")) {
-    occ_vars <- names(family)[family == "occupancy"]
-    for (ov in occ_vars) {
-      norm_equations <- lapply(norm_equations, function(eq) {
-        f_str <- paste(deparse(eq), collapse = " ")
-        # Rename response and predictors
-        # Replace ov with psi_ov, but avoid double renaming if already psi_ or p_
-        # Use word boundaries to avoid partial matches
-        # 1. Response
-        if (grepl(paste0("^", ov, "($|\\s+~|\\s+\\()"), f_str)) {
-          f_str <- sub(paste0("^", ov), paste0("psi_", ov), f_str)
-        }
-        # 2. Predictors (RHS)
-        # Match 'ov' not preceded by 'p_' or 'psi_' or 'z_'
-        # We use a simpler approach: replace ' ov ' or ' + ov' or ' ~ ov'
-        # R regex doesn't support lookbehinds well, so we'll do literal replacements
-        f_str <- gsub(
-          paste0("~\\s+", ov, "($|\\s+\\+)"),
-          paste0("~ psi_", ov, " "),
-          f_str
+  if (!is.null(family)) {
+    unique_dists <- unique(family)
+    for (dist in unique_dists) {
+      fam_obj <- get_family_object(dist)
+      vars_with_dist <- names(family)[family == dist]
+      for (v in vars_with_dist) {
+        norm_equations <- transform_graph_for_dsep(
+          fam_obj,
+          norm_equations,
+          variable = v
         )
-        f_str <- gsub(
-          paste0("\\+\\s+", ov, "($|\\s+\\+)"),
-          paste0("+ psi_", ov, " "),
-          f_str
-        )
-        f_str <- gsub(
-          paste0("\\*\\s+", ov, "($|\\s+\\+)"),
-          paste0("* psi_", ov, " "),
-          f_str
-        )
-
-        # Also handle standard formulas where spaces might be missing
-        f_str <- gsub(paste0("~", ov), paste0("~psi_", ov), f_str)
-        f_str <- gsub(paste0("\\+", ov), paste0("+psi_", ov), f_str)
-        f_str <- gsub(paste0("\\*", ov), paste0("*psi_", ov), f_str)
-
-        return(as.formula(f_str))
-      })
+      }
     }
   }
 
@@ -297,37 +269,21 @@ dsep_with_latents <- function(
   family = NULL,
   quiet = FALSE
 ) {
-  # --- Occupancy/Measurement Error Normalization ---
-  # Normalize equations for DAG: Map occupancy Species to psi_Species
+  # --- Modular Graph Transformation ---
+  # Normalize equations for DAG using Modular Family Logic (e.g. Occupancy)
   augmented_equations <- equations
-  if (!is.null(family) && any(family == "occupancy")) {
-    occ_vars <- names(family)[family == "occupancy"]
-    for (ov in occ_vars) {
-      augmented_equations <- lapply(augmented_equations, function(eq) {
-        f_str <- paste(deparse(eq), collapse = " ")
-        if (grepl(paste0("^", ov, "($|\\s+~|\\s+\\()"), f_str)) {
-          f_str <- sub(paste0("^", ov), paste0("psi_", ov), f_str)
-        }
-        f_str <- gsub(
-          paste0("~\\s+", ov, "($|\\s+\\+)"),
-          paste0("~ psi_", ov, " "),
-          f_str
+  if (!is.null(family)) {
+    unique_dists <- unique(family)
+    for (dist in unique_dists) {
+      fam_obj <- get_family_object(dist)
+      vars_with_dist <- names(family)[family == dist]
+      for (v in vars_with_dist) {
+        augmented_equations <- transform_graph_for_dsep(
+          fam_obj,
+          augmented_equations,
+          variable = v
         )
-        f_str <- gsub(
-          paste0("\\+\\s+", ov, "($|\\s+\\+)"),
-          paste0("+ psi_", ov, " "),
-          f_str
-        )
-        f_str <- gsub(
-          paste0("\\*\\s+", ov, "($|\\s+\\+)"),
-          paste0("* psi_", ov, " "),
-          f_str
-        )
-        f_str <- gsub(paste0("~", ov), paste0("~psi_", ov), f_str)
-        f_str <- gsub(paste0("\\+", ov), paste0("+psi_", ov), f_str)
-        f_str <- gsub(paste0("\\*", ov), paste0("*psi_", ov), f_str)
-        return(as.formula(f_str))
-      })
+      }
     }
   }
 

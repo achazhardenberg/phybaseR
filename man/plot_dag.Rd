@@ -16,7 +16,8 @@ plot_dag(
   edge_width_range = c(0.5, 2),
   edge_color_scheme = c("directional", "binary", "monochrome"),
   show_coefficients = TRUE,
-  coords = NULL
+  coords = NULL,
+  family = NULL
 )
 }
 \arguments{

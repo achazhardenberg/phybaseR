@@ -33,6 +33,6 @@ It uses \code{igraph} to find all simple paths from \code{exposure} to \code{out
 For each path, it identifies the corresponding regression coefficients (\code{beta_...})
 and computes their product across all MCMC samples.
 
-\strong{Note:} This assumes linear relationships for indirect effects ($\beta_1 \times \beta_2$).
+\strong{Note:} This assumes linear relationships for indirect effects (\eqn{\beta_1 \times \beta_2}).
 For non-linear models, this is an approximation of the average causal effect.
 }
