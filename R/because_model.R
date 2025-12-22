@@ -2291,7 +2291,7 @@ because_model <- function(
               !dist %in% c("negbinomial", "zinb")
           ) {
             s_name <- structure_names[1]
-            s_suffix <- "" # Conditional logic implies empty string for single structure
+            s_suffix <- paste0("_", s_name)
 
             tau_u_name <- paste0("tau_u_", response, suffix, s_suffix)
             model_lines <- c(
@@ -3503,6 +3503,7 @@ because_model <- function(
           paste0(
             "  lambda",
             var,
+            s_suffix,
             " <- (1/",
             tau_u,
             ") / ((1/",

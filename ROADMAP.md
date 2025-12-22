@@ -208,6 +208,19 @@ This document outlines planned features and extensions for the `because` package
     -   **`broom` Compatibility**: `tidy(fit)` and `glance(fit)` for seamless plotting.
 -   **Priority**: **Medium** (Excellent for complex ecological datasets with many species).
 
+## 22. Sequentially Linked Models (Modular Bayesian Inference)
+
+-   **Concept**: Enable "Cut Feedback" inference by linking separate models sequentially (Model A $\to$ Model B) instead of fitting one giant joint model.
+-   **Use Case**: Cross-scale linking (e.g., Species Occupancy $\to$ Trait Evolution) where feedback from B to A is undesirable or computationally prohibitive.
+-   **Mechanism**:
+    1.  **Extract Samples**: `extract_latent(modelA, format="samples", n_samples=1000)` returns a matrix of posterior draws for the latent variable.
+    2.  **Empirical Posterior Propagation**: Pass this matrix to Model B using `variability = "samples"`.
+    3.  **JAGS Implementation**: Model B uses `dcat` to sample from the provided empirical distribution for each observation $i$:
+        $$k_i \sim \text{Categorical}(1/N_{samples})$$
+        $$X_i = X_{samples}[i, k_i]$$
+-   **Benefit**: Propagates full non-Gaussian uncertainty (e.g., bimodality) without making parametric assumptions (like Mean/SE). Correctly handles "data with error" in a fully Bayesian framework.
+-   **Causal Inference**: Standard d-separation tests remain valid **within** each model step. The input from Model A is treated as an exogenous parent node in Model B's graph, allowing for conditional independence tests involving this latent variable.
+
 ------------------------------------------------------------------------
 
 # Appendix: Technical Implementation Strategies

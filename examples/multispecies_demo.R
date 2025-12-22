@@ -55,7 +55,7 @@ results <- because(
     ),
     data = data_list,
     distribution = c(Y = "occupancy"),
-    dsep = TRUE, # Enable d-separation tests
+    dsep = FALSE, # Enable d-separation tests
     n.iter = 2500, # Sampling iterations
     quiet = FALSE
 )
@@ -64,6 +64,8 @@ results <- because(
 # -----------------
 cat("\n--- Model Summary ---\n")
 print(summary(results))
+plot_dag(results)
+results$model
 
 # Look closely at the "d-separation Tests" section in the output.
 # It should confirm that Habitat and Wind are independent, verifying

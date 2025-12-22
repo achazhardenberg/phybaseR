@@ -36,8 +36,32 @@ First, let's load the package and the standard `rhino` dataset.
 
 ```{r, results='hide', message=FALSE}
 library(because)
-data(rhino.dat)
-data(rhino.tree)
+library(ape)
+
+# Simulate Rhino-like data (since original data is in because.phybase)
+set.seed(123)
+N <- 100
+rhino.tree <- rtree(N)
+rhino.tree$edge.length <- rhino.tree$edge.length / max(branching.times(rhino.tree))
+
+# Simulate traits to match the sem8 structure
+# LS ~ BM
+# NL ~ BM + RS
+# DD ~ NL
+BM <- rnorm(N)
+RS <- rnorm(N)
+LS <- 0.5 * BM + rnorm(N)
+NL <- 0.5 * BM + 0.6 * RS + rnorm(N)
+DD <- 0.5 * NL + rnorm(N)
+
+rhino.dat <- data.frame(
+  SP = rhino.tree$tip.label,
+  BM = BM,
+  RS = RS,
+  LS = LS,
+  NL = NL,
+  DD = DD
+)
 ```
 
 ## Simulating Missing Data
@@ -136,13 +160,11 @@ summary(sem8_na.bc)
 # sigma_LS_res   1.000  2156
 # sigma_NL_phylo 1.002  1307
 # sigma_NL_res   1.002  2183
-# 
+#
 # DIC:
-# Mean deviance:  884.1 
-# penalty 189.7 
-# Penalized deviance: 1074 
-
-
+# Mean deviance:  884.1
+# penalty 189.7
+# Penalized deviance: 1074
 ```
 
 ### What happened automatically?

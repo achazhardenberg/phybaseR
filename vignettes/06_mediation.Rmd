@@ -9,8 +9,8 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-    collapse = TRUE,
-    comment = "#>"
+  collapse = TRUE,
+  comment = "#>"
 )
 ```
 
@@ -30,10 +30,32 @@ Once again we will use the **Rhinogradentia** dataset to investigate the causal 
 
 ```{r setup}
 library(because)
+library(ape)
 
-# Load data
-data(rhino.dat)
-data(rhino.tree)
+# Simulate Rhino-like data (since original data is in because.phybase)
+set.seed(123)
+N <- 100
+rhino.tree <- rtree(N)
+rhino.tree$edge.length <- rhino.tree$edge.length / max(branching.times(rhino.tree))
+
+# Simulate traits to match the sem8 structure
+# LS ~ BM
+# NL ~ BM + RS
+# DD ~ NL
+BM <- rnorm(N)
+RS <- rnorm(N)
+LS <- 0.5 * BM + rnorm(N)
+NL <- 0.5 * BM + 0.6 * RS + rnorm(N)
+DD <- 0.5 * NL + rnorm(N)
+
+rhino.dat <- data.frame(
+  SP = rhino.tree$tip.label,
+  BM = BM,
+  RS = RS,
+  LS = LS,
+  NL = NL,
+  DD = DD
+)
 ```
 
 ## 2. Fit the Structural Equation Model
@@ -45,18 +67,18 @@ We want to investigate the effect of **Body Mass (BM)** on **Dispersal Distance 
 ```{r fit_model}
 # Define the structural equations (sem8)
 sem8_eq <- list(
-    LS ~ BM,
-    NL ~ BM + RS,
-    DD ~ NL
+  LS ~ BM,
+  NL ~ BM + RS,
+  DD ~ NL
 )
 
 # Fit the model
 fit <- because(
-    equations = sem8_eq,
-    data = rhino.dat,
-    structure = rhino.tree,
-    id_col = "SP",# Map species names
-  n.iter = 1000  #We run a short run just for demonstration. Run it longer for real analyses!
+  equations = sem8_eq,
+  data = rhino.dat,
+  structure = rhino.tree,
+  id_col = "SP", # Map species names
+  n.iter = 1000 # We run a short run just for demonstration. Run it longer for real analyses!
 )
 ```
 

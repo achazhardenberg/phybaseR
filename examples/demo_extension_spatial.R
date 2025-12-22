@@ -34,6 +34,13 @@ spatial_knn <- function(coords, k = 5) {
     num <- rep(k, n)
     weights <- rep(1, length(adj)) # Equal weights
 
+    # Also compute a precision matrix for the standard because workflow
+    # Using exponential decay distance weighting
+    W <- exp(-dist_mat / mean(dist_mat))
+    diag(W) <- 0
+    D <- diag(rowSums(W))
+    Prec <- D - 0.99 * W # CAR-like precision matrix
+
     structure(
         list(
             coords = coords,
@@ -41,7 +48,8 @@ spatial_knn <- function(coords, k = 5) {
             adj = adj,
             num = num,
             weights = weights,
-            n = n
+            n = n,
+            Prec = Prec
         ),
         class = c("spatial_knn", "because_structure")
     )
@@ -62,19 +70,15 @@ jags_structure_definition.spatial_knn <- function(
     variable_name = "u_spatial",
     ...
 ) {
-    # JAGS uses dcar_normal for CAR models
-    # adj, weights, num are passed as data
-
+    # Standard multivariate normal with precision matrix
     setup_code <- c(
-        "    # Spatial CAR Structure (k-nearest neighbors)",
-        "    # Precision parameter for spatial random effect"
+        "    # Spatial KNN Structure (distance-weighted precision)"
     )
 
     error_prior <- paste0(
         "    ",
         variable_name,
-        "[1:N] ~ dcar_normal(",
-        "adj_spatial[], weights_spatial[], num_spatial[], tau_spatial)"
+        "[1:N] ~ dmnorm(zeros[1:N], tau_spatial_knn * Prec_spatial_knn[1:N, 1:N])"
     )
 
     return(list(
@@ -87,18 +91,18 @@ jags_structure_definition.spatial_knn <- function(
 #'
 #' @param structure A spatial_knn object
 #' @param data The model data
+#' @param optimize Whether to use optimized formulation
 #' @param ... Additional arguments
 #' @return List with structure_object and data_list
 prepare_structure_data.spatial_knn <- function(
     structure,
     data,
+    optimize = TRUE,
     ...
 ) {
-    # CAR models need: adj, weights, num
+    # Return the precision matrix - this is what because expects
     data_list <- list(
-        adj_spatial = structure$adj,
-        weights_spatial = structure$weights,
-        num_spatial = structure$num
+        Prec_spatial_knn = structure$Prec
     )
 
     return(list(
@@ -113,7 +117,7 @@ prepare_structure_data.spatial_knn <- function(
 
 # Simulate spatial data
 set.seed(42)
-n <- 100
+n <- 50 # Smaller for fast demo
 
 # Random coordinates
 coords <- data.frame(
@@ -124,9 +128,10 @@ coords <- data.frame(
 # True spatial effect (smooth surface)
 true_spatial <- sin(coords$x / 2) + cos(coords$y / 2)
 
-# Simulate response
-X <- rnorm(n) # Covariate
-Y <- 0.5 * X + true_spatial + rnorm(n, sd = 0.5)
+# Simulate response with known effect
+beta_true <- 0.5
+X <- rnorm(n)
+Y <- beta_true * X + true_spatial + rnorm(n, sd = 0.3)
 
 # Create data
 sim_data <- data.frame(Y = Y, X = X)
@@ -138,29 +143,30 @@ cat("\n=== Custom Spatial Structure Created ===\n")
 cat("Class:", class(spatial_struct)[1], "\n")
 cat("N sites:", spatial_struct$n, "\n")
 cat("K neighbors:", spatial_struct$k, "\n")
+cat("Precision matrix dimensions:", dim(spatial_struct$Prec), "\n")
 
 # -----------------------------------------------------------------------------
 # Fit the model using because!
 # -----------------------------------------------------------------------------
 cat("\n=== Fitting Model with Custom Spatial Structure ===\n")
+cat("Model: Y ~ X with spatial_knn covariance structure\n")
+cat("True beta:", beta_true, "\n\n")
 
-# NOTE: For this demo to fully work, because needs to integrate the
-# spatial structure into the model. The current implementation focuses
-# on phylogenetic structures, but the S3 dispatch mechanism is in place.
-
-# To see the JAGS code that WOULD be generated:
-cat("\n--- Generated JAGS Code ---\n")
-jags_def <- jags_structure_definition(
-    spatial_struct,
-    variable_name = "u_spatial"
+# Fit the model
+fit <- because(
+    equations = list(Y ~ X),
+    data = sim_data,
+    structure = spatial_struct, # Our custom structure!
+    n.iter = 1000,
+    n.chains = 2,
+    quiet = FALSE
 )
-cat(jags_def$setup_code, sep = "\n")
-cat(jags_def$error_prior, "\n")
 
-cat("\n--- Prepared Data ---\n")
-prep_data <- prepare_structure_data(spatial_struct, sim_data)
-cat("Data elements:", names(prep_data$data_list), "\n")
+# Show results
+cat("\n=== Model Results ===\n")
+print(summary(fit))
 
 cat("\n=== Demo Complete! ===\n")
 cat("This demonstrates that external developers can extend 'because'\n")
 cat("by simply defining two S3 methods. No package modification needed!\n")
+cat("\nThe estimated beta coefficient should be close to", beta_true, "\n")

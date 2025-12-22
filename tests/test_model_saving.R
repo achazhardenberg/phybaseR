@@ -1,14 +1,24 @@
 library(becauseR)
 
-data("rhino.dat")
-data("rhino.tree")
+# Simulate data instead of loading rhino.dat
+set.seed(123)
+N <- 50
+rhino.tree <- ape::rtree(N)
+rhino.tree$edge.length <- rhino.tree$edge.length /
+    max(ape::branching.times(rhino.tree))
+
+BM <- rnorm(N)
+NL <- rnorm(N)
+DD <- rnorm(N)
+LS <- rnorm(N)
+RS <- rnorm(N)
 
 data_list <- list(
-    BM = rhino.dat$BM,
-    NL = rhino.dat$NL,
-    DD = rhino.dat$DD,
-    LS = rhino.dat$LS,
-    RS = rhino.dat$RS
+    BM = BM,
+    NL = NL,
+    DD = DD,
+    LS = LS,
+    RS = RS
 )
 
 equations_1 <- list(LS ~ BM, NL ~ BM, DD ~ NL, RS ~ DD)
@@ -21,7 +31,8 @@ fit_rhino_dsep <- because(
     equations = equations_1,
     dsep = TRUE,
     n.iter = 500,
-    n.burnin = 250
+    n.burnin = 250,
+    quiet = TRUE
 )
 
 cat("\n\n=== Checking Models Field ===\n")

@@ -24,6 +24,7 @@
 #' meaningful identifiers.
 #'
 #' @export
+#' @export
 extract_latent <- function(object, type = "occupancy", variables = NULL) {
     if (!inherits(object, "because")) {
         stop("Object must be of class 'because'.")

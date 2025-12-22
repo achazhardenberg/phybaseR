@@ -132,8 +132,19 @@
 #' @param priors Optional named list of character strings specifying custom priors for specific parameters.
 #'   Enables overriding default uninformative priors.
 #'   Example: \code{list(alpha_Response = "dnorm(0, 0.001)", beta_Response_Predictor = "dnorm(1, 10)")}.
+#' @param reuse_models List of previously fitted 'because' models to scan for reusable d-separation test results.
+#'   If a test in the current run matches a test in a reused model (same formula), the result is copied
+#'   instead of re-running JAGS. **Note**: Computing standard is consistent data is the user's responsibility.
 #'
-#' @return A list of class \code{"because"} with model output and diagnostics.
+#' @return An object of class \code{"because"} containing:
+#'   \item{samples}{MCMC samples (mcmc.list).}
+#'   \item{parameter_map}{Data frame mapping parameter names to model variables.}
+#'   \item{model}{JAGS model code.}
+#'   \item{summary}{Summary of posterior samples.}
+#'   \item{dsep_results}{List of d-separation test results (if dsep=TRUE).}
+#'   \item{DIC}{Deviance Information Criterion (if DIC=TRUE).}
+#'   \item{WAIC}{Watanabe-Akaike Information Criterion (if WAIC=TRUE).}
+#'
 #' @export
 #' @importFrom ape vcv.phylo branching.times
 #' @importFrom rjags jags.model coda.samples dic.samples jags.samples
@@ -147,14 +158,14 @@ because <- function(
   id_col = NULL,
   structure = NULL,
   tree = NULL,
-  monitor = NULL,
+  monitor = "interpretable",
   n.chains = 3,
   n.iter = 12500,
-  n.burnin = n.iter / 5,
+  n.burnin = floor(n.iter / 5),
   n.thin = 10,
   DIC = TRUE,
   WAIC = FALSE,
-  n.adapt = n.iter / 5,
+  n.adapt = floor(n.iter / 5),
   quiet = FALSE,
   verbose = FALSE,
   dsep = FALSE,
@@ -162,10 +173,10 @@ because <- function(
   family = NULL,
   distribution = NULL,
   latent = NULL,
-  latent_method = c("correlations", "explicit"),
+  latent_method = "correlations",
   standardize_latent = TRUE,
   parallel = FALSE,
-  n.cores = 1,
+  n.cores = parallel::detectCores() - 1,
   cl = NULL,
   ic_recompile = TRUE,
   optimise = TRUE,
@@ -174,9 +185,19 @@ because <- function(
   hierarchy = NULL, # Hierarchical data: level ordering (e.g., "site > individual")
   link_vars = NULL, # Hierarchical data: variables linking levels
   fix_residual_variance = NULL, # Optional: fix residual variance (tau_e) for specific variables
-  priors = NULL # Optional: custom priors list
+  priors = NULL, # Optional: custom priors list
+  reuse_models = NULL
 ) {
   # --- Input Validation & Setup ---
+
+  # Allow single formula input
+  if (inherits(equations, "formula")) {
+    equations <- list(equations)
+  }
+
+  if (!quiet) {
+    is_list_debug <- is.list(data) && !is.data.frame(data)
+  }
 
   # WAIC Validity Check: Conditional WAIC (optimise=FALSE) is misleading
   if (!optimise && WAIC) {
@@ -209,9 +230,6 @@ because <- function(
   if (is.null(data)) {
     stop("Argument 'data' must be provided.")
   }
-  if (is.null(tree) && !quiet) {
-    message("No tree provided. Running standard (non-phylogenetic) SEM.")
-  }
   if (is.null(equations)) {
     stop("Argument 'equations' must be provided.")
   }
@@ -225,6 +243,56 @@ because <- function(
       family <- distribution
     }
   }
+
+  # --- Family Object Normalization (Custom Families Support) ---
+  # Store original family objects for S3 dispatch, normalize to character vector
+  family_objects <- list()
+  if (!is.null(family)) {
+    if (inherits(family, "because_family")) {
+      # Single family object for all responses
+      family_objects[["_default"]] <- family
+      family <- setNames(family$family, "_default")
+    } else if (is.list(family) && !is.null(names(family))) {
+      # Named list: check each element for family objects
+      for (nm in names(family)) {
+        if (inherits(family[[nm]], "because_family")) {
+          family_objects[[nm]] <- family[[nm]]
+          family[[nm]] <- family[[nm]]$family
+        }
+      }
+      family <- unlist(family)
+    }
+    # Now family is a named character vector, family_objects stores originals
+  }
+
+  # --- Equation Normalization (User Request) ---
+  # Support psi_Species and z_Species as aliases for Species in occupancy models.
+  # This ensures the linear predictor (mu_Species) is correctly linked.
+  equations <- lapply(equations, function(eq) {
+    resp <- as.character(eq)[2]
+    if (grepl("^(psi_|z_)", resp)) {
+      base_name <- sub("^(psi_|z_)", "", resp)
+      # check if base name is occupancy (explicitly or via data presence)
+      is_occ <- FALSE
+      if (
+        !is.null(family) &&
+          !is.na(family[base_name]) &&
+          family[base_name] == "occupancy"
+      ) {
+        is_occ <- TRUE
+      }
+      if (base_name %in% names(data)) {
+        is_occ <- TRUE
+      } # Potential occupancy if matrix or vector
+
+      if (is_occ) {
+        f_str <- paste(deparse(eq), collapse = " ")
+        f_str <- sub(paste0("^", resp), base_name, f_str)
+        return(as.formula(f_str))
+      }
+    }
+    return(eq)
+  })
 
   # --- Auto-Stacking (Multispecies Input) ---
   # If data is a list containing species-specific matrices (and equation is generic Y ~ ...),
@@ -288,18 +356,23 @@ because <- function(
   ))
 
   # 5. Filter data frame early to save memory if it's a data.frame
-  if (is.data.frame(data)) {
+  if (is.data.frame(data) || (is.list(data) && !is.data.frame(data))) {
     available_vars <- intersect(names(data), model_vars)
     if (length(available_vars) > 0) {
-      if (!quiet && ncol(data) > length(available_vars)) {
+      if (!quiet && length(data) > length(available_vars)) {
         message(sprintf(
           "Filtering data to %d relevant columns (out of %d) to optimize memory.",
           length(available_vars),
-          ncol(data)
+          length(data)
         ))
       }
       # Keep only relevant columns
-      data <- data[, available_vars, drop = FALSE]
+      # If list, subset list. If df, subset df.
+      if (is.data.frame(data)) {
+        data <- data[, available_vars, drop = FALSE]
+      } else {
+        data <- data[available_vars]
+      }
     }
   }
 
@@ -393,6 +466,14 @@ because <- function(
       keys <- sapply(random_terms, function(x) {
         paste(x$response, x$group, sep = "|")
       })
+
+      if (!quiet) {
+        if (length(random_terms) > 0) {
+          msg <- sapply(random_terms, function(x) {
+            paste(x$response, x$group, sep = "|")
+          })
+        } else {}
+      }
       random_terms <- random_terms[!duplicated(keys)]
     }
   }
@@ -588,12 +669,13 @@ because <- function(
       stop("Failed to assemble hierarchical data frame for random effects.")
     }
 
+    if (!quiet) {}
     rand_structs <- create_group_structures(data, random_terms)
     random_structures <- rand_structs$structures
     random_data_updates <- rand_structs$data_updates
   }
 
-  if (is.data.frame(data)) {
+  if (is.data.frame(data) || (is.list(data) && !is.data.frame(data))) {
     # Check for long format data requiring matrix conversion
     # If any variability specified as 'reps', we attempt to auto-format using because_format_data
     has_reps <- any(grepl("reps", variability))
@@ -677,7 +759,7 @@ because <- function(
     }
   }
 
-  if (is.data.frame(data)) {
+  if (is.data.frame(data) || (is.list(data) && !is.data.frame(data))) {
     # Extract all variable names from fixed equations
     eq_vars <- unique(unlist(lapply(equations, all.vars)))
 
@@ -688,8 +770,14 @@ because <- function(
     }
 
     # Check which variables are in the data frame
-    available_vars <- intersect(eq_vars, colnames(data))
-    missing_vars <- setdiff(eq_vars, colnames(data))
+    available_vars <- intersect(
+      eq_vars,
+      (if (is.null(names(data))) character(0) else names(data))
+    )
+    missing_vars <- setdiff(
+      eq_vars,
+      (if (is.null(names(data))) character(0) else names(data))
+    )
 
     # Some "missing" vars might be latent - that's OK
     if (!is.null(latent)) {
@@ -713,24 +801,25 @@ because <- function(
 
     # Handle id_col for matching to tree/structure
     row_ids <- NULL
-    if (!is.null(id_col)) {
-      if (!id_col %in% colnames(data)) {
-        stop("id_col '", id_col, "' not found in data frame columns.")
-      }
-      row_ids <- data[[id_col]]
-      # Remove id_col from variables to include (it's metadata, not a model variable)
-      available_vars <- setdiff(available_vars, id_col)
-    } else {
-      # Try to use row names if they're meaningful (not just 1, 2, 3...)
-      rn <- rownames(data)
-      if (!is.null(rn) && !all(rn == as.character(seq_len(nrow(data))))) {
-        row_ids <- rn
+    if (is.data.frame(data)) {
+      if (!is.null(id_col)) {
+        if (!id_col %in% names(data)) {
+          stop("id_col '", id_col, "' not found in data frame columns.")
+        }
+        row_ids <- data[[id_col]]
+        # Remove id_col from variables to include (it's metadata, not a model variable)
+        available_vars <- setdiff(available_vars, id_col)
+      } else {
+        # Try to use row names if they're meaningful (not just 1, 2, 3...)
+        rn <- rownames(data)
+        if (!is.null(rn) && !all(rn == as.character(seq_len(nrow(data))))) {
+          row_ids <- rn
+        }
       }
     }
-
     # Also check for variability-related columns (X_se, X_obs patterns)
-    se_cols <- grep("_se$", colnames(data), value = TRUE)
-    obs_cols <- grep("_obs$", colnames(data), value = TRUE)
+    se_cols <- grep("_se$", names(data), value = TRUE)
+    obs_cols <- grep("_obs$", names(data), value = TRUE)
 
     # Add generated dummy variables for categorical predictors
     dummy_vars <- character(0)
@@ -757,7 +846,7 @@ because <- function(
     # Convert to list format
     data_list <- list()
     for (var in c(available_vars, extra_cols)) {
-      if (var %in% colnames(original_data)) {
+      if (var %in% names(original_data)) {
         data_list[[var]] <- original_data[[var]]
       }
     }
@@ -861,23 +950,39 @@ because <- function(
 
   # 1. Normalize Input to List
   if (is.null(tree)) {
-    # Independent
-  } else if (
-    inherits(tree, "multiPhylo") ||
-      (is.list(tree) && all(sapply(tree, inherits, "phylo")))
-  ) {
-    structures[["phylo"]] <- tree
-    is_multiple <- TRUE
-  } else if (inherits(tree, "phylo")) {
-    structures[["phylo"]] <- tree
+    # Independent or structure via "structure" argument
+    if (!is.null(structure)) {
+      if (is.matrix(structure)) {
+        structures[["custom"]] <- structure
+      } else {
+        # Generic S3 structure object - use its class name as key
+        class_name <- class(structure)[1]
+        structures[[class_name]] <- structure
+      }
+    }
   } else if (is.matrix(tree)) {
     structures[["custom"]] <- tree
-  } else if (is.list(tree)) {
+  } else if (is.list(tree) && !inherits(tree, "list")) {
+    # It's an S3 object with list base - use class name
+    class_name <- class(tree)[1]
+    # Check if it's a multi-object type (contains multiple items)
+    if (length(tree) > 1 && is.null(names(tree))) {
+      is_multiple <- TRUE
+    }
+    structures[[class_name]] <- tree
+  } else if (
+    is.list(tree) && is.null(class(tree)) || identical(class(tree), "list")
+  ) {
+    # Plain list of structures
     structures <- tree
-    # Safety Check for list
-    if (any(sapply(structures, inherits, "multiPhylo"))) is_multiple <- TRUE
+    # Check for multi-objects in the list
+    for (s in structures) {
+      if (is.list(s) && length(s) > 1) is_multiple <- TRUE
+    }
   } else {
-    stop("Unknown structure format. Must be tree, matrix, or list of them.")
+    # Any other S3 object (phylo, spatial_knn, etc.) - use class name
+    class_name <- class(tree)[1]
+    structures[[class_name]] <- tree
   }
 
   structure_names <- names(structures)
@@ -886,101 +991,101 @@ because <- function(
     names(structures) <- structure_names
   }
 
-  # 2. Process Structures
+  # 2. Process Structures using S3 Generic
   if (length(structures) == 0) {
     # Independent Logic: Determine N from data
-    potential_vectors <- Filter(function(x) is.vector(x) || is.factor(x), data)
-    if (length(potential_vectors) > 0) {
-      N <- length(potential_vectors[[1]])
+    # Include matrices and arrays (useful for occupancy models)
+    potential_objects <- Filter(
+      function(x) is.vector(x) || is.factor(x) || is.matrix(x) || is.array(x),
+      data
+    )
+    if (length(potential_objects) > 0) {
+      obj <- potential_objects[[1]]
+      N <- if (is.matrix(obj) || is.array(obj)) nrow(obj) else length(obj)
     } else {
       stop(
         "Could not determine N from data. Please provide structure or vector data."
       )
     }
   } else {
-    # Structured Logic
-
-    # Helper to standardize tree
-    standardize_tree <- function(phylo_tree) {
-      max_bt <- max(ape::branching.times(phylo_tree))
-      if (abs(max_bt - 1.0) > 0.01) {
-        if (!quiet) {
-          message(sprintf("Standardizing tree (max_bt: %.2f -> 1.0)", max_bt))
-        }
-        phylo_tree$edge.length <- phylo_tree$edge.length / max_bt
-      }
-      return(phylo_tree)
-    }
-
+    # Use S3 Generic for Processing
     for (s_name in structure_names) {
-      obj <- structures[[s_name]]
+      structure_obj <- structures[[s_name]]
 
-      if (is_multiple && s_name == "phylo") {
-        # Multi-Tree (Legacy)
-        obj <- lapply(obj, standardize_tree)
-        K_tree <- length(obj)
-        N_tree <- length(obj[[1]]$tip.label)
+      # Prepare Data
+      prep_res <- prepare_structure_data(
+        structure_obj,
+        data = data,
+        optimize = optimise,
+        quiet = quiet
+      )
 
+      # Merge data updates
+      if (!is.null(prep_res$data_list)) {
+        for (d_name in names(prep_res$data_list)) {
+          data[[d_name]] <- prep_res$data_list[[d_name]]
+        }
+      }
+
+      # Determine N from the processed structure
+      # Look for any square matrix or 3D array in the data_list
+      current_N <- NULL
+      for (d_name in names(prep_res$data_list)) {
+        obj <- prep_res$data_list[[d_name]]
+        if (is.matrix(obj) && nrow(obj) == ncol(obj)) {
+          current_N <- nrow(obj)
+          break
+        } else if (is.array(obj) && length(dim(obj)) == 3) {
+          current_N <- dim(obj)[1]
+          break
+        }
+      }
+
+      # Also check if structure has an 'n' attribute
+      if (is.null(current_N) && !is.null(structure_obj$n)) {
+        current_N <- structure_obj$n
+      }
+
+      if (!is.null(current_N)) {
         if (is.null(N)) {
-          N <- N_tree
-        } else if (N != N_tree) {
-          stop("Dimension mismatch in multi-tree")
+          N <- current_N
+        } else if (N != current_N) {
+          stop(paste("Dimension mismatch in structure:", s_name))
         }
+      }
 
-        # Compute Array of Precisions
-        Prec_array <- array(0, dim = c(N, N, K_tree))
-        for (k in 1:K_tree) {
-          Prec_array[,, k] <- solve(ape::vcv.phylo(obj[[k]]))
-        }
-
-        data[[paste0("Prec_", s_name)]] <- Prec_array
-        data$Ntree <- K_tree
-
-        # Legacy VCV/multiVCV required for some logic
-        # If 'optimise=FALSE', because_model might use VCV.
-
-        if (length(structures) == 1) {
-          multiVCV <- array(0, dim = c(N, N, K_tree))
-          for (k in 1:K_tree) {
-            multiVCV[,, k] <- ape::vcv.phylo(obj[[k]])
-          }
-          data$multiVCV <- multiVCV
-        }
-      } else if (inherits(obj, "phylo")) {
-        obj <- standardize_tree(obj)
-        V <- ape::vcv.phylo(obj)
-        P <- solve(V)
-        if (optimise) {
-          data[[paste0("Prec_", s_name)]] <- P
-        }
-
-        if (is.null(N)) {
-          N <- nrow(V)
-        } else if (nrow(V) != N) {
-          stop(paste("Dimension mismatch in", s_name))
-        }
-
-        if (length(structures) == 1 && !optimise) {
-          data$VCV <- V
-        }
-      } else if (is.matrix(obj)) {
-        V <- obj
-        if (optimise) {
-          data[[paste0("Prec_", s_name)]] <- solve(V)
-        }
-
-        if (is.null(N)) {
-          N <- nrow(V)
-        } else if (nrow(V) != N) {
-          stop(paste("Dimension mismatch in", s_name))
-        }
+      # Update structure object if validated/standardised
+      if (!is.null(prep_res$structure_object)) {
+        structures[[s_name]] <- prep_res$structure_object
       }
     }
 
     if (optimise) {
-      data$zeros <- rep(0, N)
+      if (is.null(N) && "N" %in% names(data)) {
+        N <- data$N
+      } # Last resort
+      if (!is.null(N)) data$zeros <- rep(0, N)
     }
   }
+
+  if (is.null(N) && "N" %in% names(data)) {
+    N <- data$N
+  }
+  if (is.null(N)) {
+    # Try to get N from data - handle both data.frame and list cases
+    if (is.data.frame(data) && nrow(data) > 0) {
+      N <- nrow(data)
+    } else if (is.list(data) && length(data) > 0) {
+      # For lists, use length of first vector element
+      first_vec <- data[[1]]
+      if (is.vector(first_vec) || is.factor(first_vec)) {
+        N <- length(first_vec)
+      } else if (is.matrix(first_vec) || is.array(first_vec)) {
+        N <- nrow(first_vec)
+      }
+    }
+  }
+  data$N <- N
 
   # Only add N x N identity matrix if needed for phylogenetic/latent models
   if (length(structures) > 0 || (!is.null(latent) && length(latent) > 0)) {
@@ -994,7 +1099,6 @@ because <- function(
   ) {
     data$ID2 <- diag(2)
   }
-  data$N <- N
 
   # Handle multinomial and ordinal data
   if (!is.null(family)) {
@@ -1476,6 +1580,23 @@ because <- function(
       # Find variables that appear in equations but not in data
       potential_latents <- setdiff(vars_in_equations, vars_in_data)
 
+      # [NEW 2025-12-21] Remove occupancy variables from potential_latents for d-sep tests
+      # Generic logic above adds vars not in data to 'potential_latents'.
+      # Since 'SpeciesA' is renamed to 'SpeciesA_obs' in data (for occupancy models),
+      # it gets added to potential_latents. We must remove it so d-sep treats it as observed.
+      if (!is.null(family)) {
+        occ_vars <- names(family)[family == "occupancy"]
+        if (length(occ_vars) > 0) {
+          potential_latents <- setdiff(potential_latents, occ_vars)
+          # Also remove p_ variables if present
+          p_vars <- paste0("p_", occ_vars)
+          potential_latents <- setdiff(potential_latents, p_vars)
+          # Also remove psi_ variables
+          psi_vars <- paste0("psi_", occ_vars)
+          potential_latents <- setdiff(potential_latents, psi_vars)
+        }
+      }
+
       # Exclude polynomial internal variables (they're deterministic, not latent)
       if (!is.null(all_poly_terms)) {
         poly_internal_names <- sapply(all_poly_terms, function(x) {
@@ -1508,20 +1629,18 @@ because <- function(
         message("Generating d-separation tests...")
       }
     }
-
     dsep_result <- because_dsep(
       equations,
       latent = latent,
       random_terms = random_terms,
-      hierarchical_info = hierarchical_info,
-      poly_terms = all_poly_terms,
       categorical_vars = if (!is.null(attr(data, "categorical_vars"))) {
         attr(data, "categorical_vars")
       } else {
         NULL
       },
       family = family,
-      quiet = !dsep
+      poly_terms = all_poly_terms,
+      quiet = quiet
     )
 
     # Extract tests and correlations
@@ -1540,6 +1659,41 @@ because <- function(
       dsep_tests <- dsep_result
     }
 
+    # [User Request] Translate tests where response is a psi_ variable
+    # "when psi_Species is a dependent variable, it should be tested (probably as Species ~)"
+    dsep_tests <- lapply(dsep_tests, function(eq) {
+      resp <- as.character(eq)[2]
+      if (grepl("^psi_", resp)) {
+        base_resp <- sub("^psi_", "", resp)
+        # Ensure base_resp exists and is an occupancy variable
+        if (
+          !is.null(family) &&
+            !is.na(family[base_resp]) &&
+            family[base_resp] == "occupancy"
+        ) {
+          # Translate response to base name
+          f_str <- paste(deparse(eq), collapse = " ")
+          # Use regex to replace only the response at the start
+          f_str <- sub(paste0("^", resp), base_resp, f_str)
+
+          # Re-attach test_var from original
+          new_eq <- as.formula(f_str)
+          attr(new_eq, "test_var") <- attr(eq, "test_var")
+          return(new_eq)
+        }
+      }
+      return(eq)
+    })
+
+    # Deduplicate tests in case translation created duplicates
+    dsep_test_strs <- sapply(dsep_tests, function(eq) {
+      # Use trimws and a single space to normalize for string comparison
+      str <- paste(deparse(eq), collapse = " ")
+      gsub("\\s+", " ", trimws(str))
+    })
+
+    dsep_tests <- dsep_tests[!duplicated(dsep_test_strs)]
+
     if (length(dsep_tests) == 0) {
       stop(
         "No d-separation tests implied by the model (model is saturated). Stopping run."
@@ -1550,17 +1704,39 @@ because <- function(
     # Decide whether to run tests in parallel
     use_parallel <- parallel && n.cores > 1 && length(dsep_tests) > 1
 
+    # INCREMENTAL D-SEP: Check for reusable tests
+    reused_results <- list()
+    tests_to_run_indices <- seq_along(dsep_tests)
+
+    if (!is.null(reuse_models)) {
+      incremental_check <- find_reusable_tests(
+        dsep_tests,
+        equations,
+        reuse_models,
+        data,
+        family = family,
+        quiet = quiet
+      )
+      reused_results <- incremental_check$found # List with results at matching indices, NULL otherwise
+      tests_to_run_indices <- incremental_check$missing_indices
+
+      # Override parallel decision if few tests remain
+      if (length(tests_to_run_indices) < 2) {
+        use_parallel <- FALSE
+      }
+    }
+
     if (!quiet) {
       if (use_parallel) {
         message(sprintf(
           "Running %d d-separation tests in parallel on %d cores...",
-          length(dsep_tests),
+          length(tests_to_run_indices), # Corrected message to show actual runs
           n.cores
         ))
       } else {
         message(sprintf(
           "Running %d d-separation tests sequentially...",
-          length(dsep_tests)
+          length(tests_to_run_indices)
         ))
       }
     }
@@ -1581,6 +1757,13 @@ because <- function(
         # Extract variables from this test equation
         test_vars <- all.vars(test_eq)
 
+        # [FIX] Add random effect grouping variables to test_vars
+        # Otherwise get_data_for_variables removes them, causing "Unknown variable N_SiteID"
+        if (!is.null(random_terms) && length(random_terms) > 0) {
+          random_groups <- unique(sapply(random_terms, function(x) x$group))
+          test_vars <- unique(c(test_vars, random_groups))
+        }
+
         # Get appropriate dataset for these variables
         test_data <- get_data_for_variables(
           test_vars,
@@ -1599,24 +1782,133 @@ because <- function(
         }
       }
 
-      # Filter variability/distribution to only variables in the test equation
-      # This prevents 'missing reps' errors for variables not in the current test (e.g. Y in Habitat~Wind)
+      # [REVISED] Populate dsep_equations FIRST, then filter sub_family/sub_variability
+      dsep_equations <- list(test_eq)
+
       test_eq_vars <- all.vars(test_eq)
-      # Include p_Y for occupancy matching if p_Y is in equation
-      test_eq_vars_clean <- unique(c(
-        test_eq_vars,
-        sub("^p_", "", test_eq_vars)
+      # [NEW 2025-12-21] For occupancy models, we must include supporting equations
+      # (detection models and models for latent predictors)
+      dsep_equations <- list(test_eq)
+
+      if (!is.null(family) && any(family == "occupancy")) {
+        # Check if this test involves occupancy variables
+        # We use a loop to ensure we catch supporting equations for newly added variables (recursion)
+        added <- TRUE
+        while (added) {
+          added <- FALSE
+          current_vars <- unique(unlist(lapply(dsep_equations, all.vars)))
+
+          for (v in current_vars) {
+            # Identify variable type
+            # Is v an occupancy variable? (z_X or X)
+            is_occ <- !is.na(family[v]) && family[v] == "occupancy"
+
+            # Is v a detection probability p_X?
+            is_det <- grepl("^p_", v) &&
+              !is.na(family[sub("^p_", "", v)]) &&
+              family[sub("^p_", "", v)] == "occupancy"
+
+            # Is v a psi probability psi_X?
+            is_psi <- grepl("^psi_", v) &&
+              !is.na(family[sub("^psi_", "", v)]) &&
+              family[sub("^psi_", "", v)] == "occupancy"
+
+            base_occ <- if (is_det) {
+              sub("^p_", "", v)
+            } else if (is_psi) {
+              sub("^psi_", "", v)
+            } else {
+              v
+            }
+
+            if (is_occ || is_det || is_psi) {
+              test_eq_resp <- as.character(test_eq)[2]
+
+              # 1. Include detection equation (p_X ~ ...) IF it is NOT the response
+              p_name <- paste0("p_", base_occ)
+              if (p_name != test_eq_resp) {
+                for (eq in equations) {
+                  if (as.character(eq)[2] == p_name) {
+                    # Check if already in dsep_equations (compare as strings)
+                    eq_str <- paste(deparse(eq), collapse = " ")
+                    exists <- any(sapply(dsep_equations, function(e) {
+                      paste(deparse(e), collapse = " ") == eq_str
+                    }))
+                    if (!exists) {
+                      dsep_equations <- c(dsep_equations, list(eq))
+                      added <- TRUE
+                    }
+                  }
+                }
+              }
+
+              # 2. Include base occupancy equation (X ~ ...)
+              should_include_occ <- FALSE
+              if (is_occ && v != test_eq_resp) {
+                should_include_occ <- TRUE
+              }
+              if (is_det && base_occ != test_eq_resp) {
+                should_include_occ <- TRUE
+              }
+              if (
+                is_psi &&
+                  base_occ != test_eq_resp &&
+                  paste0("psi_", base_occ) != test_eq_resp
+              ) {
+                should_include_occ <- TRUE
+              }
+
+              if (should_include_occ) {
+                for (eq in equations) {
+                  if (as.character(eq)[2] == base_occ) {
+                    eq_str <- paste(deparse(eq), collapse = " ")
+                    exists <- any(sapply(dsep_equations, function(e) {
+                      paste(deparse(e), collapse = " ") == eq_str
+                    }))
+                    if (!exists) {
+                      dsep_equations <- c(dsep_equations, list(eq))
+                      added <- TRUE
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      # Now filter variability/family based on ALL variables in dsep_equations
+      all_dsep_vars <- unique(unlist(lapply(dsep_equations, all.vars)))
+      all_dsep_vars_clean <- unique(c(
+        all_dsep_vars,
+        sub("^p_", "", all_dsep_vars),
+        sub("^psi_", "", all_dsep_vars),
+        sub("^z_", "", all_dsep_vars)
       ))
 
       sub_variability <- if (!is.null(variability)) {
-        variability[names(variability) %in% test_eq_vars_clean]
+        variability[names(variability) %in% all_dsep_vars_clean]
       } else {
         NULL
       }
       sub_family <- if (!is.null(family)) {
-        family[names(family) %in% test_eq_vars_clean]
+        family[names(family) %in% all_dsep_vars_clean]
       } else {
         NULL
+      }
+
+      # [User Request] Auto-detect binomial for binary response
+      test_resp <- as.character(test_eq)[2]
+      if (!is.null(test_data[[test_resp]])) {
+        vals <- unique(na.omit(test_data[[test_resp]]))
+        if (length(vals) <= 2 && all(vals %in% c(0, 1))) {
+          if (is.null(sub_family)) {
+            sub_family <- list()
+          }
+          if (is.na(sub_family[test_resp])) {
+            sub_family[[test_resp]] <- "binomial"
+          }
+        }
       }
 
       if (length(sub_variability) == 0) {
@@ -1626,13 +1918,10 @@ because <- function(
         sub_family <- NULL
       }
 
-      # Run model for this single test
-      # We pass dsep=FALSE to treat it as a standard model run
-      # We pass parallel=FALSE to avoid nested parallelism
       fit <- because(
         data = test_data, # Use selected dataset
         tree = tree,
-        equations = list(test_eq), # Pass as list of 1 equation
+        equations = dsep_equations, # Use augmented list
         monitor = monitor_params,
         n.chains = n.chains,
         n.iter = n.iter,
@@ -1660,8 +1949,8 @@ because <- function(
 
       # Extract samples, map, and model
       samples <- fit$samples
-      param_map <- fit$parameter_map
       model_string <- fit$model
+      param_map <- fit$parameter_map
 
       # Update equation index in parameter map to match the d-sep test index
       param_map$equation_index <- i
@@ -1675,42 +1964,121 @@ because <- function(
     }
 
     # Run tests (parallel or sequential)
-    if (use_parallel) {
-      # Setup cluster if not provided
-      if (is.null(cl)) {
-        cl <- parallel::makeCluster(n.cores)
-        on.exit(parallel::stopCluster(cl), add = TRUE)
+    # Only loop over tests_to_run_indices
+    # We still need to populate a full results list of length(dsep_tests)
+    # The 'reused_results' list has NULLs for missing tests and values for found ones.
+
+    new_results_list <- vector("list", length(dsep_tests))
+
+    # Fill in reused results first
+    if (length(reused_results) > 0) {
+      for (i in seq_along(reused_results)) {
+        if (!is.null(reused_results[[i]])) {
+          new_results_list[[i]] <- reused_results[[i]]
+        }
       }
+    }
 
-      # Export necessary objects to cluster
-      parallel::clusterExport(
-        cl,
-        c(
-          "original_data",
-          "tree",
-          "monitor",
-          "n.chains",
-          "n.iter",
-          "n.burnin",
-          "n.thin",
-          "n.adapt",
-          "variability",
-          "family",
-          "latent",
-          "latent_method",
-          "ic_recompile"
-        ),
-        envir = environment()
-      )
+    if (length(tests_to_run_indices) > 0) {
+      if (use_parallel) {
+        # Setup cluster if not provided
+        if (is.null(cl)) {
+          cl <- parallel::makeCluster(n.cores)
+          on.exit(parallel::stopCluster(cl), add = TRUE)
+        }
 
-      # Run tests in parallel
-      results <- parallel::parLapply(
-        cl,
-        seq_along(dsep_tests),
-        function(i) {
+        # Export necessary objects to cluster
+        parallel::clusterExport(
+          cl,
+          c(
+            "original_data",
+            "tree",
+            "monitor",
+            "n.chains",
+            "n.iter",
+            "n.burnin",
+            "n.thin",
+            "n.adapt",
+            "variability",
+            "family",
+            "latent",
+            "latent_method",
+            "ic_recompile"
+          ),
+          envir = environment()
+        )
+
+        # Run tests in parallel
+        results <- parallel::parLapply(
+          cl,
+          seq_along(dsep_tests),
+          function(i) {
+            test_eq <- dsep_tests[[i]]
+            # Monitor betas for ALL predictors in the d-sep equation
+            # We must exclude random effects grouping variables (which are not fixed predictors)
+            parsed_test_eq <- extract_random_effects(list(test_eq))
+            fixed_test_eq <- parsed_test_eq$fixed_equations[[1]]
+
+            test_vars <- all.vars(fixed_test_eq)
+            response <- as.character(fixed_test_eq)[2]
+            predictors <- test_vars[test_vars != response]
+
+            params_to_monitor <- character(0)
+
+            for (predictor in predictors) {
+              # Check if predictor is categorical
+              is_categorical <- FALSE
+              if (!is.null(attr(data, "categorical_vars"))) {
+                cat_vars <- attr(data, "categorical_vars")
+                if (predictor %in% names(cat_vars)) {
+                  is_categorical <- TRUE
+                  dummies <- cat_vars[[predictor]]$dummies
+                  # Monitor all dummy betas
+                  # For Gaussian: beta_Response_Predictor format
+                  # Note: 'dummies' are like 'sex_m'
+                  params_to_monitor <- c(
+                    params_to_monitor,
+                    paste0("beta_", response, "_", dummies)
+                  )
+                }
+              }
+
+              if (!is_categorical) {
+                # Standard continuous predictor
+                params_to_monitor <- c(
+                  params_to_monitor,
+                  paste0("beta_", response, "_", predictor)
+                )
+              }
+            }
+
+            current_monitor <- c(monitor, params_to_monitor) # Combine with global monitor
+
+            # Remove "all" keyword if present, as it causes warnings in d-sep (rjags doesn't support it here)
+            if ("all" %in% current_monitor) {
+              current_monitor <- setdiff(current_monitor, "all")
+            }
+
+            # Run model for this d-sep test
+            current_monitor <- monitor[[as.character(i)]] %||%
+              monitor[["default"]]
+            # Run model for this d-sep test
+            if (!quiet) {
+              message(sprintf("  Testing: %s", deparse(test_eq)))
+              message(sprintf(
+                "    Monitoring: %s",
+                paste(params_to_monitor, collapse = ", ")
+              ))
+            }
+            run_single_dsep_test(i, test_eq, current_monitor) # Pass current_monitor
+          }
+        )
+      } else {
+        # Sequential execution
+        # Loop over only the needed indices
+        seq_results <- lapply(tests_to_run_indices, function(i) {
           test_eq <- dsep_tests[[i]]
           # Monitor betas for ALL predictors in the d-sep equation
-          # We must exclude random effects grouping variables (which are not fixed predictors)
           parsed_test_eq <- extract_random_effects(list(test_eq))
           fixed_test_eq <- parsed_test_eq$fixed_equations[[1]]
 
@@ -1749,85 +2117,35 @@ because <- function(
 
           current_monitor <- c(monitor, params_to_monitor) # Combine with global monitor
 
-          # Remove "all" keyword if present, as it causes warnings in d-sep (rjags doesn't support it here)
+          # Remove "all" keyword if present (sequential mode)
           if ("all" %in% current_monitor) {
             current_monitor <- setdiff(current_monitor, "all")
           }
 
-          # Run model for this d-sep test
           if (!quiet) {
-            message(sprintf("  Testing: %s", deparse(test_eq)))
+            message(sprintf(
+              "  Test %d/%d: %s",
+              i,
+              length(dsep_tests),
+              deparse(test_eq)
+            ))
             message(sprintf(
               "    Monitoring: %s",
               paste(params_to_monitor, collapse = ", ")
             ))
           }
           run_single_dsep_test(i, test_eq, current_monitor) # Pass current_monitor
+        })
+
+        # Assign sequential results to the main list
+        for (j in seq_along(tests_to_run_indices)) {
+          idx <- tests_to_run_indices[j]
+          new_results_list[[idx]] <- seq_results[[j]]
         }
-      )
-    } else {
-      # Sequential execution
-      results <- lapply(seq_along(dsep_tests), function(i) {
-        test_eq <- dsep_tests[[i]]
-        # Monitor betas for ALL predictors in the d-sep equation
-        parsed_test_eq <- extract_random_effects(list(test_eq))
-        fixed_test_eq <- parsed_test_eq$fixed_equations[[1]]
+      }
+    } # End if tests_to_run > 0
 
-        test_vars <- all.vars(fixed_test_eq)
-        response <- as.character(fixed_test_eq)[2]
-        predictors <- test_vars[test_vars != response]
-
-        params_to_monitor <- character(0)
-
-        for (predictor in predictors) {
-          # Check if predictor is categorical
-          is_categorical <- FALSE
-          if (!is.null(attr(data, "categorical_vars"))) {
-            cat_vars <- attr(data, "categorical_vars")
-            if (predictor %in% names(cat_vars)) {
-              is_categorical <- TRUE
-              dummies <- cat_vars[[predictor]]$dummies
-              # Monitor all dummy betas
-              # For Gaussian: beta_Response_Predictor format
-              # Note: 'dummies' are like 'sex_m'
-              params_to_monitor <- c(
-                params_to_monitor,
-                paste0("beta_", response, "_", dummies)
-              )
-            }
-          }
-
-          if (!is_categorical) {
-            # Standard continuous predictor
-            params_to_monitor <- c(
-              params_to_monitor,
-              paste0("beta_", response, "_", predictor)
-            )
-          }
-        }
-
-        current_monitor <- c(monitor, params_to_monitor) # Combine with global monitor
-
-        # Remove "all" keyword if present (sequential mode)
-        if ("all" %in% current_monitor) {
-          current_monitor <- setdiff(current_monitor, "all")
-        }
-
-        if (!quiet) {
-          message(sprintf(
-            "  Test %d/%d: %s",
-            i,
-            length(dsep_tests),
-            deparse(test_eq)
-          ))
-          message(sprintf(
-            "    Monitoring: %s",
-            paste(params_to_monitor, collapse = ", ")
-          ))
-        }
-        run_single_dsep_test(i, test_eq, current_monitor) # Pass current_monitor
-      })
-    }
+    results <- new_results_list
 
     # Combine results
     combined_models <- list()
@@ -1906,7 +2224,8 @@ because <- function(
       dsep = TRUE,
       dsep_tests = dsep_tests,
       dsep_results = results, # Store individual test results for summary
-      induced_correlations = induced_cors
+      induced_correlations = induced_cors,
+      equations = equations # Store original equations for safe reuse
     )
     class(result) <- "because"
     return(result)
@@ -2119,6 +2438,7 @@ because <- function(
     standardize_latent = standardize_latent,
     optimise = optimise,
     structure_names = structure_names,
+    structures = structures,
     random_structure_names = names(random_structures),
     random_terms = random_terms,
     poly_terms = all_poly_terms,
@@ -2497,7 +2817,6 @@ because <- function(
 
     model <- tryCatch(
       {
-        # DEBUG: Print model and data names
         if (verbose) {
           cat("\n--- JAGS MODEL STRING ---\n", model_string, "\n")
         }
@@ -2736,9 +3055,20 @@ because <- function(
     message("Recompiling model for DIC/WAIC calculation...")
 
     # Recompile model with 2 chains for IC calculation (DIC requires >=2)
+    ic_inits <- lapply(1:2, function(i) {
+      c(
+        occupancy_inits,
+        list(
+          .RNG.name = "base::Wichmann-Hill",
+          .RNG.seed = 12345 + i
+        )
+      )
+    })
+
     ic_model <- rjags::jags.model(
       model_file,
       data = data,
+      inits = ic_inits,
       n.chains = 2,
       n.adapt = n.adapt,
       quiet = quiet
