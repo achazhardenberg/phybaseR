@@ -352,7 +352,8 @@ because <- function(
     global_random_vars,
     id_col,
     if (!is.null(family)) names(family),
-    if (!is.null(variability) && !is.character(variability)) names(variability)
+    if (!is.null(variability) && !is.character(variability)) names(variability),
+    "N" # Explicitly keep N if provided
   ))
 
   # 5. Filter data frame early to save memory if it's a data.frame
@@ -770,8 +771,15 @@ because <- function(
     }
 
     # Check which variables are in the data frame
+    # Check which variables are in the data frame
+    # We must include "N" if it exists, as it's needed for optimized loops
+    cols_to_keep <- unique(c(eq_vars, "N"))
+    if (!is.null(variability) && !is.character(variability)) {
+      cols_to_keep <- c(cols_to_keep, names(variability))
+    }
+
     available_vars <- intersect(
-      eq_vars,
+      cols_to_keep,
       (if (is.null(names(data))) character(0) else names(data))
     )
     missing_vars <- setdiff(
@@ -844,6 +852,7 @@ because <- function(
     extra_cols <- c(se_cols, obs_cols, dummy_vars)
 
     # Convert to list format
+
     data_list <- list()
     for (var in c(available_vars, extra_cols)) {
       if (var %in% names(original_data)) {
@@ -1011,7 +1020,6 @@ because <- function(
     # Use S3 Generic for Processing
     for (s_name in structure_names) {
       structure_obj <- structures[[s_name]]
-
       # Prepare Data
       prep_res <- prepare_structure_data(
         structure_obj,
@@ -1041,9 +1049,12 @@ because <- function(
         }
       }
 
-      # Also check if structure has an 'n' attribute
-      if (is.null(current_N) && !is.null(structure_obj$n)) {
-        current_N <- structure_obj$n
+      # If still NULL, check for 'n' attribute (safe way)
+      if (is.null(current_N)) {
+        n_attr <- attr(structure_obj, "n")
+        if (!is.null(n_attr) && is.numeric(n_attr)) {
+          current_N <- n_attr
+        }
       }
 
       if (!is.null(current_N)) {
@@ -1062,14 +1073,13 @@ because <- function(
 
     if (optimise) {
       if (is.null(N) && "N" %in% names(data)) {
-        N <- data$N
+        N <- if (is.list(data)) data$N[1] else data[["N"]][1]
       } # Last resort
-      if (!is.null(N)) data$zeros <- rep(0, N)
     }
   }
 
   if (is.null(N) && "N" %in% names(data)) {
-    N <- data$N
+    N <- if (is.list(data)) data$N[1] else data[["N"]][1]
   }
   if (is.null(N)) {
     # Try to get N from data - handle both data.frame and list cases
@@ -1086,19 +1096,18 @@ because <- function(
     }
   }
   data$N <- N
+  # Only add 'zeros' vector if using ZIP or ZINB (Poisson trick)
+  # OR if we have structures (which often use dmnorm(zeros, ...))
+  if (!is.null(N) && is.null(data$zeros)) {
+    needs_zeros <- any(family %in% c("zip", "zinb", "occupancy")) ||
+      length(structures) > 0
+    if (needs_zeros) {
+      data$zeros <- rep(0, N)
+    }
+  }
 
-  # Only add N x N identity matrix if needed for phylogenetic/latent models
-  if (length(structures) > 0 || (!is.null(latent) && length(latent) > 0)) {
-    data$ID <- diag(N)
-  }
-  if (
-    !is.null(latent_method) &&
-      latent_method == "correlations" &&
-      !is.null(latent) &&
-      length(latent) > 0
-  ) {
-    data$ID2 <- diag(2)
-  }
+  # ID is currently unused in model templates, removing to avoid JAGS warnings
+  # ID2 is also unused in current correlation templates
 
   # Handle multinomial and ordinal data
   if (!is.null(family)) {
