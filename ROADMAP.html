@@ -23,7 +23,7 @@
     <li><a class="dropdown-item" href="articles/03_phylogenetic_models.html">Phylogenetic Models</a></li>
     <li><a class="dropdown-item" href="articles/04_missing_data.html">Missing Data Imputation in because</a></li>
     <li><a class="dropdown-item" href="articles/05_custom_priors.html">Custom Priors and Mechanistic Constraints</a></li>
-    <li><a class="dropdown-item" href="articles/06_mediation.html">Automated Mediation Analysis</a></li>
+    <li><a class="dropdown-item" href="articles/06_mediation.html">Mediation Analysis</a></li>
   </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json"></form></li>
@@ -340,16 +340,18 @@
 <li>
 <strong>Core Principle</strong>: The traditional <code><a href="reference/because.html">because()</a></code> function remains the stable engine. This DSL is a lightweight wrapper.</li>
 <li>
-<strong>Proposed Syntax</strong> (Matching TidySEM): <code>r     model &lt;- tidy_because(data) %&gt;%       add_paths(Risk ~ Population + Climate) %&gt;%       set_distribution(Risk = "binomial") %&gt;%  # 'because' specific extension       estimate_jags()</code>
+<strong>Proposed Syntax</strong> (Matching TidySEM): <code>r     model &lt;- tidy_because(data) |&gt;       add_paths(Risk ~ Population + Climate) |&gt;       set_family(Risk = "binomial") |&gt;  # 'because' specific extension       estimate_jags()</code>
 </li>
 <li>
 <strong>Key Features</strong>:
 <ul><li>
 <strong><code>add_paths()</code></strong>: Incrementally build equations.</li>
 <li>
-<strong><code>set_distribution()</code></strong>: Explicitly handle families (Bernoulli, Poisson, etc).</li>
+<strong><code>set_family()</code></strong>: Explicitly handle families (Bernoulli, Poisson, etc).</li>
 <li>
 <strong><code>set_variability()</code></strong>: Explicitly handle measurement error.</li>
+<li>
+<strong>Base Pipe (<code>|&gt;</code>)</strong>: Uses the native R pipe (requires R &gt;= 4.1.0) to avoid <code>magrittr</code> dependency.</li>
 <li>
 <strong><code>broom</code> Compatibility</strong>: <code>tidy(fit)</code> and <code>glance(fit)</code> for seamless plotting.</li>
 </ul></li>

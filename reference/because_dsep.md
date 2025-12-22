@@ -100,8 +100,8 @@ ind_tests <- because_dsep(equations)
 #> I( RS , DD | NL ) 
 #> I( RS , LS | BM ) 
 #> I( BM , DD | NL ) 
-#> I( NL , LS | RS, BM ) 
-#> I( DD , LS | NL, BM ) 
+#> I( NL , LS | BM, RS ) 
+#> I( DD , LS | BM, NL ) 
 
 # With latent variable
 equations_latent <- list(X ~ Quality, Y ~ Quality)

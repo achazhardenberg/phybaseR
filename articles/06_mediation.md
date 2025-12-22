@@ -1,4 +1,4 @@
-# Automated Mediation Analysis
+# Mediation Analysis
 
 ## Introduction
 
@@ -28,9 +28,7 @@ causal drivers of **Dispersal Distance (DD)**.
 ``` r
 library(because)
 
-# Load package data
-# Note: In a vignette context before installation, data() might be tricky,
-# but assuming standard execution, these should be available.
+# Load data
 data(rhino.dat)
 data(rhino.tree)
 ```
@@ -61,7 +59,7 @@ fit <- because(
     data = rhino.dat,
     structure = rhino.tree,
     id_col = "SP",# Map species names
-  n.iter = 1000  #We run a short run just for demonstration run it longer for real analyses!
+  n.iter = 1000  #We run a short run just for demonstration. Run it longer for real analyses!
 )
 #> Converted data.frame to list with 5 variables: LS, BM, NL, RS, DD
 #> Standardizing tree (max_bt: 3.31 -> 1.0)
@@ -84,7 +82,7 @@ We analyze the effect of **Body Mass (BM)** on **Dispersal Distance
 (DD)**.
 
 ``` r
-# Run Automated Mediation Analysis for BM -> DD
+# Run Mediation Analysis for BM -> DD
 med_results <- because_mediation(fit, exposure = "BM", outcome = "DD")
 ```
 
