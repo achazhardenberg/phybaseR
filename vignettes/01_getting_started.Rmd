@@ -32,14 +32,14 @@ autocorrelation, genetic relatedness etc.).
 
 -   [Causal Inference with d-Separation](02_dseparation.html): Testing
     conditional independencies implied by your causal model.
--   [Phylogenetic Path Analysis](03_phylogenetic_models.html): Using        the Phylogenetic Bayesian Structural Equation Model approach
-     (PhyBaSE, von Hardenberg & Gonzalez-Voyer, 2025).
--   [Missing Data Imputation](04_missing_data.html):
-     Handling missing data using Bayesian imputation.
--   [Custom Priors and Mechanistic Constraints](05_custom_priors.html):
+-   [Custom Priors and Mechanistic Constraints](03_custom_priors.html):
      Incorporating prior knowledge and mechanistic constraints.
--   [Automated Mediation Analysis](06_mediation.html):
+-   [Mediation Analysis](04_mediation.html):
      Decomposing effects into direct and indirect components.
+     - *Phylogenetic Path Analysis*: Using the Phylogenetic Bayesian Structural Equation Model approach
+     (PhyBaSE, von Hardenberg & Gonzalez-Voyer, 2025)(through the `because.phybase` module)
+-   * Phylogenetic Missing Data Imputation*:
+     Handling missing data using Bayesian imputation (through the `because.phybase` module).
 -   *Alternative Covariance structures:*
     Spatial, genetic, social, or other correlation structures.
     *Alternative  dustribution families:* Modeling

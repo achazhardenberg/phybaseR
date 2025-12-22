@@ -15,7 +15,7 @@ vignette: >
 
 The **because.phybase** module adds support for phylogenetic covariance structures, enabling "Phylogenetic Bayesian Structural Equation Modeling" (PhyBaSE).
 
--   **Features**: Single tree (`phylo`) and multiple trees (`multiPhylo`) for uncertainty.
+-   **Features**: Single tree (`phylo`) and multiple trees (`multiPhylo`) for uncertainty in phylogeny.
 -   **Repository**: [github.com/because-pkg/because.phybase](https://github.com/because-pkg/because.phybase)
 -   **Documentation**: [Reference Site](https://because-pkg.github.io/because.phybase/) (Coming Soon)
 
