@@ -199,17 +199,12 @@ This document outlines planned features and extensions for the `because` package
 -   **Concept**: An optional, pipe-based interface inspired by `TidySEM` but powered by `because`.
 -   **Goal**: "Steal the Syntax, Keep the Backend". Provide the grammar users love without the frequentist limitations.
 -   **Core Principle**: The traditional `because()` function remains the stable engine. This DSL is a lightweight wrapper.
--   **Proposed Syntax** (Matching TidySEM):
-    ```r
-    model <- tidy_because(data) %>%
-      add_paths(Risk ~ Population + Climate) %>%
-      set_distribution(Risk = "binomial") %>%  # 'because' specific extension
-      estimate_jags()
-    ```
+-   **Proposed Syntax** (Matching TidySEM): `r     model <- tidy_because(data) |>       add_paths(Risk ~ Population + Climate) |>       set_family(Risk = "binomial") |>  # 'because' specific extension       estimate_jags()`
 -   **Key Features**:
     -   **`add_paths()`**: Incrementally build equations.
-    -   **`set_distribution()`**: Explicitly handle families (Bernoulli, Poisson, etc).
+    -   **`set_family()`**: Explicitly handle families (Bernoulli, Poisson, etc).
     -   **`set_variability()`**: Explicitly handle measurement error.
+    -   **Base Pipe (`|>`)**: Uses the native R pipe (requires R \>= 4.1.0) to avoid `magrittr` dependency.
     -   **`broom` Compatibility**: `tidy(fit)` and `glance(fit)` for seamless plotting.
 -   **Priority**: **Medium** (Excellent for complex ecological datasets with many species).
 

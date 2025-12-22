@@ -140,7 +140,8 @@ extract_bidirected_edges <- function(mag) {
 mag_basis_to_formulas <- function(
     basis_set,
     latent_children = NULL,
-    categorical_vars = NULL
+    categorical_vars = NULL,
+    family = NULL
 ) {
     if (is.null(basis_set) || length(basis_set) == 0) {
         return(list())
@@ -184,23 +185,123 @@ mag_basis_to_formulas <- function(
             }
         }
 
+        # FINAL RULE (User Override): Enforce directionality for species parameters.
+        # Species parameters (p_, psi_, z_) should always be the RESPONSE in d-sep tests
+        # with covariates, as covariates cannot cause parameters (biologically).
+        # Regex to identify parameters: starts with p_, psi_, or z_
+        is_param <- function(v) grepl("^(p_|psi_|z_)", v)
+
+        if (is_param(var2) && !is_param(var1)) {
+            # Predictor is parameter, Response is not. SWAP to make Parameter the Response.
+            temp <- var1
+            var1 <- var2
+            var2 <- temp
+        } else if (is_param(var2) && is_param(var1)) {
+            # Both are parameters. Tie-breaker rule (User Request):
+            # p_Species should be RESPONSE if paired with psi_Species/z_Species
+            # Hierarchy: p_ > psi_/z_ > covariate
+
+            is_p1 <- grepl("^p_", var1)
+            is_p2 <- grepl("^p_", var2)
+
+            # If Predictor is p_ and Response is NOT p_ (i.e. psi/z), SWAP.
+            if (is_p2 && !is_p1) {
+                temp <- var1
+                var1 <- var2
+                var2 <- temp
+            }
+        }
+
         # Build formula string
+
+        # PREDICTOR RENAMING (User Request): Use psi_Species instead of z_Species/Species as predictor
+        # This improves convergence for d-separation tests.
+        if (!is.null(family)) {
+            # Helper: rename if occupancy
+            rename_if_occ <- function(v) {
+                # Check if this variable is an occupancy variable
+                # (either the base name or maybe already prefixed?)
+                # Usually basis set uses base variable names (e.g. "Dingo")
+
+                # Check if 'v' itself is in family as occupancy
+                if (!is.na(family[v]) && family[v] == "occupancy") {
+                    return(paste0("psi_", v))
+                }
+
+                # If it's already p_ or psi_ or z_, keep as is
+                if (grepl("^(p_|psi_|z_)", v)) {
+                    return(v)
+                }
+
+                return(v)
+            }
+
+            var2 <- rename_if_occ(var2)
+            if (!is.null(cond_vars) && length(cond_vars) > 0) {
+                cond_vars <- sapply(cond_vars, rename_if_occ)
+            }
+        }
+
         if (is.null(cond_vars) || length(cond_vars) == 0) {
             formula_str <- paste(var1, "~", var2)
         } else {
+            # Sort conditioning variables for a canonical representation and stable deduplication
+            sorted_cond <- sort(cond_vars)
             formula_str <- paste(
                 var1,
                 "~",
                 var2,
                 "+",
-                paste(cond_vars, collapse = " + ")
+                paste(sorted_cond, collapse = " + ")
             )
         }
-
         f <- stats::as.formula(formula_str)
         attr(f, "test_var") <- var2 # The variable being tested for independence
 
         formulas[[length(formulas) + 1]] <- f
+    }
+
+    # EXCLUSION RULE (User Request): Remove tests between p_Species and psi_Species (or Species itself)
+    # for the same species. These are structurally coupled and testing independence is confusing/invalid.
+
+    if (length(formulas) > 0) {
+        keep_indices <- rep(TRUE, length(formulas))
+
+        for (i in seq_along(formulas)) {
+            f <- formulas[[i]]
+            # Handle potential multiple terms on RHS, get the first one (test var)
+            # Actually, `f` constructed above is `var1 ~ var2 (+ conds)`
+            # But `as.character(f)` yields c("~", "var1", "var2 + conds")
+            # We stored `test_var` as attribute! Use that.
+
+            test_var <- attr(f, "test_var")
+            resp_var <- as.character(f)[2] # Response is reliable from formula structure
+
+            # Helper to extract species name from p_Species or psi_Species or Species
+            get_species <- function(x) {
+                x <- sub("^p_", "", x)
+                x <- sub("^psi_", "", x)
+                x <- sub("^z_", "", x)
+                return(x)
+            }
+
+            s1 <- get_species(resp_var)
+            s2 <- get_species(test_var)
+
+            # Check if one is p_ and the other is a state variable (psi, z, or raw species name)
+            is_p1 <- grepl("^p_", resp_var)
+            is_p2 <- grepl("^p_", test_var)
+
+            is_state1 <- !is_p1 # Simplified: if not p, it's state (psi, z, or observed)
+            is_state2 <- !is_p2
+
+            # Condition: Same species AND one is p, one is state
+            if (s1 == s2 && ((is_p1 && is_state2) || (is_state1 && is_p2))) {
+                keep_indices[i] <- FALSE
+            }
+        }
+
+        formulas <- formulas[keep_indices]
     }
 
     return(formulas)

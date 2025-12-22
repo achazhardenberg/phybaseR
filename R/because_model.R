@@ -1667,7 +1667,29 @@ because_model <- function(
             response,
             "[i])"
           ),
-          paste0("    }")
+          # Add log-likelihood calculation for WAIC
+          paste0(
+            "      lik_matrix_",
+            response,
+            "[i, j] <- logdensity.bern(",
+            response,
+            "_obs[i, j], z_",
+            response,
+            "[i] * p_",
+            response,
+            "[i])"
+          ),
+          paste0("    }"),
+          # Sum log-likelihoods for this site i
+          paste0(
+            "    log_lik_",
+            response,
+            "[i] <- sum(lik_matrix_",
+            response,
+            "[i, 1:",
+            n_reps_var,
+            "])"
+          )
         )
         model_lines <- c(model_lines, "  }")
       } else if (dist == "negbinomial" || dist == "zinb") {

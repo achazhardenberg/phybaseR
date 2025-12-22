@@ -34,7 +34,11 @@ extract_latent <- function(object, type = "occupancy", variables = NULL) {
     }
 
     # Identification of occupancy variables
-    dist <- object$input$distribution
+    dist <- object$input$family
+    if (is.null(dist)) {
+        dist <- object$input$distribution
+    }
+
     occ_vars <- names(dist)[dist == "occupancy"]
 
     if (length(occ_vars) == 0) {
@@ -75,17 +79,31 @@ extract_latent <- function(object, type = "occupancy", variables = NULL) {
             param_base <- paste0(prefix, "_", v)
 
             # Find all matching parameters in summary
-            # Format: param_base[i]
+            # Format: param_base[i] or param_base (scalar)
             all_params <- rownames(sum_stats$statistics)
-            pattern <- paste0("^", param_base, "\\[(\\d+)\\]$")
-            matches <- grep(pattern, all_params, value = TRUE)
+
+            # Robust vector matching (handles spaces: psi[ 1 ])
+            pattern_vec <- paste0("^", param_base, "\\[\\s*(\\d+)\\s*\\]$")
+            matches_vec <- grep(pattern_vec, all_params, value = TRUE)
+
+            # Scalar matching
+            pattern_scalar <- paste0("^", param_base, "$")
+            matches_scalar <- grep(pattern_scalar, all_params, value = TRUE)
+
+            matches <- c(matches_vec, matches_scalar)
 
             if (length(matches) == 0) {
                 next
             }
 
             # Extract indices
-            indices <- as.integer(gsub(pattern, "\\1", matches))
+            indices_vec <- as.integer(gsub(pattern_vec, "\\1", matches_vec))
+            # Scalars get index 1
+            if (length(matches_scalar) > 0) {
+                indices_vec <- c(indices_vec, rep(1, length(matches_scalar)))
+            }
+
+            indices <- indices_vec
 
             for (idx in seq_along(indices)) {
                 i <- indices[idx]
@@ -123,7 +141,25 @@ extract_latent <- function(object, type = "occupancy", variables = NULL) {
     }
 
     if (length(results_list) == 0) {
-        warning("No latent occupancy parameters found in the summary.")
+        # Diagnostic info
+        avail_params <- rownames(sum_stats$statistics)
+
+        # Search for any occupancy-like params to hint at what IS there
+        occ_hints <- grep("^(psi|z|p)_", avail_params, value = TRUE)
+        if (length(occ_hints) > 20) {
+            occ_hints <- c(head(occ_hints, 20), "...")
+        }
+        if (length(occ_hints) == 0) {
+            occ_hints <- "NONE FOUND"
+        } else {
+            occ_hints <- paste(occ_hints, collapse = ", ")
+        }
+
+        warning(sprintf(
+            "No latent occupancy parameters found in the summary.\nIdentified Occupancy Vars: %s\nVisible Occupancy-like Params: %s\nEnsure 'family' is correctly specified and the model converged.",
+            paste(occ_vars, collapse = ", "),
+            occ_hints
+        ))
         return(data.frame())
     }
 
@@ -134,6 +170,7 @@ extract_latent <- function(object, type = "occupancy", variables = NULL) {
     cols <- c(
         "Variable",
         "Response",
+        "Index",
         "SpeciesID",
         "SiteID",
         "Mean",

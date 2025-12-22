@@ -199,9 +199,21 @@ expand_nesting_syntax <- function(rhs) {
 
 # Parse Random Effect Part
 parse_random_part <- function(part) {
-    if (grepl("\\(.*\\|.*\\)", part)) {
-        inner <- sub("^\\((.*)\\)$", "\\1", part)
+    # Check if part contains a pipe character (random effect indicator)
+    if (grepl("\\|", part)) {
+        # Remove parentheses if present
+        inner <- if (grepl("^\\(.*\\)$", part)) {
+            sub("^\\((.*)\\)$", "\\1", part)
+        } else {
+            part
+        }
+
         split_term <- strsplit(inner, "\\|")[[1]]
+
+        if (length(split_term) != 2) {
+            warning("Invalid random effect syntax: ", part)
+            return(NULL)
+        }
 
         lhs_term <- trimws(split_term[1])
         group_var <- trimws(split_term[2])

@@ -1,5 +1,5 @@
 ---
-title: "Automated Mediation Analysis"
+title: "Mediation Analysis"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Automated Mediation Analysis}
@@ -31,9 +31,7 @@ Once again we will use the **Rhinogradentia** dataset to investigate the causal 
 ```{r setup}
 library(because)
 
-# Load package data
-# Note: In a vignette context before installation, data() might be tricky,
-# but assuming standard execution, these should be available.
+# Load data
 data(rhino.dat)
 data(rhino.tree)
 ```
@@ -58,7 +56,7 @@ fit <- because(
     data = rhino.dat,
     structure = rhino.tree,
     id_col = "SP",# Map species names
-  n.iter = 1000  #We run a short run just for demonstration run it longer for real analyses!
+  n.iter = 1000  #We run a short run just for demonstration. Run it longer for real analyses!
 )
 ```
 
@@ -67,7 +65,7 @@ fit <- because(
 We analyze the effect of **Body Mass (BM)** on **Dispersal Distance (DD)**.
 
 ```{r mediation}
-# Run Automated Mediation Analysis for BM -> DD
+# Run Mediation Analysis for BM -> DD
 med_results <- because_mediation(fit, exposure = "BM", outcome = "DD")
 ```
 

@@ -130,8 +130,53 @@ dsep_standard <- function(
   # Combine exclusions
   exclude_vars <- c(grouping_vars, poly_internal_vars)
 
-  # Convert equations to adjacency matrix (DAG)
-  dag <- equations_to_dag(equations, exclude_vars = exclude_vars)
+  # Normalize equations for DAG: Map occupancy Species to psi_Species and p_Species
+  # This ensures the DAG has the correct nodes for d-separation tests
+  # and avoids duplicate nodes (e.g. 'Fox' and 'psi_Fox').
+  norm_equations <- equations
+  if (!is.null(family) && any(family == "occupancy")) {
+    occ_vars <- names(family)[family == "occupancy"]
+    for (ov in occ_vars) {
+      norm_equations <- lapply(norm_equations, function(eq) {
+        f_str <- paste(deparse(eq), collapse = " ")
+        # Rename response and predictors
+        # Replace ov with psi_ov, but avoid double renaming if already psi_ or p_
+        # Use word boundaries to avoid partial matches
+        # 1. Response
+        if (grepl(paste0("^", ov, "($|\\s+~|\\s+\\()"), f_str)) {
+          f_str <- sub(paste0("^", ov), paste0("psi_", ov), f_str)
+        }
+        # 2. Predictors (RHS)
+        # Match 'ov' not preceded by 'p_' or 'psi_' or 'z_'
+        # We use a simpler approach: replace ' ov ' or ' + ov' or ' ~ ov'
+        # R regex doesn't support lookbehinds well, so we'll do literal replacements
+        f_str <- gsub(
+          paste0("~\\s+", ov, "($|\\s+\\+)"),
+          paste0("~ psi_", ov, " "),
+          f_str
+        )
+        f_str <- gsub(
+          paste0("\\+\\s+", ov, "($|\\s+\\+)"),
+          paste0("+ psi_", ov, " "),
+          f_str
+        )
+        f_str <- gsub(
+          paste0("\\*\\s+", ov, "($|\\s+\\+)"),
+          paste0("* psi_", ov, " "),
+          f_str
+        )
+
+        # Also handle standard formulas where spaces might be missing
+        f_str <- gsub(paste0("~", ov), paste0("~psi_", ov), f_str)
+        f_str <- gsub(paste0("\\+", ov), paste0("+psi_", ov), f_str)
+        f_str <- gsub(paste0("\\*", ov), paste0("*psi_", ov), f_str)
+
+        return(as.formula(f_str))
+      })
+    }
+  }
+
+  dag <- equations_to_dag(norm_equations, exclude_vars = exclude_vars)
 
   # Use ggm::basiSet to get the correct d-separation basis set
   if (!requireNamespace("ggm", quietly = TRUE)) {
@@ -165,10 +210,26 @@ dsep_standard <- function(
       }
     })
   }
+  # Filter out random effect grouping variables from basis set conditioning sets
+  # (Grouping variables are technical nodes, not causal ones in d-sep sense)
+  if (length(random_terms) > 0 && !is.null(basis)) {
+    basis <- lapply(basis, function(test) {
+      if (length(test) > 2) {
+        cond_vars <- test[3:length(test)]
+        filtered_cond <- cond_vars[!cond_vars %in% grouping_vars]
+        return(c(test[1:2], filtered_cond))
+      }
+      return(test)
+    })
+  }
 
   # Convert basis set to formula list
   # We reuse mag_basis_to_formulas as the format is identical (list of vectors)
-  tests <- mag_basis_to_formulas(basis, categorical_vars = categorical_vars)
+  tests <- mag_basis_to_formulas(
+    basis,
+    categorical_vars = categorical_vars,
+    family = family
+  )
 
   # Append random terms if relevant (same logic as in with_latents)
   if (length(random_terms) > 0 && length(tests) > 0) {
@@ -177,8 +238,12 @@ dsep_standard <- function(
       t_eq <- tests[[t_idx]]
       resp <- as.character(t_eq)[2]
 
-      # Find random terms for response
-      vocab_rand <- Filter(function(x) x$response == resp, random_terms)
+      # Find random terms for response (handle both Species and psi_Species)
+      base_resp <- sub("^psi_", "", resp)
+      vocab_rand <- Filter(
+        function(x) x$response == resp || x$response == base_resp,
+        random_terms
+      )
 
       if (length(vocab_rand) > 0) {
         rand_str <- paste(
@@ -232,24 +297,37 @@ dsep_with_latents <- function(
   family = NULL,
   quiet = FALSE
 ) {
-  # --- Occupancy/Measurement Error Injection ---
-  # To make d-separation useful for occupancy models, we must include the
-  # observation process in the DAG. Otherwise, Y and p_Y (latents) are pruned,
-  # leaving only tests among covariates.
-  # We inject Y_obs <- Y + p_Y for each occupancy variable.
+  # --- Occupancy/Measurement Error Normalization ---
+  # Normalize equations for DAG: Map occupancy Species to psi_Species
   augmented_equations <- equations
-  if (!is.null(family)) {
+  if (!is.null(family) && any(family == "occupancy")) {
     occ_vars <- names(family)[family == "occupancy"]
     for (ov in occ_vars) {
-      # Check if p_ov exists in equations or latent
-      p_name <- paste0("p_", ov)
-      if (p_name %in% latent) {
-        # Create formula: ov_obs ~ ov + p_ov
-        # Note: ov_obs is the observed data name used in DAG
-        obs_name <- paste0(ov, "_obs")
-        f_obs <- stats::as.formula(paste(obs_name, "~", ov, "+", p_name))
-        augmented_equations <- c(augmented_equations, list(f_obs))
-      }
+      augmented_equations <- lapply(augmented_equations, function(eq) {
+        f_str <- paste(deparse(eq), collapse = " ")
+        if (grepl(paste0("^", ov, "($|\\s+~|\\s+\\()"), f_str)) {
+          f_str <- sub(paste0("^", ov), paste0("psi_", ov), f_str)
+        }
+        f_str <- gsub(
+          paste0("~\\s+", ov, "($|\\s+\\+)"),
+          paste0("~ psi_", ov, " "),
+          f_str
+        )
+        f_str <- gsub(
+          paste0("\\+\\s+", ov, "($|\\s+\\+)"),
+          paste0("+ psi_", ov, " "),
+          f_str
+        )
+        f_str <- gsub(
+          paste0("\\*\\s+", ov, "($|\\s+\\+)"),
+          paste0("* psi_", ov, " "),
+          f_str
+        )
+        f_str <- gsub(paste0("~", ov), paste0("~psi_", ov), f_str)
+        f_str <- gsub(paste0("\\+", ov), paste0("+psi_", ov), f_str)
+        f_str <- gsub(paste0("\\*", ov), paste0("*psi_", ov), f_str)
+        return(as.formula(f_str))
+      })
     }
   }
 
@@ -358,7 +436,8 @@ dsep_with_latents <- function(
   tests <- mag_basis_to_formulas(
     basis,
     latent_children = latent_children,
-    categorical_vars = categorical_vars
+    categorical_vars = categorical_vars,
+    family = family
   )
 
   # Save tests without random effects for clean display
@@ -371,8 +450,12 @@ dsep_with_latents <- function(
       t_eq <- tests[[t_idx]]
       resp <- as.character(t_eq)[2]
 
-      # Find random terms for response
-      vocab_rand <- Filter(function(x) x$response == resp, random_terms)
+      # Find random terms for response (handle both Species and psi_Species)
+      base_resp <- sub("^psi_", "", resp)
+      vocab_rand <- Filter(
+        function(x) x$response == resp || x$response == base_resp,
+        random_terms
+      )
 
       if (length(vocab_rand) > 0) {
         rand_str <- paste(
@@ -385,7 +468,6 @@ dsep_with_latents <- function(
         # Rebuild formula
         # deparse might wrap lines
         # Use reliable string construction
-        rhs <- labels(terms(t_eq))
         # Reconstruct: Resp ~ Preds + Random
         # Paste to the formula string representation
 
@@ -433,17 +515,31 @@ dsep_with_latents <- function(
 # Helper to format a d-sep test for printing
 format_dsep_test <- function(test) {
   # Extract variables from formula
-  vars <- all.vars(test)
-  response <- as.character(test)[2]
+  # Use regex to strip out random terms like (1 | Group) before extracting vars
+  test_str <- deparse(test)
+  fixed_str <- gsub(
+    "\\s*\\+\\s*\\(.*?\\|.*?\\)",
+    "",
+    paste(test_str, collapse = " ")
+  )
+
+  test_fixed <- stats::as.formula(fixed_str)
+  vars <- all.vars(test_fixed)
+
+  response <- as.character(test_fixed)[2]
   predictors <- setdiff(vars, response)
 
+  if (length(predictors) == 0) {
+    return(paste0("I( ", response, " , INVALID |  )"))
+  }
+
+  test_var <- predictors[1]
+
   if (length(predictors) == 1) {
-    # No conditioning set
-    return(paste0("I( ", response, " , ", predictors[1], " | ", " )"))
+    return(paste0("I( ", response, " , ", test_var, " |  )"))
   } else {
-    # First predictor is the test variable, rest are conditioning
-    test_var <- predictors[1]
-    cond_set <- paste(predictors[-1], collapse = ", ")
+    # Sort for canonical representation
+    cond_set <- paste(sort(predictors[-1]), collapse = ", ")
     return(paste0("I( ", response, " , ", test_var, " | ", cond_set, " )"))
   }
 }

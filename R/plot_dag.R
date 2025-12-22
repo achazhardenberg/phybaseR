@@ -55,7 +55,8 @@ plot_dag <- function(
     edge_width_range = c(0.5, 2),
     edge_color_scheme = c("directional", "binary", "monochrome"),
     show_coefficients = TRUE,
-    coords = NULL
+    coords = NULL,
+    family = NULL
 ) {
     edge_color_scheme <- match.arg(edge_color_scheme)
 
@@ -92,6 +93,7 @@ plot_dag <- function(
 
         # 1. Extract Equations and Latent Info
         current_latent <- latent
+        current_family <- family
 
         if (inherits(obj, "because")) {
             eqs <- obj$parameter_map$equations %||%
@@ -106,9 +108,26 @@ plot_dag <- function(
             if (is.null(current_latent)) {
                 current_latent <- obj$input$latent
             }
+            # Also get family if not provided
+            if (is.null(current_family)) {
+                current_family <- obj$input$family
+            }
         } else {
             # List of formulas
             eqs <- obj
+        }
+
+        # Handle occupancy expansion for visualization
+        occ_vars <- c()
+        if (!is.null(current_family)) {
+            occ_vars <- names(current_family)[current_family == "occupancy"]
+            if (length(occ_vars) > 0) {
+                # Add p_ and psi_ to latent set so they become circles
+                latent_to_add <- unlist(lapply(occ_vars, function(v) {
+                    c(paste0("p_", v), paste0("psi_", v))
+                }))
+                current_latent <- unique(c(current_latent, latent_to_add))
+            }
         }
 
         # 2. Convert to dagitty syntax
@@ -118,7 +137,11 @@ plot_dag <- function(
                 obj$input$induced_correlations
         }
 
-        dag_str <- equations_to_dag_string(eqs, induced_cors)
+        dag_str <- equations_to_dag_string(
+            eqs,
+            induced_cors,
+            family = current_family
+        )
         dag_obj <- dagitty::dagitty(dag_str)
 
         # Apply coordinates if provided
@@ -144,8 +167,35 @@ plot_dag <- function(
         # Extract data frame for plotting (nodes + edges flattened)
         dag_data <- as.data.frame(dplyr::as_tibble(tidy_dag))
 
+        # Identify occupancy nodes and assign to groups for box drawing
+        dag_data$occ_species <- NA_character_
+        if (length(occ_vars) > 0) {
+            for (v in occ_vars) {
+                # Pattern match p_Species and psi_Species
+                dag_data$occ_species[grepl(
+                    paste0("^(p_|psi_)", v, "$"),
+                    dag_data$name
+                )] <- v
+                # Also include the observation node if it exists
+                dag_data$occ_species[dag_data$name == v] <- v
+            }
+        }
+
         # Label Processing: Wrap text (replace _ with \n)
         dag_data$label_display <- gsub("_", "\n", dag_data$name)
+        # Override for occupancy latent nodes to just 'p' and 'psi'
+        if (length(occ_vars) > 0) {
+            dag_data$label_display <- ifelse(
+                grepl("^p_", dag_data$name) & !is.na(dag_data$occ_species),
+                "p",
+                dag_data$label_display
+            )
+            dag_data$label_display <- ifelse(
+                grepl("^psi_", dag_data$name) & !is.na(dag_data$occ_species),
+                "psi",
+                dag_data$label_display
+            )
+        }
 
         # Determine Node Size based on longest label (Heuristic)
         # Assuming circular node, diameter needs to cover the rectangular text block.
@@ -310,6 +360,29 @@ plot_dag <- function(
         }
     }
 
+    # Calculate Bounding Boxes for Occupancy Groups
+    occupancy_boxes <- NULL
+    if (
+        !is.null(combined_dag_data) &&
+            any(!is.na(combined_dag_data$occ_species))
+    ) {
+        # Check if we have coordinates
+        if (any(!is.na(combined_dag_data$x))) {
+            occupancy_boxes <- combined_dag_data |>
+                dplyr::filter(
+                    !is.na(occ_species) & grepl("^(p_|psi_)", name)
+                ) |>
+                dplyr::group_by(model_label, occ_species) |>
+                dplyr::summarize(
+                    xmin = min(x) - 0.25,
+                    xmax = max(x) + 0.25,
+                    ymin = min(y) - 0.25,
+                    ymax = max(y) + 0.25,
+                    .groups = "drop"
+                )
+        }
+    }
+
     # Ensure type is a factor
     combined_dag_data$type <- factor(
         combined_dag_data$type,
@@ -337,7 +410,42 @@ plot_dag <- function(
     p <- ggplot2::ggplot(
         combined_dag_data,
         ggplot2::aes(x = x, y = y, xend = xend, yend = yend)
-    ) +
+    )
+
+    # 0. Shadowed Boxes for Occupancy (Background Layer)
+    if (!is.null(occupancy_boxes)) {
+        p <- p +
+            ggplot2::geom_rect(
+                data = occupancy_boxes,
+                ggplot2::aes(
+                    xmin = xmin,
+                    xmax = xmax,
+                    ymin = ymin,
+                    ymax = ymax
+                ),
+                inherit.aes = FALSE,
+                fill = "grey93",
+                color = "grey80",
+                alpha = 0.5,
+                linewidth = 0.4,
+                lty = "dashed"
+            ) +
+            # Species name label for the box
+            ggplot2::geom_text(
+                data = occupancy_boxes,
+                ggplot2::aes(
+                    x = (xmin + xmax) / 2,
+                    y = ymax + 0.05,
+                    label = occ_species
+                ),
+                inherit.aes = FALSE,
+                size = text_size * 1.1,
+                fontface = "bold",
+                vjust = 0
+            )
+    }
+
+    p <- p +
         ggdag::theme_dag() +
         # Add margins back (ggdag removes them)
         ggplot2::theme(plot.margin = ggplot2::margin(10, 10, 10, 10, "mm")) +
@@ -534,24 +642,63 @@ plot_dag <- function(
 #' @param equations List of formulas
 #' @param induced_cors List of character vectors (pairs) for bidirected edges
 #' @noRd
-equations_to_dag_string <- function(equations, induced_cors = NULL) {
+equations_to_dag_string <- function(
+    equations,
+    induced_cors = NULL,
+    family = NULL
+) {
     edges <- c()
+    occ_vars <- c()
+    if (!is.null(family)) {
+        occ_vars <- names(family)[family == "occupancy"]
+    }
+
     for (eq in equations) {
         resp <- all.vars(eq)[1]
         predictors <- all.vars(eq)[-1]
-        for (pred in predictors) {
-            edges <- c(edges, paste(resp, "<-", pred))
+
+        # If response is occupancy, it's actually psi_response
+        # unless it's already p_response
+        actual_resp <- resp
+        if (resp %in% occ_vars) {
+            actual_resp <- paste0("psi_", resp)
         }
+
+        for (pred in predictors) {
+            actual_pred <- pred
+            # Handle p_ and psi_ aliases
+            if (pred %in% occ_vars) {
+                actual_pred <- paste0("psi_", pred)
+            }
+            edges <- c(edges, paste(actual_resp, "<-", actual_pred))
+        }
+    }
+
+    # Ensure p_Species exists for every occupancy variable
+    # even if it's just an intercept-only 1
+    for (v in occ_vars) {
+        p_name <- paste0("p_", v)
+        # We don't strictly need internal edges if they aren't in equations,
+        # but for the visual "box", we need both nodes to exist.
+        # Adding a self-loop or just an edge between p and psi if they are both in dag?
+        # Actually, adding any edge involving p_name ensures it's in the DAG.
     }
 
     if (!is.null(induced_cors)) {
         for (pair in induced_cors) {
             if (length(pair) == 2) {
-                # Add bidirected edge A <-> B
-                edges <- c(edges, paste(pair[1], "<->", pair[2]))
+                p1 <- pair[1]
+                p2 <- pair[2]
+                if (p1 %in% occ_vars) {
+                    p1 <- paste0("psi_", p1)
+                }
+                if (p2 %in% occ_vars) {
+                    p2 <- paste0("psi_", p2)
+                }
+                edges <- c(edges, paste(p1, "<->", p2))
             }
         }
     }
 
-    return(paste("dag {", paste(edges, collapse = "; "), "}"))
+    return(paste("dag {", paste(unique(edges), collapse = "; "), "}"))
 }
