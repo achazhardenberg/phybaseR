@@ -1579,7 +1579,7 @@ because_model <- function(
         total_u <- ""
         if (optimise && !is.null(structures)) {
           for (s_name in names(structures)) {
-            s_suffix <- if (length(structures) > 1) paste0("_", s_name) else ""
+            s_suffix <- paste0("_", s_name) # Always use structure name suffix
             u_var <- paste0("u_", response, suffix, s_suffix)
             tau_u <- paste0("tau_u_", response, suffix, s_suffix)
 
@@ -2263,12 +2263,8 @@ because_model <- function(
 
           # Generate Structure Priors
           for (s_name in structure_names) {
-            # Use conditional suffix logic to match model generation (generic blocks)
-            s_suffix <- if (length(structure_names) > 1) {
-              paste0("_", s_name)
-            } else {
-              ""
-            }
+            # Always use structure name suffix to match model generation
+            s_suffix <- paste0("_", s_name)
 
             tau_u <- paste0("tau_u_", response, suffix, s_suffix)
 
@@ -3260,7 +3256,7 @@ because_model <- function(
 
         if (!is.null(structures)) {
           for (s_name in names(structures)) {
-            s_suffix <- if (length(structures) > 1) paste0("_", s_name) else ""
+            s_suffix <- paste0("_", s_name)
             u_var <- paste0("u_", var, s_suffix)
             tau_u <- paste0("tau_u_", var, s_suffix)
 
@@ -3395,7 +3391,7 @@ because_model <- function(
           paste0("  sigma", var, " <- 1/sqrt(tau_e_", var, ")")
         )
       } else if (optimise) {
-        if (length(structure_names) > 1) {
+        if (TRUE) {
           if (
             !is.null(fix_residual_variance) &&
               (var %in%
