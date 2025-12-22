@@ -24,13 +24,13 @@ Imports:
     stats,
     parallel,
     utils,
-    loo
+    loo,
+    ape
 Depends: 
     R (>= 3.5)
 RoxygenNote: 7.3.3
 Roxygen: list(markdown = TRUE)
 Suggests: 
-    ape,
     because.phybase,
     because.occupancy,
     knitr,
