@@ -6,7 +6,7 @@ through extension packages.
 
 ## Available packages
 
-### Phylogenetic Structural Equation Models (`because.phybase`)
+### PhyBaSE (`because.phybase`)
 
 The [because.phybase](https://because-pkg.github.io/because.phybase/)
 package adds support for phylogenetic covariance structures, enabling
@@ -31,8 +31,9 @@ the fitting of Phylogenetic Bayesian Structural Equation Models
 
 ### Occupancy (`because.occupancy`)
 
-*Status: In Development* Adds support for hierarchical occupancy models
-(single-season, multi-season) directly within the causal framework.
+*Status: In Development* Adds support for hierarchical single and
+joint-species single-season occupancy models within the causal inference
+framework (Occupancy SEMs).
 
 ### Spatial (`because.spatial`)
 
