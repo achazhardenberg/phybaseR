@@ -19,12 +19,14 @@ standard R formulas. Key features include:
 - **Automatic JAGS Code Generation**: Builds models directly from a list
   of structural equations.
 - **Generalized Covariance Structures**: Supports standard SEMs,
-  Phylogenetic SEMS (PhyBaSE) as well as Spatial SEMs and Animal Models
-  via custom covariance matrices or pedigrees.
+  Phylogenetic SEMS (PhyBaSE; trough the because.phybase extension) as
+  well as Spatial SEMs and Animal Models via custom covariance matrices
+  or pedigrees.
 - **Phylogenetic Uncertainty**: Incorporates uncertainty by sampling
-  across a set of trees.
+  across a set of trees (through the because.phybase extension).
 - **Missing Data Support**: Handles missing values in both response and
-  predictor variables using phylogenetic imputation.
+  predictor variables using phylogenetic imputation (through the
+  because.phybase extension).
 - **Measurement Error**: Accounts for within-species variability or
   measurement error.
 - **Multiple Response Distributions**: Supports Gaussian, Binomial,
@@ -40,10 +42,10 @@ standard R formulas. Key features include:
 
 ## Installation
 
-To install the **stable release** (`v0.9.7`), run:
+To install the **stable release** (`v0.9.8`), run:
 
 ``` r
-remotes::install_github("because-pkg/because@v0.9.7", build_vignettes = TRUE)
+remotes::install_github("because-pkg/because@v0.9.8", build_vignettes = TRUE)
 ```
 
 To install the **latest development version** (unstable), run:

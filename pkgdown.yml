@@ -4,11 +4,10 @@ pkgdown_sha: ~
 articles:
   01_getting_started: 01_getting_started.html
   02_dseparation: 02_dseparation.html
-  03_phylogenetic_models: 03_phylogenetic_models.html
-  04_missing_data: 04_missing_data.html
-  05_custom_priors: 05_custom_priors.html
-  06_mediation: 06_mediation.html
-last_built: 2025-12-22T10:37Z
+  03_custom_priors: 03_custom_priors.html
+  04_mediation: 04_mediation.html
+  modules: modules.html
+last_built: 2025-12-23T08:48Z
 urls:
   reference: https://because-pkg.github.io/because/reference
   article: https://because-pkg.github.io/because/articles

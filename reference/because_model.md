@@ -14,6 +14,7 @@ because_model(
   multi.tree = FALSE,
   latent_method = "correlations",
   structure_names = "phylo",
+  structures = NULL,
   random_structure_names = NULL,
   random_terms = list(),
   vars_with_na = NULL,

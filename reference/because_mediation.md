@@ -50,6 +50,6 @@ stored in the fit object. It uses `igraph` to find all simple paths from
 regression coefficients (`beta_...`) and computes their product across
 all MCMC samples.
 
-**Note:** This assumes linear relationships for indirect effects (\$\_1
-\_2\$). For non-linear models, this is an approximation of the average
-causal effect.
+**Note:** This assumes linear relationships for indirect effects
+(\\\beta_1 \times \beta_2\\). For non-linear models, this is an
+approximation of the average causal effect.

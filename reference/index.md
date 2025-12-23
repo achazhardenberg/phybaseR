@@ -2,16 +2,14 @@
 
 ## All functions
 
-- [`RhinoMulti.dat`](https://because-pkg.github.io/because/reference/RhinoMulti.dat.md)
-  : Rhinograd Simulated Repeated Measures Data
-- [`RhinoMulti_se.dat`](https://because-pkg.github.io/because/reference/RhinoMulti_se.dat.md)
-  : Rhinograd Means and Standard Errors
 - [`because()`](https://because-pkg.github.io/because/reference/because.md)
   : Run a Bayesian Structural Equation Model
 - [`because_compare()`](https://because-pkg.github.io/because/reference/because_compare.md)
   : Compare Because Models
 - [`because_dsep()`](https://because-pkg.github.io/because/reference/because_dsep.md)
   : Extract d-separation statements from a structural equation model
+- [`because_family()`](https://because-pkg.github.io/because/reference/because_family.md)
+  : Create a Custom Family (Distribution) for use with because
 - [`because_format_data()`](https://because-pkg.github.io/because/reference/because_format_data.md)
   : Format Data for Because Analysis
 - [`because_lambda()`](https://because-pkg.github.io/because/reference/because_lambda.md)
@@ -24,23 +22,43 @@
   : Automated Mediation Analysis
 - [`because_model()`](https://because-pkg.github.io/because/reference/because_model.md)
   : Generate a JAGS model string for Phylogenetic Bayesian SEM (Because)
+- [`because_structure()`](https://because-pkg.github.io/because/reference/because_structure.md)
+  : Create a Custom Covariance Structure for use with because
 - [`because_waic()`](https://because-pkg.github.io/because/reference/because_waic.md)
   : Calculate WAIC with Standard Errors for a Because Model
 - [`extract_imputed()`](https://because-pkg.github.io/because/reference/extract_imputed.md)
   : Extract Imputed Values for Missing Data
 - [`extract_latent()`](https://because-pkg.github.io/because/reference/extract_latent.md)
   : Extract Latent Parameters from a because Model
+- [`family_definitions`](https://because-pkg.github.io/because/reference/family_definitions.md)
+  : Family Definition Generics and Default Methods
+- [`get_family()`](https://because-pkg.github.io/because/reference/get_family.md)
+  : Create a family object for a given distribution
+- [`jags_family_definition()`](https://because-pkg.github.io/because/reference/jags_family_definition.md)
+  : Define JAGS Family Implementation
+- [`jags_family_definition(`*`<default>`*`)`](https://because-pkg.github.io/because/reference/jags_family_definition.default.md)
+  : Default Method for Family Definition
+- [`jags_family_likelihood()`](https://because-pkg.github.io/because/reference/jags_family_likelihood.md)
+  : Generate JAGS likelihood code for a distribution family
+- [`jags_structure_definition()`](https://because-pkg.github.io/because/reference/jags_structure_definition.md)
+  : Define JAGS Structure Implementation
+- [`jags_structure_definition(`*`<default>`*`)`](https://because-pkg.github.io/because/reference/jags_structure_definition.default.md)
+  : Default Method for Structure Definition (Independent Model)
 - [`plot_dag()`](https://because-pkg.github.io/because/reference/plot_dag.md)
   : Plot DAG from Equations or Fitted Model
 - [`plot_posterior()`](https://because-pkg.github.io/because/reference/plot_posterior.md)
   : Plot Posterior Distributions for Model Comparison
+- [`prepare_structure_data()`](https://because-pkg.github.io/because/reference/prepare_structure_data.md)
+  : Prepare Structure Data
+- [`prepare_structure_data(`*`<default>`*`)`](https://because-pkg.github.io/because/reference/prepare_structure_data.default.md)
+  : Default Method for Structure Data Preparation
 - [`print(`*`<summary.because>`*`)`](https://because-pkg.github.io/because/reference/print.summary.because.md)
   : Print Summary for Because Model
-- [`rhino.dat`](https://because-pkg.github.io/because/reference/rhino.dat.md)
-  : Rhinograd life-history data
-- [`rhino.tree`](https://because-pkg.github.io/because/reference/rhino.tree.md)
-  : Rhinograd phylogenetic tree
 - [`storks`](https://because-pkg.github.io/because/reference/storks.md)
   : Data on Stork Populations and Human Birth Rates
 - [`summary(`*`<because>`*`)`](https://because-pkg.github.io/because/reference/summary.because.md)
   : Summary for Because Model
+- [`transform_graph_for_dsep()`](https://because-pkg.github.io/because/reference/transform_graph_for_dsep.md)
+  : Transform Graph for D-Separation
+- [`transform_graph_for_dsep(`*`<default>`*`)`](https://because-pkg.github.io/because/reference/transform_graph_for_dsep.default.md)
+  : Default Method for D-Sep Transformation

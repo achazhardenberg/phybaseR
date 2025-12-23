@@ -8,7 +8,8 @@ Convert MAG basis set to becauseR formula format
 mag_basis_to_formulas(
   basis_set,
   latent_children = NULL,
-  categorical_vars = NULL
+  categorical_vars = NULL,
+  family = NULL
 )
 ```
 

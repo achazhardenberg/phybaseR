@@ -11,14 +11,14 @@ because(
   id_col = NULL,
   structure = NULL,
   tree = NULL,
-  monitor = NULL,
+  monitor = "interpretable",
   n.chains = 3,
   n.iter = 12500,
-  n.burnin = n.iter/5,
+  n.burnin = floor(n.iter/5),
   n.thin = 10,
   DIC = TRUE,
   WAIC = FALSE,
-  n.adapt = n.iter/5,
+  n.adapt = floor(n.iter/5),
   quiet = FALSE,
   verbose = FALSE,
   dsep = FALSE,
@@ -26,10 +26,10 @@ because(
   family = NULL,
   distribution = NULL,
   latent = NULL,
-  latent_method = c("correlations", "explicit"),
+  latent_method = "correlations",
   standardize_latent = TRUE,
   parallel = FALSE,
-  n.cores = 1,
+  n.cores = parallel::detectCores() - 1,
   cl = NULL,
   ic_recompile = TRUE,
   optimise = TRUE,
@@ -38,7 +38,8 @@ because(
   hierarchy = NULL,
   link_vars = NULL,
   fix_residual_variance = NULL,
-  priors = NULL
+  priors = NULL,
+  reuse_models = NULL
 )
 ```
 
@@ -305,6 +306,42 @@ because(
   Example:
   `list(alpha_Response = "dnorm(0, 0.001)", beta_Response_Predictor = "dnorm(1, 10)")`.
 
+- reuse_models:
+
+  List of previously fitted 'because' models to scan for reusable
+  d-separation test results. If a test in the current run matches a test
+  in a reused model (same formula), the result is copied instead of
+  re-running JAGS. **Note**: Computing standard is consistent data is
+  the user's responsibility.
+
 ## Value
 
-A list of class `"because"` with model output and diagnostics.
+An object of class `"because"` containing:
+
+- samples:
+
+  MCMC samples (mcmc.list).
+
+- parameter_map:
+
+  Data frame mapping parameter names to model variables.
+
+- model:
+
+  JAGS model code.
+
+- summary:
+
+  Summary of posterior samples.
+
+- dsep_results:
+
+  List of d-separation test results (if dsep=TRUE).
+
+- DIC:
+
+  Deviance Information Criterion (if DIC=TRUE).
+
+- WAIC:
+
+  Watanabe-Akaike Information Criterion (if WAIC=TRUE).
