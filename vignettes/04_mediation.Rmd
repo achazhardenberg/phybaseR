@@ -30,6 +30,7 @@ Once again we will use the **Rhinogradentia** dataset to investigate the causal 
 
 ```{r setup}
 library(because)
+library(because.phybase)
 library(ape)
 
 # Simulate Rhino-like data (since original data is in because.phybase)
