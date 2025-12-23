@@ -2,9 +2,12 @@
 
 ### Bayesian Estimation of Causal Effects
 
-**because** provides a unified framework for specifying and fitting
+`because` provides a unified framework for specifying and fitting
 Bayesian structural equation models in `R` using
-[JAGS](http://mcmc-jags.sourceforge.net).
+[JAGS](http://mcmc-jags.sourceforge.net). The focus of `because` is on
+causal inference, providing tools to facilitate the correct estimation
+and testng of direct and indirect causal effects in complex systems and
+quantify uncertainty in the estimates.
 
 > **Note on the logo**: The package hexagon sticker features the
 > mathematical symbol for “because”, represented as three dots in an
@@ -18,27 +21,33 @@ standard R formulas. Key features include:
 
 - **Automatic JAGS Code Generation**: Builds models directly from a list
   of structural equations.
-- **Generalized Covariance Structures**: Supports standard SEMs,
-  Phylogenetic SEMS (PhyBaSE; trough the because.phybase extension) as
-  well as Spatial SEMs and Animal Models via custom covariance matrices
-  or pedigrees.
-- **Phylogenetic Uncertainty**: Incorporates uncertainty by sampling
-  across a set of trees (through the because.phybase extension).
-- **Missing Data Support**: Handles missing values in both response and
-  predictor variables using phylogenetic imputation (through the
-  because.phybase extension).
-- **Measurement Error**: Accounts for within-species variability or
-  measurement error.
-- **Multiple Response Distributions**: Supports Gaussian, Binomial,
-  Multinomial, Ordinal, Poisson, and Negative Binomial distributions.
+- **Generalized Covariance Structures**: Supports the specification of
+  custom covariance structures in the data.
+- **Missing Data Support**: Imputes missing values in both response and
+  predictor variables (assuming data is missing at random (MAR) or
+  completely at random (MCAR).
+- **Measurement Error**: Accounts for measurement error providing
+  repeated measures or known error variances.
+- **Distribution families**: Supports Gaussian, Binomial, Multinomial,
+  Ordinal, Poisson,Negative Binomial as well as Zero Inflated Poisson
+  (ZIP) and Zero Inflated Negative Binomial (ZINP) distributions.
 - **Categorical Predictors**: Automatic handling of factor variables
   with dummy variable expansion.
-- **Latent Variables**: Support for modeling induced correlations from
-  latent common causes.
-- **Model Validation**: Tools for d-separation testing to validate
-  causal hypotheses.
+- **Polynomial and Interaction Terms**: Easily include polynomial terms
+  and interactions in structural equations.
+- **Hierachical Models**: Support for random effects and multi-level
+  structures.
+- **Latent Variables**: Support for explicitly including Latent
+  variables or modelling induced correlations from latent common causes
+  with the Maximum Acyclic Graph (MAG) method.
+- **Causal inference tools**: native support for d-separation and
+  m-separation testing and mediation analysis.
 - **Parallel Computing**: Run MCMC chains in parallel on multi-core
   systems for faster computation.
+- **Visualisation tools**: Functions for visualizing model structures
+  and posterior distributions.
+- **Extension packages**: Full S3 support for extension packages to
+  build on the core functionality.
 
 ## Installation
 

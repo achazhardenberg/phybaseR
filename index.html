@@ -48,7 +48,7 @@
     <li><a class="dropdown-item" href="articles/modules.html">Extension Packages</a></li>
   </ul>
 </li>
-<li class="nav-item"><a class="nav-link" href="articles/modules.html">Modules</a></li>
+<li class="nav-item"><a class="nav-link" href="articles/modules.html">Extensions</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -70,7 +70,7 @@
 <div class="section level3">
 <h3 id="bayesian-estimation-of-causal-effects">Bayesian Estimation of Causal Effects<a class="anchor" aria-label="anchor" href="#bayesian-estimation-of-causal-effects"></a>
 </h3>
-<p><strong>because</strong> provides a unified framework for specifying and fitting Bayesian structural equation models in <code>R</code> using <a href="http://mcmc-jags.sourceforge.net" class="external-link">JAGS</a>.</p>
+<p><code>because</code> provides a unified framework for specifying and fitting Bayesian structural equation models in <code>R</code> using <a href="http://mcmc-jags.sourceforge.net" class="external-link">JAGS</a>. The focus of <code>because</code> is on causal inference, providing tools to facilitate the correct estimation and testng of direct and indirect causal effects in complex systems and quantify uncertainty in the estimates.</p>
 <blockquote>
 <p><strong>Note on the logo</strong>: The package hexagon sticker features the mathematical symbol for “because”, represented as three dots in an inverted triangle (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>∵</mi><annotation encoding="application/x-tex">\because</annotation></semantics></math>).</p>
 </blockquote>
@@ -83,23 +83,29 @@
 <li>
 <strong>Automatic JAGS Code Generation</strong>: Builds models directly from a list of structural equations.</li>
 <li>
-<strong>Generalized Covariance Structures</strong>: Supports standard SEMs, Phylogenetic SEMS (PhyBaSE; trough the because.phybase extension) as well as Spatial SEMs and Animal Models via custom covariance matrices or pedigrees.</li>
+<strong>Generalized Covariance Structures</strong>: Supports the specification of custom covariance structures in the data.</li>
 <li>
-<strong>Phylogenetic Uncertainty</strong>: Incorporates uncertainty by sampling across a set of trees (through the because.phybase extension).</li>
+<strong>Missing Data Support</strong>: Imputes missing values in both response and predictor variables (assuming data is missing at random (MAR) or completely at random (MCAR).</li>
 <li>
-<strong>Missing Data Support</strong>: Handles missing values in both response and predictor variables using phylogenetic imputation (through the because.phybase extension).</li>
+<strong>Measurement Error</strong>: Accounts for measurement error providing repeated measures or known error variances.</li>
 <li>
-<strong>Measurement Error</strong>: Accounts for within-species variability or measurement error.</li>
-<li>
-<strong>Multiple Response Distributions</strong>: Supports Gaussian, Binomial, Multinomial, Ordinal, Poisson, and Negative Binomial distributions.</li>
+<strong>Distribution families</strong>: Supports Gaussian, Binomial, Multinomial, Ordinal, Poisson,Negative Binomial as well as Zero Inflated Poisson (ZIP) and Zero Inflated Negative Binomial (ZINP) distributions.</li>
 <li>
 <strong>Categorical Predictors</strong>: Automatic handling of factor variables with dummy variable expansion.</li>
 <li>
-<strong>Latent Variables</strong>: Support for modeling induced correlations from latent common causes.</li>
+<strong>Polynomial and Interaction Terms</strong>: Easily include polynomial terms and interactions in structural equations.</li>
 <li>
-<strong>Model Validation</strong>: Tools for d-separation testing to validate causal hypotheses.</li>
+<strong>Hierachical Models</strong>: Support for random effects and multi-level structures.</li>
+<li>
+<strong>Latent Variables</strong>: Support for explicitly including Latent variables or modelling induced correlations from latent common causes with the Maximum Acyclic Graph (MAG) method.</li>
+<li>
+<strong>Causal inference tools</strong>: native support for d-separation and m-separation testing and mediation analysis.</li>
 <li>
 <strong>Parallel Computing</strong>: Run MCMC chains in parallel on multi-core systems for faster computation.</li>
+<li>
+<strong>Visualisation tools</strong>: Functions for visualizing model structures and posterior distributions.</li>
+<li>
+<strong>Extension packages</strong>: Full S3 support for extension packages to build on the core functionality.</li>
 </ul>
 </div>
 <div class="section level2">
