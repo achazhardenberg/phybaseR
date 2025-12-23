@@ -12,4 +12,4 @@ navbar:
   components:
     extensions:
       text: "Extensions"
-      href: articles/modules.html
+      href: articles/extensions.html

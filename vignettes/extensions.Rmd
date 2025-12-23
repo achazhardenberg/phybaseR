@@ -1,8 +1,8 @@
 ---
-title: "Extension Packages"
+title: "Extensions"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Extension Modules}
+  %\VignetteIndexEntry{Extensions}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
