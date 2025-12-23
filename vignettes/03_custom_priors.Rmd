@@ -2,7 +2,7 @@
 title: "Custom Priors and Mechanistic Constraints"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Custom Priors and Mechanistic Modeling}
+  %\VignetteIndexEntry{Custom Priors and Mechanistic Constraints}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -251,7 +251,6 @@ fit_check <- because(
 
 # Print the JAGS model
 fit_check$model
-
 ```
 
 \`\`\`
