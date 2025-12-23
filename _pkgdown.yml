@@ -7,9 +7,9 @@ template:
     navbar-bg: "#0076BA"
 navbar:
   structure:
-    left: [home, reference, articles, modules]
+    left: [home, reference, articles, extensions]
     right: [search, github]
   components:
-    modules:
-      text: "Modules"
+    extensions:
+      text: "Extensions"
       href: articles/modules.html

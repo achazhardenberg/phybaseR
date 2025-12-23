@@ -13,16 +13,15 @@ vignette: >
 
 ### Phylogenetic Structural Equation Models (`because.phybase`)
 
-The **because.phybase** package adds support for phylogenetic covariance structures, enabling "Phylogenetic Bayesian Structural Equation Modeling" (PhyBaSE).
+The [because.phybase](https://because-pkg.github.io/because.phybase/) package adds support for phylogenetic covariance structures, enabling the fitting of Phylogenetic Bayesian Structural Equation Models (PhyBaSE; von Hardenberg & Gonzalez-Voyer, 2025).
 
--   **Features**: Single tree (`phylo`) and multiple trees (`multiPhylo`) for uncertainty in phylogeny.
--   **Repository**: [github.com/because-pkg/because.phybase](https://github.com/because-pkg/because.phybase)
--   **Documentation**: [Reference Site](https://because-pkg.github.io/because.phybase/) (Coming Soon)
+*Features*
 
-To install:
-```r
-remotes::install_github("because-pkg/because.phybase")
-```
+-   **Phylogenetic Covariance**: Incorporates phylogenetic relatedness into `because` models.
+-   **Phylogenetic Uncertainty**: Supports `multiPhylo` objects to account for uncertainty in tree topology or branch lengths.
+-   **Measurement error**: Accounting for measurement error in traits both providing repeated measures as well as specifying known measurement error variances.
+-   **Phylogenetic missing data imputation**: informs imputation of missing data using phylogenetic relationships.
+-   **Seamless Integration**: Designed to work transparently with `because` via S3 method dispatch.
 
 ## Planned packages
 

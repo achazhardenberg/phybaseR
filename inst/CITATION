@@ -8,15 +8,3 @@ citEntry(entry = "Manual",
   url = "https://github.com/achazhardenberg/because",
   textVersion = "von Hardenberg, A. (2025). because: Bayesian Estimation of Causal Effects. R package version 0.9.5. https://github.com/achazhardenberg/because"
 )
-
-citEntry(entry = "Article",
-  title = "PhyBaSE: A Bayesian structural equation model approach to causal inference in phylogenetic comparative analyses",
-  author = c(person("Achaz", "von Hardenberg"), person("Alejandro", "Gonzalez-Voyer")),
-  journal = "Methods in Ecology and Evolution",
-  year = "2025",
-  volume = "16",
-  number = "6",
-  pages = "1136-1148",
-  doi = "10.1111/2041-210X.70044",
-  textVersion = "von Hardenberg, A., & Gonzalez-Voyer, A. (2025). PhyBaSE: A Bayesian structural equation model approach to causal inference in phylogenetic comparative analyses. Methods in Ecology and Evolution, 16(6), 1136-1148. <doi:10.1111/2041-210X.70044>"
-)
