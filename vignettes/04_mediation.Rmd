@@ -1,5 +1,5 @@
 ---
-title: "Mediation Analysis"
+title: "Automated Mediation Analysis"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Automated Mediation Analysis}
@@ -30,19 +30,15 @@ Once again we will use the **Rhinogradentia** dataset to investigate the causal 
 
 ```{r setup}
 library(because)
-library(because.phybase)
-library(ape)
 
-# Simulate Rhino-like data (since original data is in because.phybase)
+# Simulate Data with Structural Relationships (Mediation)
 set.seed(123)
 N <- 100
-rhino.tree <- rtree(N)
-rhino.tree$edge.length <- rhino.tree$edge.length / max(branching.times(rhino.tree))
 
-# Simulate traits to match the sem8 structure
-# LS ~ BM
-# NL ~ BM + RS
-# DD ~ NL
+# Simulate traits to match the structure
+# Path 1: LS ~ BM
+# Path 2: NL ~ BM + RS
+# Path 3: DD ~ NL
 BM <- rnorm(N)
 RS <- rnorm(N)
 LS <- 0.5 * BM + rnorm(N)
@@ -50,7 +46,6 @@ NL <- 0.5 * BM + 0.6 * RS + rnorm(N)
 DD <- 0.5 * NL + rnorm(N)
 
 rhino.dat <- data.frame(
-  SP = rhino.tree$tip.label,
   BM = BM,
   RS = RS,
   LS = LS,
@@ -77,8 +72,6 @@ sem8_eq <- list(
 fit <- because(
   equations = sem8_eq,
   data = rhino.dat,
-  structure = rhino.tree,
-  id_col = "SP", # Map species names
   n.iter = 1000 # We run a short run just for demonstration. Run it longer for real analyses!
 )
 ```
