@@ -2167,7 +2167,8 @@ because_model <- function(
         )
       needs_random_variance <- !independent &&
         optimise &&
-        (length(structure_names) > 0 || length(random_structure_names) > 0)
+        (length(structure_names) > 0 || length(random_structure_names) > 0) &&
+        dist != "occupancy"
 
       if (
         (is.null(vars_with_na) || !response %in% vars_with_na || optimise) &&
