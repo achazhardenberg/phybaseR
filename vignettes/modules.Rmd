@@ -1,5 +1,5 @@
 ---
-title: "Extension Modules"
+title: "Extension Packages"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Extension Modules}
@@ -7,13 +7,13 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-`because` is designed as a modular framework. While the core package handles standard Bayesian SEMs, specialized functionality is provided through extension modules.
+`because` is designed as a modular framework. While the core package handles standard Bayesian SEMs, specialized functionality is provided through extension packages.
 
-## Available Modules
+## Available packages
 
-### Phylogenetic Structure (`because.phybase`)
+### Phylogenetic Structural Equation Models (`because.phybase`)
 
-The **because.phybase** module adds support for phylogenetic covariance structures, enabling "Phylogenetic Bayesian Structural Equation Modeling" (PhyBaSE).
+The **because.phybase** package adds support for phylogenetic covariance structures, enabling "Phylogenetic Bayesian Structural Equation Modeling" (PhyBaSE).
 
 -   **Features**: Single tree (`phylo`) and multiple trees (`multiPhylo`) for uncertainty in phylogeny.
 -   **Repository**: [github.com/because-pkg/because.phybase](https://github.com/because-pkg/because.phybase)
@@ -24,7 +24,7 @@ To install:
 remotes::install_github("because-pkg/because.phybase")
 ```
 
-## Planned Modules
+## Planned packages
 
 ### Occupancy (`because.occupancy`)
 *Status: In Development*

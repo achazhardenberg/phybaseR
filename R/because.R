@@ -2753,7 +2753,6 @@ because <- function(
         )
       )
 
-      )
       model <- rjags::jags.model(
         model_file,
         data = data,
@@ -2852,7 +2851,6 @@ because <- function(
               .RNG.seed = 12345 + i
             )
           )
-        })
         })
 
         rjags::jags.model(
