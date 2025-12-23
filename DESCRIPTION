@@ -18,30 +18,38 @@ SystemRequirements: JAGS (>= 4.0.0)
 License: AGPL-3
 Encoding: UTF-8
 LazyData: true
-Imports:
+Imports: 
     rjags,
     coda,
-    stats,
-    parallel,
-    utils,
+    MASS,
+    Formula,
+    igraph,
+    visNetwork,
+    performance,
     loo,
-    ape
+    parallel,
+    methods,
+    stats,
+    graphics,
+    utils,
+    Matrix
 Depends: 
     R (>= 3.5)
 RoxygenNote: 7.3.3
 Roxygen: list(markdown = TRUE)
 Suggests: 
-    because.phybase,
-    because.occupancy,
+    testthat (>= 3.0.0),
     knitr,
     rmarkdown,
-    testthat (>= 3.0.0),
+    ggplot2,
+    ape,
+    because.phybase,
+    because.occupancy,
     devtools,
     MASS,
     dagitty,
     ggdag,
     ggraph,
-    ggplot2,
     dplyr,
     ggm,
     igraph
