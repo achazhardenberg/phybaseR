@@ -1098,11 +1098,16 @@ because <- function(
   data$N <- N
   # Only add 'zeros' vector if using ZIP or ZINB (Poisson trick)
   # OR if we have structures (which often use dmnorm(zeros, ...))
-  if (!is.null(N) && is.null(data$zeros)) {
-    needs_zeros <- any(family %in% c("zip", "zinb", "occupancy")) ||
-      length(structures) > 0
-    if (needs_zeros) {
-      data$zeros <- rep(0, N)
+  if (!is.null(N)) {
+    # Check if 'zeros' already exists (use exact name match)
+    has_zeros <- "zeros" %in% names(data)
+    if (!has_zeros) {
+      needs_zeros <- any(family %in% c("zip", "zinb", "occupancy")) ||
+        length(structures) > 0
+
+      if (needs_zeros) {
+        data[["zeros"]] <- rep(0, N)
+      }
     }
   }
 
@@ -2748,6 +2753,7 @@ because <- function(
         )
       )
 
+      )
       model <- rjags::jags.model(
         model_file,
         data = data,
@@ -2846,6 +2852,7 @@ because <- function(
               .RNG.seed = 12345 + i
             )
           )
+        })
         })
 
         rjags::jags.model(
