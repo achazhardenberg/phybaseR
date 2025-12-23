@@ -43,8 +43,6 @@ Suggests:
     rmarkdown,
     ggplot2,
     ape,
-    because.phybase,
-    because.occupancy,
     devtools,
     MASS,
     dagitty,
@@ -56,5 +54,5 @@ Suggests:
 VignetteBuilder: knitr, rmarkdown
 URL: https://because-pkg.github.io/because/, https://github.com/because-pkg/because
 BugReports: https://github.com/because-pkg/because/issues
-Remotes: because-pkg/because.phybase, because-pkg/because.occupancy
+
 
