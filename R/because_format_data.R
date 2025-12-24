@@ -190,7 +190,7 @@ because_format_data <- function(data, species_col = "SP", tree = NULL) {
             # Take the first column (which contains the value for constant vars)
             # Note: for constant vars, all replicates are identical, so col 1 is sufficient.
             trait_vector <- trait_matrix[, 1]
-            names(trait_vector) <- tree_species
+            names(trait_vector) <- reference_labels
             data_list[[trait]] <- trait_vector
         } else {
             data_list[[trait]] <- trait_matrix

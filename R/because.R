@@ -2072,10 +2072,11 @@ because <- function(
             if ("all" %in% current_monitor) {
               current_monitor <- setdiff(current_monitor, "all")
             }
+            # Remove "interpretable" keyword if present
+            if ("interpretable" %in% current_monitor) {
+              current_monitor <- setdiff(current_monitor, "interpretable")
+            }
 
-            # Run model for this d-sep test
-            current_monitor <- monitor[[as.character(i)]] %||%
-              monitor[["default"]]
             # Run model for this d-sep test
             if (!quiet) {
               message(sprintf("  Testing: %s", deparse(test_eq)))
@@ -2134,6 +2135,10 @@ because <- function(
           # Remove "all" keyword if present (sequential mode)
           if ("all" %in% current_monitor) {
             current_monitor <- setdiff(current_monitor, "all")
+          }
+          # Remove "interpretable" keyword if present
+          if ("interpretable" %in% current_monitor) {
+            current_monitor <- setdiff(current_monitor, "interpretable")
           }
 
           if (!quiet) {
