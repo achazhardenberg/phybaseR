@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Automated Mediation Analysis • because</title>
+<title>Mediation Analysis • because</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
 <link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
@@ -15,7 +15,7 @@
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Automated Mediation Analysis">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Mediation Analysis">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -41,7 +41,7 @@
 <li><a class="dropdown-item" href="../articles/01_getting_started.html">Getting Started with because</a></li>
     <li><a class="dropdown-item" href="../articles/02_dseparation.html">Causal inference with d-separation</a></li>
     <li><a class="dropdown-item" href="../articles/03_custom_priors.html">Custom Priors and Mechanistic Constraints</a></li>
-    <li><a class="dropdown-item" href="../articles/04_mediation.html">Automated Mediation Analysis</a></li>
+    <li><a class="dropdown-item" href="../articles/04_mediation.html">Mediation Analysis</a></li>
     <li><a class="dropdown-item" href="../articles/extensions.html">Extensions</a></li>
   </ul>
 </li>
@@ -64,7 +64,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="../logo.png" class="logo" alt=""><h1>Automated Mediation Analysis</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Mediation Analysis</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/because-pkg/because/blob/master/vignettes/04_mediation.Rmd" class="external-link"><code>vignettes/04_mediation.Rmd</code></a></small>
@@ -83,7 +83,7 @@ affect
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Y</mi><annotation encoding="application/x-tex">Y</annotation></semantics></math>
 directly, or does it work through a mediator
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>M</mi><annotation encoding="application/x-tex">M</annotation></semantics></math>?</p>
-<p>The <code>because</code> package provides a fully Bayesian automated
+<p>The <code>because</code> package provides a fully automated Bayesian
 mediation analysis tool, <code><a href="../reference/because_mediation.html">because_mediation()</a></code>, which
 decomposes the Total Effect of an exposure on an outcome into: 1.
 <strong>Direct Effect</strong>: The effect of
@@ -96,128 +96,245 @@ coefficients along each path, preserving full uncertainty
 quantification.</p>
 </div>
 <div class="section level2">
-<h2 id="example-rhino-model-sem8">Example: Rhino Model (<code>sem8</code>)<a class="anchor" aria-label="anchor" href="#example-rhino-model-sem8"></a>
+<h2 id="example-ecological-mediation-elevation-gradient">Example: Ecological Mediation (Elevation Gradient)<a class="anchor" aria-label="anchor" href="#example-ecological-mediation-elevation-gradient"></a>
 </h2>
-<p>Once again we will use the <strong>Rhinogradentia</strong> dataset to
-investigate the causal drivers of <strong>Dispersal Distance
-(DD)</strong>.</p>
+<p>In this example, we investigate how <strong>Elevation</strong>
+affects <strong>Plant Abundance</strong>. We hypothesize that Elevation
+acts through a causal chain involving Temperature and Soil Moisture:</p>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Elevation</strong> determines <strong>Temperature</strong>
+(higher elevation
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math>
+lower temperature).</li>
+<li>
+<strong>Temperature</strong> influences <strong>Soil
+Moisture</strong> (lower temperature
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math>
+lower evaporation
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math>
+higher moisture).</li>
+<li>
+<strong>Abundance</strong> is driven by <strong>Moisture</strong>,
+<strong>Temperature</strong>, and potentially a direct effect of
+<strong>Elevation</strong> (e.g., due to UV radiation or partial
+pressure of gases).</li>
+</ol>
 <div class="section level3">
-<h3 id="load-package-and-data">1. Load Package and Data<a class="anchor" aria-label="anchor" href="#load-package-and-data"></a>
+<h3 id="simulate-data">1. Simulate Data<a class="anchor" aria-label="anchor" href="#simulate-data"></a>
 </h3>
+<p>We simulate
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mo>=</mo><mn>200</mn></mrow><annotation encoding="application/x-tex">N=200</annotation></semantics></math>
+plots along an elevation gradient.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://because-pkg.github.io/because/">because</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Simulate Data with Structural Relationships (Mediation)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
-<span><span class="va">N</span> <span class="op">&lt;-</span> <span class="fl">100</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
+<span><span class="va">N</span> <span class="op">&lt;-</span> <span class="fl">200</span></span>
 <span></span>
-<span><span class="co"># Simulate traits to match the structure</span></span>
-<span><span class="co"># Path 1: LS ~ BM</span></span>
-<span><span class="co"># Path 2: NL ~ BM + RS</span></span>
-<span><span class="co"># Path 3: DD ~ NL</span></span>
-<span><span class="va">BM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">N</span><span class="op">)</span></span>
-<span><span class="va">RS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">N</span><span class="op">)</span></span>
-<span><span class="va">LS</span> <span class="op">&lt;-</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="va">BM</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">N</span><span class="op">)</span></span>
-<span><span class="va">NL</span> <span class="op">&lt;-</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="va">BM</span> <span class="op">+</span> <span class="fl">0.6</span> <span class="op">*</span> <span class="va">RS</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">N</span><span class="op">)</span></span>
-<span><span class="va">DD</span> <span class="op">&lt;-</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="va">NL</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">N</span><span class="op">)</span></span>
+<span><span class="co"># 1. Elevation (Exogenous variable)</span></span>
+<span><span class="co"># Ranges roughly from 500m to 1500m</span></span>
+<span><span class="va">Elevation</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">N</span>, mean <span class="op">=</span> <span class="fl">1000</span>, sd <span class="op">=</span> <span class="fl">200</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">rhino.dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  BM <span class="op">=</span> <span class="va">BM</span>,</span>
-<span>  RS <span class="op">=</span> <span class="va">RS</span>,</span>
-<span>  LS <span class="op">=</span> <span class="va">LS</span>,</span>
-<span>  NL <span class="op">=</span> <span class="va">NL</span>,</span>
-<span>  DD <span class="op">=</span> <span class="va">DD</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># 2. Temperature (Mediator 1)</span></span>
+<span><span class="co"># Decreases with Elevation (Lapse rate approx effect)</span></span>
+<span><span class="co"># Coef: -0.01 implies 100m climb -&gt; -1 degree C</span></span>
+<span><span class="va">Temp</span> <span class="op">&lt;-</span> <span class="fl">25</span> <span class="op">-</span> <span class="fl">0.01</span> <span class="op">*</span> <span class="va">Elevation</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">N</span>, sd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 3. Moisture (Mediator 2)</span></span>
+<span><span class="co"># Driven by Temperature. Cooler -&gt; Moister.</span></span>
+<span><span class="co"># We model a negative relationship with Temp.</span></span>
+<span><span class="va">Moisture</span> <span class="op">&lt;-</span> <span class="fl">20</span> <span class="op">-</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">Temp</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">N</span>, sd <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 4. Plant Abundance (Outcome)</span></span>
+<span><span class="co"># - Positive effect of Moisture (+0.5)</span></span>
+<span><span class="co"># - Positive effect of Temperature (+1.5)</span></span>
+<span><span class="co"># - Direct negative effect of Elevation (-0.005) due to harsh conditions</span></span>
+<span><span class="va">Abundance</span> <span class="op">&lt;-</span> <span class="fl">10</span> <span class="op">+</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="va">Moisture</span> <span class="op">+</span> <span class="fl">1.5</span> <span class="op">*</span> <span class="va">Temp</span> <span class="op">-</span> <span class="fl">0.005</span> <span class="op">*</span> <span class="va">Elevation</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">N</span>, sd <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">eco_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">Elevation</span>, <span class="va">Temp</span>, <span class="va">Moisture</span>, <span class="va">Abundance</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">eco_data</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   Elevation      Temp   Moisture Abundance</span></span>
+<span><span class="co">#&gt; 1 1274.1917  8.256225  10.162114  18.60961</span></span>
+<span><span class="co">#&gt; 2  887.0604 16.796951 -17.940260  26.01320</span></span>
+<span><span class="co">#&gt; 3 1072.6257 16.616393 -12.955352  32.96032</span></span>
+<span><span class="co">#&gt; 4 1126.5725 17.853353 -15.461372  31.77216</span></span>
+<span><span class="co">#&gt; 5 1080.8537 11.437740  -5.767259  12.26349</span></span>
+<span><span class="co">#&gt; 6  978.7751 12.910538 -10.814769  34.70524</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="fit-the-structural-equation-model">2. Fit the Structural Equation Model<a class="anchor" aria-label="anchor" href="#fit-the-structural-equation-model"></a>
+<h3 id="standardize-data">2. Standardize Data<a class="anchor" aria-label="anchor" href="#standardize-data"></a>
 </h3>
-<p>We define the <code>sem8</code> structure from Gonzalez-Voyer &amp;
-von Hardenberg (2014): <strong>Body Mass (BM)</strong> increases
-<strong>Nose Length (NL)</strong> which is also influenced by Range Size
-(RS). * <strong>Nose Length (NL)</strong> increases <strong>Range Size
-(RS)</strong>. * <strong>Body Mass (BM)</strong> <em>also</em> directly
-affects <strong>Litter Size (LS)</strong>.</p>
-<p>We want to investigate the effect of <strong>Body Mass (BM)</strong>
-on <strong>Dispersal Distance (DD)</strong>. There is no direct link
-<code>BM -&gt; DD</code> in the model definition, so any effect MUST be
-mediated by <strong>Nose Length (NL)</strong>.</p>
+<p><strong>Important:</strong> For mediation analysis, it is highly
+recommended to <strong>standardize</strong> your continuous variables
+(mean = 0, sd = 1) before fitting.</p>
+<p>Standardization ensures that: 1. <strong>Coefficients are
+comparable</strong>: All effects are expressed in standard deviation
+units (standardized effects). 2. <strong>Scale Invariance</strong>: The
+calculation of Indirect Effects (product of coefficients) is more
+interpretable relative to the Total Effect. 3.
+<strong>Convergence</strong>: MCMC sampling often behaves better with
+standardized scales.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Define the structural equations (sem8)</span></span>
-<span><span class="va">sem8_eq</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  <span class="va">LS</span> <span class="op">~</span> <span class="va">BM</span>,</span>
-<span>  <span class="va">NL</span> <span class="op">~</span> <span class="va">BM</span> <span class="op">+</span> <span class="va">RS</span>,</span>
-<span>  <span class="va">DD</span> <span class="op">~</span> <span class="va">NL</span></span>
+<code class="sourceCode R"><span><span class="co"># Standardize all variables</span></span>
+<span><span class="va">eco_data_std</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/scale.html" class="external-link">scale</a></span><span class="op">(</span><span class="va">eco_data</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">eco_data_std</span><span class="op">)</span></span>
+<span><span class="co">#&gt;        Elevation       Temp    Moisture  Abundance</span></span>
+<span><span class="co">#&gt; [1,]  1.43491089 -2.4146372  2.79684187 -0.2519564</span></span>
+<span><span class="co">#&gt; [2,] -0.55122296  0.6086453 -1.01750576  0.4847317</span></span>
+<span><span class="co">#&gt; [3,]  0.40079909  0.5447309 -0.34090197  1.1759989</span></span>
+<span><span class="co">#&gt; [4,]  0.67756730  0.9825952 -0.68104515  1.0577725</span></span>
+<span><span class="co">#&gt; [5,]  0.44301183 -1.2884308  0.63474109 -0.8834208</span></span>
+<span><span class="co">#&gt; [6,] -0.08069081 -0.7670836 -0.05035969  1.3496260</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="fit-the-structural-equation-model">3. Fit the Structural Equation Model<a class="anchor" aria-label="anchor" href="#fit-the-structural-equation-model"></a>
+</h3>
+<p>We define the structural equations reflecting our causal DAG. Notice
+the chain:
+<code>Elevation -&gt; Temp -&gt; Moisture -&gt; Abundance</code>.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Define the structural equations</span></span>
+<span><span class="va">eco_eqs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  <span class="va">Temp</span> <span class="op">~</span> <span class="va">Elevation</span>,</span>
+<span>  <span class="va">Moisture</span> <span class="op">~</span> <span class="va">Temp</span>,</span>
+<span>  <span class="va">Abundance</span> <span class="op">~</span> <span class="va">Moisture</span> <span class="op">+</span> <span class="va">Temp</span> <span class="op">+</span> <span class="va">Elevation</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Fit the model</span></span>
+<span><span class="co"># We use a short chain for demonstration purposes. Use more iterations for real analysis.</span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/because.html">because</a></span><span class="op">(</span></span>
-<span>  equations <span class="op">=</span> <span class="va">sem8_eq</span>,</span>
-<span>  data <span class="op">=</span> <span class="va">rhino.dat</span>,</span>
-<span>  n.iter <span class="op">=</span> <span class="fl">1000</span> <span class="co"># We run a short run just for demonstration. Run it longer for real analyses!</span></span>
+<span>  equations <span class="op">=</span> <span class="va">eco_eqs</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">eco_data_std</span>,</span>
+<span>  n.iter <span class="op">=</span> <span class="fl">2000</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Converted data.frame to list with 5 variables: LS, BM, NL, RS, DD</span></span>
+<span><span class="co">#&gt; Converted data.frame to list with 4 variables: Temp, Elevation, Moisture, Abundance</span></span>
 <span><span class="co">#&gt; Compiling model graph</span></span>
 <span><span class="co">#&gt;    Resolving undeclared variables</span></span>
 <span><span class="co">#&gt;    Allocating nodes</span></span>
 <span><span class="co">#&gt; Graph information:</span></span>
-<span><span class="co">#&gt;    Observed stochastic nodes: 300</span></span>
-<span><span class="co">#&gt;    Unobserved stochastic nodes: 10</span></span>
-<span><span class="co">#&gt;    Total graph size: 1520</span></span>
+<span><span class="co">#&gt;    Observed stochastic nodes: 600</span></span>
+<span><span class="co">#&gt;    Unobserved stochastic nodes: 11</span></span>
+<span><span class="co">#&gt;    Total graph size: 3021</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Initializing model</span></span></code></pre></div>
+<span><span class="co">#&gt; Initializing model</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                            Mean    SD Naive SE Time-series SE   2.5%    50%</span></span>
+<span><span class="co">#&gt; alpha_Abundance           0.000 0.069    0.003          0.003 -0.132 -0.001</span></span>
+<span><span class="co">#&gt; alpha_Moisture           -0.002 0.051    0.002          0.002 -0.099 -0.003</span></span>
+<span><span class="co">#&gt; alpha_Temp                0.005 0.048    0.002          0.002 -0.080  0.004</span></span>
+<span><span class="co">#&gt; beta_Abundance_Elevation -0.157 0.101    0.005          0.005 -0.341 -0.160</span></span>
+<span><span class="co">#&gt; beta_Abundance_Moisture   0.353 0.091    0.004          0.004  0.180  0.356</span></span>
+<span><span class="co">#&gt; beta_Abundance_Temp       0.408 0.119    0.005          0.005  0.189  0.411</span></span>
+<span><span class="co">#&gt; beta_Moisture_Temp       -0.709 0.052    0.002          0.002 -0.806 -0.709</span></span>
+<span><span class="co">#&gt; beta_Temp_Elevation      -0.738 0.048    0.002          0.002 -0.830 -0.743</span></span>
+<span><span class="co">#&gt; sigmaAbundance            0.935 0.047    0.002          0.002  0.854  0.932</span></span>
+<span><span class="co">#&gt; sigmaMoisture             0.712 0.035    0.002          0.001  0.644  0.712</span></span>
+<span><span class="co">#&gt; sigmaTemp                 0.678 0.034    0.002          0.001  0.617  0.678</span></span>
+<span><span class="co">#&gt;                           97.5%  Rhat n.eff</span></span>
+<span><span class="co">#&gt; alpha_Abundance           0.138 1.004   480</span></span>
+<span><span class="co">#&gt; alpha_Moisture            0.087 1.002   480</span></span>
+<span><span class="co">#&gt; alpha_Temp                0.107 1.001   693</span></span>
+<span><span class="co">#&gt; beta_Abundance_Elevation  0.054 1.001   480</span></span>
+<span><span class="co">#&gt; beta_Abundance_Moisture   0.537 0.998   493</span></span>
+<span><span class="co">#&gt; beta_Abundance_Temp       0.628 1.000   578</span></span>
+<span><span class="co">#&gt; beta_Moisture_Temp       -0.612 0.998   550</span></span>
+<span><span class="co">#&gt; beta_Temp_Elevation      -0.648 1.013   492</span></span>
+<span><span class="co">#&gt; sigmaAbundance            1.030 0.998   442</span></span>
+<span><span class="co">#&gt; sigmaMoisture             0.783 0.998   603</span></span>
+<span><span class="co">#&gt; sigmaTemp                 0.744 1.000   604</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; DIC:</span></span>
+<span><span class="co">#&gt; Mean deviance:  1377 </span></span>
+<span><span class="co">#&gt; penalty 11.16 </span></span>
+<span><span class="co">#&gt; Penalized deviance: 1388</span></span></code></pre></div>
+<p>We can also plot the fitted causal model with its standardised
+paths:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_dag.html">plot_dag</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
+<p><img src="04_mediation_files/figure-html/plot_dag-1.png" class="r-plt" alt="" width="700"></p>
 </div>
 <div class="section level3">
-<h3 id="perform-mediation-analysis">3. Perform Mediation Analysis<a class="anchor" aria-label="anchor" href="#perform-mediation-analysis"></a>
+<h3 id="perform-mediation-analysis">4. Perform Mediation Analysis<a class="anchor" aria-label="anchor" href="#perform-mediation-analysis"></a>
 </h3>
-<p>We analyze the effect of <strong>Body Mass (BM)</strong> on
-<strong>Dispersal Distance (DD)</strong>.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Run Mediation Analysis for BM -&gt; DD</span></span>
-<span><span class="va">med_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/because_mediation.html">because_mediation</a></span><span class="op">(</span><span class="va">fit</span>, exposure <span class="op">=</span> <span class="st">"BM"</span>, outcome <span class="op">=</span> <span class="st">"DD"</span><span class="op">)</span></span></code></pre></div>
+<p>We want to understand the Total Effect of <strong>Elevation</strong>
+on <strong>Abundance</strong>, and decompose it into its direct and
+indirect components.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Run Mediation Analysis for Elevation -&gt; Abundance</span></span>
+<span><span class="va">med_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/because_mediation.html">because_mediation</a></span><span class="op">(</span><span class="va">fit</span>, exposure <span class="op">=</span> <span class="st">"Elevation"</span>, outcome <span class="op">=</span> <span class="st">"Abundance"</span><span class="op">)</span></span></code></pre></div>
 <div class="section level4">
 <h4 id="inspect-the-summary">Inspect the Summary<a class="anchor" aria-label="anchor" href="#inspect-the-summary"></a>
 </h4>
-<p>The summary table provides the posterior mean, standard deviation,
-and credible intervals for the Total, Direct, and Total Indirect
-effects.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">med_results</span><span class="op">$</span><span class="va">summary</span></span>
-<span><span class="co">#&gt;                        Type      Mean         SD      Lower    Upper</span></span>
-<span><span class="co">#&gt; 2.5%           Total Effect 0.1711248 0.06046591 0.07014847 0.319557</span></span>
-<span><span class="co">#&gt; 2.5%1         Direct Effect 0.0000000 0.00000000 0.00000000 0.000000</span></span>
-<span><span class="co">#&gt; 2.5%2 Total Indirect Effect 0.1711248 0.06046591 0.07014847 0.319557</span></span></code></pre></div>
-<p><strong>Interpretation:</strong> * <strong>Total Effect</strong>: The
-overall causal impact of BM on DD. * <strong>Direct Effect</strong>: The
-path <code>BM -&gt; DD</code>. * <strong>Indirect Effect</strong>: The
-path <code>BM -&gt; NL -&gt; DD</code> (plus any others if they
-existed).</p>
-<p>If the <strong>Indirect Effect</strong> is substantial and its
-credible interval excludes zero, we have evidence of mediation.</p>
+<span><span class="co">#&gt;                    Type       Mean         SD      Lower       Upper</span></span>
+<span><span class="co">#&gt; 1          Total Effect -0.2736813 0.06781102 -0.4064066 -0.12873398</span></span>
+<span><span class="co">#&gt; 2         Direct Effect -0.1570835 0.10138569 -0.3412616  0.05359304</span></span>
+<span><span class="co">#&gt; 3 Total Indirect Effect -0.1165978 0.07616327 -0.2766890  0.02484438</span></span></code></pre></div>
+<p><strong>Interpretation (Standardized Units):</strong> * <strong>Total
+Effect</strong>: The net impact of Elevation on Abundance in SD units. *
+<strong>Direct Effect</strong>: The path
+<code>Elevation -&gt; Abundance</code> (independent of mediators). *
+<strong>Total Indirect Effect</strong>: The sum of all mediated paths.
+In our simulation, Elevation lowers Temp, which raises Moisture, which
+increases Abundance.</p>
 </div>
 <div class="section level4">
 <h4 id="inspect-individual-paths">Inspect Individual Paths<a class="anchor" aria-label="anchor" href="#inspect-individual-paths"></a>
 </h4>
-<p>If there were multiple indirect paths (e.g.,
-<code>BM -&gt; LS -&gt; NL -&gt; RS</code>),
-<code>because_mediation</code> would list each one separately.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<p>The <code>because_mediation</code> function automatically traces all
+valid paths from exposure to outcome in the DAG.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">med_results</span><span class="op">$</span><span class="va">paths</span></span>
-<span><span class="co">#&gt;                Path     Type      Mean         SD      Lower    Upper</span></span>
-<span><span class="co">#&gt; 2.5% BM -&gt; NL -&gt; DD Indirect 0.1711248 0.06046591 0.07014847 0.319557</span></span></code></pre></div>
-<p>This table shows exactly which causal pathways contribute to the
-relationship.</p>
+<span><span class="co">#&gt;                                         Path     Type       Mean         SD</span></span>
+<span><span class="co">#&gt; 1 Elevation -&gt; Temp -&gt; Moisture -&gt; Abundance Indirect  0.1847236 0.05171803</span></span>
+<span><span class="co">#&gt; 2             Elevation -&gt; Temp -&gt; Abundance Indirect -0.3013214 0.09070711</span></span>
+<span><span class="co">#&gt; 3                     Elevation -&gt; Abundance   Direct -0.1570835 0.10138569</span></span>
+<span><span class="co">#&gt;         Lower       Upper</span></span>
+<span><span class="co">#&gt; 1  0.09250807  0.30043116</span></span>
+<span><span class="co">#&gt; 2 -0.47230373 -0.14221839</span></span>
+<span><span class="co">#&gt; 3 -0.34126157  0.05359304</span></span></code></pre></div>
+<p>We expect to see three distinct paths:</p>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Direct</strong>: <code>Elevation -&gt; Abundance</code>
+</li>
+<li>
+<strong>Short Indirect</strong>:
+<code>Elevation -&gt; Temp -&gt; Abundance</code>
+<ul>
+<li>Elevation lowers Temp (negative correlation); Temp increases
+Abundance (positive correlation).</li>
+<li>The product of these effects is <strong>Negative</strong>.</li>
+</ul>
+</li>
+<li>
+<strong>Long Indirect (Chain)</strong>:
+<code>Elevation -&gt; Temp -&gt; Moisture -&gt; Abundance</code>
+<ul>
+<li>Elevation lowers Temp (negative).</li>
+<li>Lower Temp raises Moisture (negative relationship
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math>
+positive change in moisture).</li>
+<li>Higher Moisture raises Abundance (positive).</li>
+<li>The chain involves two negative links and one positive link,
+resulting in a <strong>Positive</strong> indirect effect.</li>
+</ul>
+</li>
+</ol>
+<p>The function handles this decomposition automatically, providing
+credibility intervals for each specific mechanism.</p>
 </div>
 </div>
 <div class="section level3">
 <h3 id="technical-note">Technical Note<a class="anchor" aria-label="anchor" href="#technical-note"></a>
 </h3>
 <p>The function calculates the indirect effect as the product of
-coefficients along the path:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Indirect</mtext><mo>=</mo><msub><mi>β</mi><mrow><mi>B</mi><mi>M</mi><mo>→</mo><mi>N</mi><mi>L</mi></mrow></msub><mo>×</mo><msub><mi>β</mi><mrow><mi>N</mi><mi>L</mi><mo>→</mo><mi>D</mi><mi>D</mi></mrow></msub></mrow><annotation encoding="application/x-tex"> \text{Indirect} = \beta_{BM \to NL} \times \beta_{NL \to DD} </annotation></semantics></math>
-This assumes linear relationships. For non-linear or generalized linear
-models (e.g., Binomial), this product rule is an approximation of the
-average causal effect on the linear predictor scale.</p>
+coefficients along the path. For example, for the long chain:
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mtext mathvariant="normal">Indirect</mtext><mtext mathvariant="normal">chain</mtext></msub><mo>=</mo><msub><mi>β</mi><mrow><mi>E</mi><mi>l</mi><mi>e</mi><mi>v</mi><mo>→</mo><mi>T</mi><mi>e</mi><mi>m</mi><mi>p</mi></mrow></msub><mo>×</mo><msub><mi>β</mi><mrow><mi>T</mi><mi>e</mi><mi>m</mi><mi>p</mi><mo>→</mo><mi>M</mi><mi>o</mi><mi>i</mi><mi>s</mi><mi>t</mi></mrow></msub><mo>×</mo><msub><mi>β</mi><mrow><mi>M</mi><mi>o</mi><mi>i</mi><mi>s</mi><mi>t</mi><mo>→</mo><mi>A</mi><mi>b</mi><mi>u</mi><mi>n</mi><mi>d</mi></mrow></msub></mrow><annotation encoding="application/x-tex"> \text{Indirect}_{\text{chain}} = \beta_{Elev \to Temp} \times \beta_{Temp \to Moist} \times \beta_{Moist \to Abund} </annotation></semantics></math>
+This approach is standard for linear models. For non-linear models, this
+represents an approximation of the average causal effect.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

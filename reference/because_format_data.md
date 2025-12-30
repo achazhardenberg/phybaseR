@@ -7,7 +7,7 @@ format required by
 ## Usage
 
 ``` r
-because_format_data(data, species_col = "SP", tree)
+because_format_data(data, species_col = "SP", tree = NULL)
 ```
 
 ## Arguments
@@ -22,8 +22,8 @@ because_format_data(data, species_col = "SP", tree)
 
 - tree:
 
-  A phylogenetic tree (class `phylo`). Required to determine species
-  order.
+  A phylogenetic tree (class `phylo`). Optional. If provided, determines
+  species order.
 
 ## Value
 
@@ -33,7 +33,8 @@ A named list where each element is either:
 
 - A numeric matrix with species in rows and replicates in columns
 
-Species are ordered to match `tree$tip.label`.
+Species are ordered to match `tree$tip.label` (if provided) or sorted
+alphabetically.
 
 ## Details
 
@@ -44,14 +45,18 @@ This function handles:
 
 - Missing values (NA)
 
-- Automatic alignment with phylogenetic tree tip labels
+- Automatic alignment with phylogenetic tree tip labels (if provided)
 
 When species have different numbers of replicates, the function creates
 a matrix with dimensions (number of species) x (maximum number of
 replicates). Species with fewer replicates are padded with NA values.
 
-Species in the tree but not in the data will have all NA values. Species
-in the data but not in the tree will be excluded with a warning.
+If a tree is provided: Species in the tree but not in the data will have
+all NA values. Species in the data but not in the tree will be excluded
+with a warning.
+
+If no tree is provided: All species in the data are included, sorted
+alphabetically by their ID.
 
 ## Examples
 
@@ -64,10 +69,11 @@ data_long <- data.frame(
   NL = c(0.5, 0.6, NA, 0.7, 0.8, 0.9)
 )
 
+# With tree
 tree <- ape::read.tree(text = "(sp1:1,sp2:1,sp3:1);")
 data_list <- because_format_data(data_long, species_col = "SP", tree = tree)
 
-# Use with because
-fit <- because(data = data_list, tree = tree, equations = list(NL ~ BM))
+# Without tree (general repeated measures)
+data_list_no_tree <- because_format_data(data_long, species_col = "SP")
 } # }
 ```

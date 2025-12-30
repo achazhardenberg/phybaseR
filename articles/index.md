@@ -8,6 +8,6 @@
   d-separation](https://because-pkg.github.io/because/articles/02_dseparation.md):
 - [Custom Priors and Mechanistic
   Constraints](https://because-pkg.github.io/because/articles/03_custom_priors.md):
-- [Automated Mediation
+- [Mediation
   Analysis](https://because-pkg.github.io/because/articles/04_mediation.md):
 - [Extensions](https://because-pkg.github.io/because/articles/extensions.md):
