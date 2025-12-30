@@ -193,8 +193,8 @@ because_mediation <- function(fit, exposure, outcome, prob = 0.95) {
             Type = name,
             Mean = m,
             SD = sd_val,
-            Lower = ci[1],
-            Upper = ci[2],
+            Lower = unname(ci[1]),
+            Upper = unname(ci[2]),
             stringsAsFactors = FALSE
         )
     }

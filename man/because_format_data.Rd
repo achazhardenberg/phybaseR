@@ -4,14 +4,14 @@
 \alias{because_format_data}
 \title{Format Data for Because Analysis}
 \usage{
-because_format_data(data, species_col = "SP", tree)
+because_format_data(data, species_col = "SP", tree = NULL)
 }
 \arguments{
 \item{data}{A data.frame in long format with one row per observation.}
 
 \item{species_col}{Name of the column containing species identifiers (default: "SP").}
 
-\item{tree}{A phylogenetic tree (class \code{phylo}). Required to determine species order.}
+\item{tree}{A phylogenetic tree (class \code{phylo}). Optional. If provided, determines species order.}
 }
 \value{
 A named list where each element is either:
@@ -19,7 +19,7 @@ A named list where each element is either:
 \item A numeric vector (if all species have exactly 1 observation)
 \item A numeric matrix with species in rows and replicates in columns
 }
-Species are ordered to match \code{tree$tip.label}.
+Species are ordered to match \code{tree$tip.label} (if provided) or sorted alphabetically.
 }
 \description{
 Converts data from long format (one row per observation) to the list format
@@ -30,15 +30,19 @@ This function handles:
 \itemize{
 \item Different numbers of replicates per species (creates rectangular matrix with NA padding)
 \item Missing values (NA)
-\item Automatic alignment with phylogenetic tree tip labels
+\item Automatic alignment with phylogenetic tree tip labels (if provided)
 }
 
 When species have different numbers of replicates, the function creates a matrix
 with dimensions (number of species) x (maximum number of replicates).
 Species with fewer replicates are padded with NA values.
 
+If a tree is provided:
 Species in the tree but not in the data will have all NA values.
 Species in the data but not in the tree will be excluded with a warning.
+
+If no tree is provided:
+All species in the data are included, sorted alphabetically by their ID.
 }
 \examples{
 \dontrun{
@@ -49,11 +53,12 @@ data_long <- data.frame(
   NL = c(0.5, 0.6, NA, 0.7, 0.8, 0.9)
 )
 
+# With tree
 tree <- ape::read.tree(text = "(sp1:1,sp2:1,sp3:1);")
 data_list <- because_format_data(data_long, species_col = "SP", tree = tree)
 
-# Use with because
-fit <- because(data = data_list, tree = tree, equations = list(NL ~ BM))
+# Without tree (general repeated measures)
+data_list_no_tree <- because_format_data(data_long, species_col = "SP")
 }
 
 }
