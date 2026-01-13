@@ -702,6 +702,50 @@ because <- function(
     }
   }
 
+  # --- Data Validation ---
+  # Check that binomial response variables are 0/1 to avoid "Node inconsistent with parents" error
+  if (!is.null(family)) {
+    # If family is a single string but multiple equations, replicate it?
+    # 'because' usually handles parsing family vector inside because_model, but we check here.
+    # Assuming family corresponds to equations order or is named.
+
+    # Simple check: scan equations and find their family
+    # Note: 'family' argument handling in 'because' can be complex (vector vs single).
+    # We'll use a simplified check using the names if possible, or position.
+
+    responses <- sapply(equations, function(eq) as.character(formula(eq)[2]))
+
+    for (i in seq_along(responses)) {
+      resp <- responses[i]
+      fam <- NULL
+
+      if (!is.null(names(family))) {
+        if (resp %in% names(family)) {
+          fam <- family[[resp]]
+        }
+      } else {
+        if (length(family) == 1) {
+          fam <- family
+        } else if (length(family) == length(responses)) {
+          # Ensure using double bracket if list, or single if vector
+          if (is.list(family)) fam <- family[[i]] else fam <- family[i]
+        }
+      }
+
+      if (!is.null(fam) && fam == "binomial" && resp %in% names(data)) {
+        vals <- data[[resp]]
+        if (any(!vals %in% c(0, 1, NA))) {
+          unique_vals <- unique(vals[!is.na(vals)])
+          stop(sprintf(
+            "Binomial response variable '%s' contains invalid values: {%s}. Binomial variables must be strictly 0 or 1.",
+            resp,
+            paste(head(unique_vals, 5), collapse = ", ")
+          ))
+        }
+      }
+    }
+  }
+
   # --- Random Effects Data Prep (Post-Assembly) ---
   # Create structures for JAGS using the assembled data
   if (length(random_terms) > 0) {
