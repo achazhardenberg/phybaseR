@@ -2830,6 +2830,34 @@ because <- function(
     }
   }
 
+  # Clean up data list: Remove variables not present in the model code to avoid JAGS warnings
+  model_code_str <- model_output$model
+  vars_to_remove <- character(0)
+
+  # Always keep these structural/special variables
+  keep_vars <- c("ID2", "zeros")
+
+  for (v in names(data)) {
+    if (v %in% keep_vars) {
+      next
+    }
+
+    # Check if variable appears in the model code as a token
+    # Use perl=TRUE for word boundaries
+    if (!grepl(paste0("\\b", v, "\\b"), model_code_str, perl = TRUE)) {
+      vars_to_remove <- c(vars_to_remove, v)
+    }
+  }
+
+  if (length(vars_to_remove) > 0) {
+    if (!quiet) {
+      # message(sprintf("Removing unused variables from data: %s", paste(vars_to_remove, collapse=", ")))
+    }
+    for (v in vars_to_remove) {
+      data[[v]] <- NULL
+    }
+  }
+
   # Run MCMC chains (parallel or sequential)
 
   if (parallel && n.cores > 1 && n.chains > 1) {
@@ -2874,15 +2902,6 @@ because <- function(
           .RNG.seed = 12345 + chain_id
         )
       )
-
-      if (!quiet) {
-        cat("--- JAGS Model Code ---\n")
-        lines <- strsplit(model_file, "\n")[[1]]
-        for (i in seq_along(lines)) {
-          cat(sprintf("%4d: %s\n", i, lines[i]))
-        }
-        cat("-----------------------\n")
-      }
 
       model <- rjags::jags.model(
         model_file,
