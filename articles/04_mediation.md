@@ -120,49 +120,6 @@ fit <- because(
   n.iter = 2000
 )
 #> Converted data.frame to list with 4 variables: Temp, Elevation, Moisture, Abundance
-#> --- JAGS Model Code (Main) ---
-#>    1: model {
-#>    2:   # Structural equations
-#>    3: 
-#>    4:   for (i in 1:N) {
-#>    5:     mu_Temp[i] <- alpha_Temp + beta_Temp_Elevation*Elevation[i]
-#>    6:   }
-#>    7:   for (i in 1:N) {
-#>    8:     mu_Moisture[i] <- alpha_Moisture + beta_Moisture_Temp*Temp[i]
-#>    9:   }
-#>   10:   for (i in 1:N) {
-#>   11:     mu_Abundance[i] <- alpha_Abundance + beta_Abundance_Moisture*Moisture[i] + beta_Abundance_Temp*Temp[i] + beta_Abundance_Elevation*Elevation[i]
-#>   12:   }
-#>   13:   # Multivariate normal likelihoods
-#>   14:   for (i in 1:N) {
-#>   15:     Temp[i] ~ dnorm(mu_Temp[i], tau_e_Temp)
-#>   16:     log_lik_Temp[i] <- logdensity.norm(Temp[i], mu_Temp[i], tau_e_Temp)
-#>   17:   }
-#>   18:   for (i in 1:N) {
-#>   19:     Moisture[i] ~ dnorm(mu_Moisture[i], tau_e_Moisture)
-#>   20:     log_lik_Moisture[i] <- logdensity.norm(Moisture[i], mu_Moisture[i], tau_e_Moisture)
-#>   21:   }
-#>   22:   for (i in 1:N) {
-#>   23:     Abundance[i] ~ dnorm(mu_Abundance[i], tau_e_Abundance)
-#>   24:     log_lik_Abundance[i] <- logdensity.norm(Abundance[i], mu_Abundance[i], tau_e_Abundance)
-#>   25:   }
-#>   26:   # Priors for structural parameters
-#>   27:   alpha_Temp ~ dnorm(0, 1.0E-6)
-#>   28:   tau_e_Temp ~ dgamma(1, 1)
-#>   29:   sigmaTemp <- 1/sqrt(tau_e_Temp)
-#>   30:   alpha_Moisture ~ dnorm(0, 1.0E-6)
-#>   31:   tau_e_Moisture ~ dgamma(1, 1)
-#>   32:   sigmaMoisture <- 1/sqrt(tau_e_Moisture)
-#>   33:   alpha_Abundance ~ dnorm(0, 1.0E-6)
-#>   34:   tau_e_Abundance ~ dgamma(1, 1)
-#>   35:   sigmaAbundance <- 1/sqrt(tau_e_Abundance)
-#>   36:   beta_Temp_Elevation ~ dnorm(0, 1.0E-6)
-#>   37:   beta_Moisture_Temp ~ dnorm(0, 1.0E-6)
-#>   38:   beta_Abundance_Moisture ~ dnorm(0, 1.0E-6)
-#>   39:   beta_Abundance_Temp ~ dnorm(0, 1.0E-6)
-#>   40:   beta_Abundance_Elevation ~ dnorm(0, 1.0E-6)
-#>   41: }
-#> ------------------------------
 #> Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :
 #> Unused variable "ID2" in data
 #> Compiling model graph

@@ -139,25 +139,6 @@ Gamma priors (<code>dgamma(1, 1)</code>) to precisions
 <span>    data <span class="op">=</span> <span class="va">df</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Converted data.frame to list with 2 variables: Growth_g_day, Temp_Centered</span></span>
-<span><span class="co">#&gt; --- JAGS Model Code (Main) ---</span></span>
-<span><span class="co">#&gt;    1: model {</span></span>
-<span><span class="co">#&gt;    2:   # Structural equations</span></span>
-<span><span class="co">#&gt;    3: </span></span>
-<span><span class="co">#&gt;    4:   for (i in 1:N) {</span></span>
-<span><span class="co">#&gt;    5:     mu_Growth_g_day[i] &lt;- alpha_Growth_g_day + beta_Growth_g_day_Temp_Centered*Temp_Centered[i]</span></span>
-<span><span class="co">#&gt;    6:   }</span></span>
-<span><span class="co">#&gt;    7:   # Multivariate normal likelihoods</span></span>
-<span><span class="co">#&gt;    8:   for (i in 1:N) {</span></span>
-<span><span class="co">#&gt;    9:     Growth_g_day[i] ~ dnorm(mu_Growth_g_day[i], tau_e_Growth_g_day)</span></span>
-<span><span class="co">#&gt;   10:     log_lik_Growth_g_day[i] &lt;- logdensity.norm(Growth_g_day[i], mu_Growth_g_day[i], tau_e_Growth_g_day)</span></span>
-<span><span class="co">#&gt;   11:   }</span></span>
-<span><span class="co">#&gt;   12:   # Priors for structural parameters</span></span>
-<span><span class="co">#&gt;   13:   alpha_Growth_g_day ~ dnorm(0, 1.0E-6)</span></span>
-<span><span class="co">#&gt;   14:   tau_e_Growth_g_day ~ dgamma(1, 1)</span></span>
-<span><span class="co">#&gt;   15:   sigmaGrowth_g_day &lt;- 1/sqrt(tau_e_Growth_g_day)</span></span>
-<span><span class="co">#&gt;   16:   beta_Growth_g_day_Temp_Centered ~ dnorm(0, 1.0E-6)</span></span>
-<span><span class="co">#&gt;   17: }</span></span>
-<span><span class="co">#&gt; ------------------------------</span></span>
 <span><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :</span></span>
 <span><span class="co">#&gt; Unused variable "ID2" in data</span></span>
 <span><span class="co">#&gt; Compiling model graph</span></span>
@@ -216,25 +197,6 @@ around <strong>0.5 g/day/°C</strong>.</p>
 <span>    priors <span class="op">=</span> <span class="va">my_priors</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Converted data.frame to list with 2 variables: Growth_g_day, Temp_Centered</span></span>
-<span><span class="co">#&gt; --- JAGS Model Code (Main) ---</span></span>
-<span><span class="co">#&gt;    1: model {</span></span>
-<span><span class="co">#&gt;    2:   # Structural equations</span></span>
-<span><span class="co">#&gt;    3: </span></span>
-<span><span class="co">#&gt;    4:   for (i in 1:N) {</span></span>
-<span><span class="co">#&gt;    5:     mu_Growth_g_day[i] &lt;- alpha_Growth_g_day + beta_Growth_g_day_Temp_Centered*Temp_Centered[i]</span></span>
-<span><span class="co">#&gt;    6:   }</span></span>
-<span><span class="co">#&gt;    7:   # Multivariate normal likelihoods</span></span>
-<span><span class="co">#&gt;    8:   for (i in 1:N) {</span></span>
-<span><span class="co">#&gt;    9:     Growth_g_day[i] ~ dnorm(mu_Growth_g_day[i], tau_e_Growth_g_day)</span></span>
-<span><span class="co">#&gt;   10:     log_lik_Growth_g_day[i] &lt;- logdensity.norm(Growth_g_day[i], mu_Growth_g_day[i], tau_e_Growth_g_day)</span></span>
-<span><span class="co">#&gt;   11:   }</span></span>
-<span><span class="co">#&gt;   12:   # Priors for structural parameters</span></span>
-<span><span class="co">#&gt;   13:   alpha_Growth_g_day ~ dnorm(0, 1.0E-6)</span></span>
-<span><span class="co">#&gt;   14:   tau_e_Growth_g_day ~ dgamma(1, 1)</span></span>
-<span><span class="co">#&gt;   15:   sigmaGrowth_g_day &lt;- 1/sqrt(tau_e_Growth_g_day)</span></span>
-<span><span class="co">#&gt;   16:   beta_Growth_g_day_Temp_Centered ~ dnorm(0.5, 400)</span></span>
-<span><span class="co">#&gt;   17: }</span></span>
-<span><span class="co">#&gt; ------------------------------</span></span>
 <span><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :</span></span>
 <span><span class="co">#&gt; Unused variable "ID2" in data</span></span>
 <span><span class="co">#&gt; Compiling model graph</span></span>
@@ -320,25 +282,6 @@ enforcing a positive prior.</p>
 <span>    data <span class="op">=</span> <span class="va">df_kleiber</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Converted data.frame to list with 2 variables: Log_MR, Log_Mass</span></span>
-<span><span class="co">#&gt; --- JAGS Model Code (Main) ---</span></span>
-<span><span class="co">#&gt;    1: model {</span></span>
-<span><span class="co">#&gt;    2:   # Structural equations</span></span>
-<span><span class="co">#&gt;    3: </span></span>
-<span><span class="co">#&gt;    4:   for (i in 1:N) {</span></span>
-<span><span class="co">#&gt;    5:     mu_Log_MR[i] &lt;- alpha_Log_MR + beta_Log_MR_Log_Mass*Log_Mass[i]</span></span>
-<span><span class="co">#&gt;    6:   }</span></span>
-<span><span class="co">#&gt;    7:   # Multivariate normal likelihoods</span></span>
-<span><span class="co">#&gt;    8:   for (i in 1:N) {</span></span>
-<span><span class="co">#&gt;    9:     Log_MR[i] ~ dnorm(mu_Log_MR[i], tau_e_Log_MR)</span></span>
-<span><span class="co">#&gt;   10:     log_lik_Log_MR[i] &lt;- logdensity.norm(Log_MR[i], mu_Log_MR[i], tau_e_Log_MR)</span></span>
-<span><span class="co">#&gt;   11:   }</span></span>
-<span><span class="co">#&gt;   12:   # Priors for structural parameters</span></span>
-<span><span class="co">#&gt;   13:   alpha_Log_MR ~ dnorm(0, 1.0E-6)</span></span>
-<span><span class="co">#&gt;   14:   tau_e_Log_MR ~ dgamma(1, 1)</span></span>
-<span><span class="co">#&gt;   15:   sigmaLog_MR &lt;- 1/sqrt(tau_e_Log_MR)</span></span>
-<span><span class="co">#&gt;   16:   beta_Log_MR_Log_Mass ~ dnorm(0, 1.0E-6)</span></span>
-<span><span class="co">#&gt;   17: }</span></span>
-<span><span class="co">#&gt; ------------------------------</span></span>
 <span><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :</span></span>
 <span><span class="co">#&gt; Unused variable "ID2" in data</span></span>
 <span><span class="co">#&gt; Compiling model graph</span></span>
@@ -358,25 +301,6 @@ enforcing a positive prior.</p>
 <span>    priors <span class="op">=</span> <span class="va">positive_prior</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Converted data.frame to list with 2 variables: Log_MR, Log_Mass</span></span>
-<span><span class="co">#&gt; --- JAGS Model Code (Main) ---</span></span>
-<span><span class="co">#&gt;    1: model {</span></span>
-<span><span class="co">#&gt;    2:   # Structural equations</span></span>
-<span><span class="co">#&gt;    3: </span></span>
-<span><span class="co">#&gt;    4:   for (i in 1:N) {</span></span>
-<span><span class="co">#&gt;    5:     mu_Log_MR[i] &lt;- alpha_Log_MR + beta_Log_MR_Log_Mass*Log_Mass[i]</span></span>
-<span><span class="co">#&gt;    6:   }</span></span>
-<span><span class="co">#&gt;    7:   # Multivariate normal likelihoods</span></span>
-<span><span class="co">#&gt;    8:   for (i in 1:N) {</span></span>
-<span><span class="co">#&gt;    9:     Log_MR[i] ~ dnorm(mu_Log_MR[i], tau_e_Log_MR)</span></span>
-<span><span class="co">#&gt;   10:     log_lik_Log_MR[i] &lt;- logdensity.norm(Log_MR[i], mu_Log_MR[i], tau_e_Log_MR)</span></span>
-<span><span class="co">#&gt;   11:   }</span></span>
-<span><span class="co">#&gt;   12:   # Priors for structural parameters</span></span>
-<span><span class="co">#&gt;   13:   alpha_Log_MR ~ dnorm(0, 1.0E-6)</span></span>
-<span><span class="co">#&gt;   14:   tau_e_Log_MR ~ dgamma(1, 1)</span></span>
-<span><span class="co">#&gt;   15:   sigmaLog_MR &lt;- 1/sqrt(tau_e_Log_MR)</span></span>
-<span><span class="co">#&gt;   16:   beta_Log_MR_Log_Mass ~ dnorm(0, 1) T(0, )</span></span>
-<span><span class="co">#&gt;   17: }</span></span>
-<span><span class="co">#&gt; ------------------------------</span></span>
 <span><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :</span></span>
 <span><span class="co">#&gt; Unused variable "ID2" in data</span></span>
 <span><span class="co">#&gt; Compiling model graph</span></span>
