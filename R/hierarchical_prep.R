@@ -10,9 +10,18 @@ prepare_hierarchical_jags_data <- function(hierarchical_info, vars_needed) {
     data_list <- list()
     n_vec <- list()
 
+    hierarchy_str <- hierarchical_info$hierarchy
+    levels_ordered <- trimws(strsplit(hierarchy_str, ">")[[1]])
+
     # 1. Extract variables from their native levels
-    # Iterate through each level
-    for (lvl_name in names(hierarchical_info$data)) {
+    # Iterate through ordered levels (Coarse -> Fine)
+    # This ensures variables present in multiple levels (e.g. ID links)
+    # are extracted from the finest level (usually the vector of FKs we want).
+    for (lvl_name in levels_ordered) {
+        if (!lvl_name %in% names(hierarchical_info$data)) {
+            next
+        }
+
         df <- hierarchical_info$data[[lvl_name]]
         n_vec[[paste0("N_", lvl_name)]] <- nrow(df)
 
@@ -20,15 +29,40 @@ prepare_hierarchical_jags_data <- function(hierarchical_info, vars_needed) {
         lvl_vars <- hierarchical_info$levels[[lvl_name]]
 
         # Filter for only those needed in the model
-        vars_in_model <- intersect(lvl_vars, vars_needed)
+        # Use known level variables + any other variables found in the dataframe (e.g. created dummies)
+        vars_in_model <- unique(c(
+            intersect(lvl_vars, vars_needed),
+            intersect(names(df), vars_needed)
+        ))
 
         for (v in vars_in_model) {
+            # Check if variable is assigned to a specific level in hierarchy metadata
+            # If so, only extract it from that level to avoid overwriting with wrong length (FK/PK issues)
+            v_level <- NULL
+            for (l_name in names(hierarchical_info$levels)) {
+                if (v %in% hierarchical_info$levels[[l_name]]) {
+                    v_level <- l_name
+                    break
+                }
+            }
+
+            if (!is.null(v_level) && v_level != lvl_name) {
+                # Variable belongs to another level (e.g. Year belongs to Individual, don't extract from Enviro)
+                next
+            }
+
             if (!v %in% names(df)) {
-                stop(sprintf(
-                    "Variable '%s' expected in level '%s' but not found in data.",
-                    v,
-                    lvl_name
-                ))
+                # Only error if it was EXPECTED here (i.e. this IS the assigned level)
+                # If unassigned (e.g. sex_m), we expect it where found.
+                if (!is.null(v_level) && v_level == lvl_name) {
+                    stop(sprintf(
+                        "Variable '%s' expected in level '%s' but not found in data.",
+                        v,
+                        lvl_name
+                    ))
+                }
+                # If unassigned and missing here, just skip (look in other levels)
+                next
             }
             data_list[[v]] <- df[[v]]
         }
@@ -123,6 +157,55 @@ prepare_hierarchical_jags_data <- function(hierarchical_info, vars_needed) {
 
             # Store mapping for model generator
             # We need to know: To access Parent from Child, use vector 'idx_name'
+        }
+    }
+
+    # 3. Transitive Index Generation (Link Grandchild -> Grandparent)
+    if (length(levels_ordered) > 2) {
+        depth <- length(levels_ordered)
+        for (gap in 2:(depth - 1)) {
+            for (k in 1:(depth - gap)) {
+                parent_lvl <- levels_ordered[k]
+                child_lvl <- levels_ordered[k + gap]
+
+                # We need the intermediate level to bridge the gap
+                # We can use the level immediately preceding the child (k + gap - 1)
+                prev_child_lvl <- levels_ordered[k + gap - 1]
+
+                # We look for:
+                # 1. parent_idx_prev (Bridge -> Parent) - Created in previous gap iteration or adjacent step
+                # 2. prev_idx_child (Child -> Bridge)   - Created in adjacent step
+
+                parent_vec_name <- paste0(parent_lvl, "_idx_", prev_child_lvl)
+                prev_vec_name <- paste0(prev_child_lvl, "_idx_", child_lvl)
+
+                if (is.null(data_list[[parent_vec_name]])) {
+                    # Should not occur if hierarchy is correct
+                    warning(sprintf(
+                        "Missing bridge index '%s' for transitive link.",
+                        parent_vec_name
+                    ))
+                    next
+                }
+                if (is.null(data_list[[prev_vec_name]])) {
+                    warning(sprintf(
+                        "Missing child index '%s' for transitive link.",
+                        prev_vec_name
+                    ))
+                    next
+                }
+
+                parent_vec <- data_list[[parent_vec_name]]
+                prev_vec <- data_list[[prev_vec_name]]
+
+                # Chain them: Parent[i] = Parent[ Prev[ Child[i] ] ]
+                # Effectively: parent_vec[ prev_vec ]
+
+                transitive_vec <- parent_vec[prev_vec]
+
+                transitive_name <- paste0(parent_lvl, "_idx_", child_lvl)
+                data_list[[transitive_name]] <- transitive_vec
+            }
         }
     }
 

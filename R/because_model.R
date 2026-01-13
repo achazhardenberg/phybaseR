@@ -102,6 +102,7 @@ because_model <- function(
         return(lvl_name)
       }
     }
+
     return(NULL) # Variable not found in any level
   }
 
@@ -129,7 +130,7 @@ because_model <- function(
       return(paste0(pred, "[i]"))
     } # Unknown, use default
 
-    if (pred_lvl == response_level) {
+    if (is.null(response_level) || pred_lvl == response_level) {
       return(paste0(pred, "[i]"))
     }
 
@@ -137,6 +138,32 @@ because_model <- function(
     # We need the index vector: <PredLevel>_idx_<RespLevel>
     idx_name <- paste0(pred_lvl, "_idx_", response_level)
     return(paste0(pred, "[", idx_name, "[i]]"))
+  }
+
+  # Helper: Check if random effect grouping level is compatible with response level
+  # Valid if: Rank(Group) <= Rank(Response) (Coarser or Equal to Response)
+  is_valid_random_level <- function(response, group_var, h_info) {
+    if (is.null(h_info)) {
+      return(TRUE)
+    }
+
+    resp_lvl <- get_var_level(response, h_info)
+    grp_lvl <- get_var_level(group_var, h_info)
+
+    if (is.null(resp_lvl) || is.null(grp_lvl)) {
+      return(TRUE)
+    } # Assume true if unknown
+
+    h_levels <- trimws(strsplit(h_info$hierarchy, ">")[[1]])
+    # Rank: index in list. 1=Coarsest. N=Finest.
+    resp_rank <- match(resp_lvl, h_levels)
+    grp_rank <- match(grp_lvl, h_levels)
+
+    if (is.na(resp_rank) || is.na(grp_rank)) {
+      return(TRUE)
+    }
+
+    return(grp_rank <= resp_rank)
   }
 
   # Compute main loop N once for use throughout
@@ -271,33 +298,81 @@ because_model <- function(
   }
 
   # main_loop_N already computed above
-  model_lines <- c(
-    model_lines,
-    paste0("  for (i in 1:", main_loop_N, ") {")
-  )
+  # Removed global loop opening to support hierarchical loops per equation
+  # model_lines <- c(model_lines, paste0("  for (i in 1:", main_loop_N, ") {"))
 
   # Add polynomial transformations as deterministic nodes
+  # Generated with specific loops for each term's level
   if (!is.null(poly_terms)) {
-    poly_jags <- generate_polynomial_jags(poly_terms)
-    if (length(poly_jags) > 0) {
+    if (length(poly_terms) > 0) {
       model_lines <- c(
         model_lines,
-        "    # Deterministic polynomial transformations",
-        poly_jags
+        "    # Deterministic polynomial transformations"
       )
+
+      for (pt in poly_terms) {
+        # Determine loop bound for this specific term
+        layout_N <- get_loop_bound(pt$base_var, hierarchical_info)
+
+        # Generate wrapped code
+        model_lines <- c(
+          model_lines,
+          paste0("  for (i in 1:", layout_N, ") {"),
+          sprintf(
+            "    %s[i] <- %s[i]^%d",
+            pt$internal_name,
+            pt$base_var,
+            pt$power
+          ),
+          "  }"
+        )
+      }
     }
   }
 
   # Add generic deterministic nodes (e.g., interactions, logic)
-  # This generalizes the polynomial logic (Item #12)
+  # This generalizes the polynomial logic
   if (!is.null(deterministic_terms) && length(deterministic_terms) > 0) {
-    det_jags <- generate_deterministic_jags(deterministic_terms)
-    if (length(det_jags) > 0) {
+    if (length(deterministic_terms) > 0) {
       model_lines <- c(
         model_lines,
-        "    # Deterministic nodes (Interactions / Logic)",
-        det_jags
+        "    # Deterministic nodes (Interactions / Logic)"
       )
+
+      for (dt_name in names(deterministic_terms)) {
+        dt <- deterministic_terms[[dt_name]]
+
+        # Determine loop bound. For interactions, use finest level of involved vars.
+        # Fallback to main_loop_N if complex.
+        vars_in_expr <- all.vars(parse(text = dt$original))
+        current_N <- main_loop_N
+
+        if (!is.null(hierarchical_info)) {
+          h_levels <- trimws(strsplit(hierarchical_info$hierarchy, ">")[[1]])
+          h_levels_rev <- rev(h_levels) # Finest first
+
+          found_level <- NULL
+          for (lvl in h_levels_rev) {
+            # Check if any var is in this level
+            lvl_vars <- hierarchical_info$levels[[lvl]]
+            if (any(vars_in_expr %in% lvl_vars)) {
+              found_level <- lvl
+              break
+            }
+          }
+
+          if (!is.null(found_level)) {
+            current_N <- paste0("N_", found_level)
+          }
+        }
+
+        model_lines <- c(
+          model_lines,
+          paste0("  for (i in 1:", current_N, ") {"),
+          sprintf("    %s[i] <- %s", dt$internal_name, dt$expression),
+          "  }"
+        )
+      }
     }
   }
 
@@ -309,6 +384,10 @@ because_model <- function(
     response <- eq$response
     predictors <- eq$predictors
     dist <- dist_list[[response]] %||% "gaussian"
+
+    # Hierarchical Loop Wrapper
+    eq_loop_N <- get_loop_bound(response, hierarchical_info)
+    model_lines <- c(model_lines, paste0("  for (i in 1:", eq_loop_N, ") {"))
 
     # Check if this is a deterministic identity equation (e.g., dummy ~ I(parent == k))
     is_identity <- FALSE
@@ -840,9 +919,12 @@ because_model <- function(
     } else {
       stop(paste("Unknown distribution:", dist))
     }
+
+    # Close Hierarchical Loop
+    model_lines <- c(model_lines, "  }")
   }
 
-  model_lines <- c(model_lines, "  }", "  # Multivariate normal likelihoods")
+  model_lines <- c(model_lines, "  # Multivariate normal likelihoods")
 
   # Likelihoods for responses
   for (response in names(response_counter)) {
@@ -858,6 +940,9 @@ because_model <- function(
       suffix <- if (k == 1) "" else as.character(k)
       dist <- dist_list[[response]] %||% "gaussian"
       response_var <- paste0(response, suffix)
+
+      # Determine proper loop bound for this response variable
+      loop_bound <- get_loop_bound(response, hierarchical_info)
 
       tau <- paste0("TAU", tolower(response), suffix)
 
@@ -891,7 +976,7 @@ because_model <- function(
             paste0(
               "  # GLMM likelihood for missing data (preserves phylo signal)"
             ),
-            paste0("  for (i in 1:N) {"),
+            paste0("  for (i in 1:", loop_bound, ") {"),
             paste0(
               "    ",
               response_var,
@@ -932,7 +1017,7 @@ because_model <- function(
 
             model_lines <- c(
               model_lines,
-              paste0("  for (i in 1:N) {"),
+              paste0("  for (i in 1:", loop_bound, ") {"),
               paste0(
                 "    ",
                 response_var,
@@ -971,9 +1056,9 @@ because_model <- function(
 
               prec_name <- paste0("Prec_", s_name)
               prec_index <- if (multi.tree && is_multi_structure) {
-                paste0(prec_name, "[1:N, 1:N, K]")
+                paste0(prec_name, "[1:", loop_bound, ", 1:", loop_bound, ", K]")
               } else {
-                paste0(prec_name, "[1:N, 1:N]")
+                paste0(prec_name, "[1:", loop_bound, ", 1:", loop_bound, "]")
               }
 
               model_lines <- c(
@@ -981,12 +1066,18 @@ because_model <- function(
                 paste0(
                   "  ",
                   u_std,
-                  "[1:N] ~ dmnorm(zeros[1:N], ",
+                  "[1:",
+                  loop_bound,
+                  "] ~ dmnorm(zeros[1:",
+                  loop_bound,
+                  "], ",
                   prec_index,
                   ")"
                 ),
                 paste0(
-                  "  for (i in 1:N) { ",
+                  "  for (i in 1:",
+                  loop_bound,
+                  ") { ",
                   u,
                   "[i] <- ",
                   u_std,
@@ -1011,6 +1102,15 @@ because_model <- function(
               }
 
               if (is_relevant) {
+                # Valid hierarchical check: Group <= Response (Coarser or Equal)
+                if (
+                  !is_valid_random_level(response, r_name, hierarchical_info)
+                ) {
+                  is_relevant <- FALSE
+                }
+              }
+
+              if (is_relevant) {
                 s_suffix <- paste0("_", r_name)
 
                 u_std <- paste0("u_std_", response, suffix, s_suffix)
@@ -1018,7 +1118,45 @@ because_model <- function(
                 tau_u <- paste0("tau_u_", response, suffix, s_suffix)
 
                 n_groups <- paste0("N_", r_name)
-                group_idx <- paste0("group_", r_name)
+                n_groups <- paste0("N_", r_name)
+
+                # Smart Group Index Logic for Hierarchy
+                group_idx <- paste0("group_", r_name, "[i]")
+                if (!is.null(hierarchical_info)) {
+                  resp_bound <- get_loop_bound(response, hierarchical_info)
+                  grp_bound <- get_loop_bound(r_name, hierarchical_info)
+
+                  # Strip N_ prefix
+                  resp_lvl <- sub("^N_", "", resp_bound)
+                  grp_lvl <- sub("^N_", "", grp_bound)
+
+                  # Resolve "N" to finest level name
+                  finest_lvl <- trimws(strsplit(
+                    hierarchical_info$hierarchy,
+                    ">"
+                  )[[1]])
+                  finest_lvl <- finest_lvl[length(finest_lvl)]
+
+                  if (resp_lvl == "N") {
+                    resp_lvl <- finest_lvl
+                  }
+                  if (grp_lvl == "N") {
+                    grp_lvl <- finest_lvl
+                  }
+
+                  # If levels differ, use nested transitive index
+                  if (resp_lvl != grp_lvl) {
+                    group_idx <- paste0(
+                      "group_",
+                      r_name,
+                      "[",
+                      grp_lvl,
+                      "_idx_",
+                      resp_lvl,
+                      "[i]]"
+                    )
+                  }
+                }
                 prec_name <- paste0("Prec_", r_name)
                 zeros_name <- paste0("zeros_", r_name)
 
@@ -1060,7 +1198,7 @@ because_model <- function(
                   u,
                   "[",
                   group_idx,
-                  "[i]]"
+                  "]"
                 )
               }
             } # End relevant check
@@ -1069,7 +1207,7 @@ because_model <- function(
 
             model_lines <- c(
               model_lines,
-              paste0("  for (i in 1:N) {"),
+              paste0("  for (i in 1:", loop_bound, ") {"),
               paste0(
                 "    ",
                 response_var,
@@ -1108,9 +1246,13 @@ because_model <- function(
               paste0(
                 "  ",
                 response_var,
-                "[1:N] ~ dmnorm(",
+                "[1:",
+                loop_bound,
+                "] ~ dmnorm(",
                 mu,
-                "[1:N], ",
+                "[1:",
+                loop_bound,
+                "], ",
                 tau,
                 ")"
               )
@@ -1118,7 +1260,7 @@ because_model <- function(
             model_lines <- c(
               model_lines,
               "  # Pointwise log-likelihood for MVN",
-              paste0("  for (i in 1:N) {"),
+              paste0("  for (i in 1:", loop_bound, ") {"),
               paste0(
                 "    tau_marg_",
                 response,
@@ -1203,13 +1345,57 @@ because_model <- function(
 
           # Random Group Structures
           for (r_name in random_structure_names) {
+            # Valid hierarchical check: Group <= Response
+            if (!is_valid_random_level(response, r_name, hierarchical_info)) {
+              next
+            }
+
+            # Calculate loop bound for response (needed for Binomial/GLMM loop)
+            loop_bound <- get_loop_bound(response, hierarchical_info)
             s_suffix <- paste0("_", r_name)
             u_std <- paste0("u_std_", response, suffix, s_suffix)
             u <- paste0("u_", response, suffix, s_suffix)
             tau_u <- paste0("tau_u_", response, suffix, s_suffix)
 
             n_groups <- paste0("N_", r_name)
-            group_idx <- paste0("group_", r_name)
+
+            # Smart Group Index Logic for Hierarchy
+            group_idx <- paste0("group_", r_name, "[i]")
+            if (!is.null(hierarchical_info)) {
+              resp_bound <- get_loop_bound(response, hierarchical_info)
+              grp_bound <- get_loop_bound(r_name, hierarchical_info)
+
+              # Strip N_ prefix
+              resp_lvl <- sub("^N_", "", resp_bound)
+              grp_lvl <- sub("^N_", "", grp_bound)
+
+              # Resolve "N" to finest level name
+              finest_lvl <- trimws(strsplit(hierarchical_info$hierarchy, ">")[[
+                1
+              ]])
+              finest_lvl <- finest_lvl[length(finest_lvl)]
+
+              if (resp_lvl == "N") {
+                resp_lvl <- finest_lvl
+              }
+              if (grp_lvl == "N") {
+                grp_lvl <- finest_lvl
+              }
+
+              # If levels differ, use nested transitive index
+              # This creates u[ group_var[ bridge_idx[i] ] ]
+              if (resp_lvl != grp_lvl) {
+                group_idx <- paste0(
+                  "group_",
+                  r_name,
+                  "[",
+                  grp_lvl,
+                  "_idx_",
+                  resp_lvl,
+                  "[i]]"
+                )
+              }
+            }
             prec_name <- paste0("Prec_", r_name)
             zeros_name <- paste0("zeros_", r_name)
 
@@ -1236,13 +1422,13 @@ because_model <- function(
               paste0("    ", u, "[g] <- ", u_std, "[g] / sqrt(", tau_u, ")"),
               paste0("  }")
             )
-            total_u <- paste0(total_u, " + ", u, "[", group_idx, "[i]]")
+            total_u <- paste0(total_u, " + ", u, "[", group_idx, "]")
           }
 
           model_lines <- c(
             model_lines,
             paste0("  # Binomial error term summation: ", response),
-            paste0("  for (i in 1:N) {"),
+            paste0("  for (i in 1:", loop_bound, ") {"),
             paste0("    ", epsilon, "[i] ~ dnorm(0, ", tau_e, ")"),
             paste0("    ", err, "[i] <- ", epsilon, "[i]", total_u), # total_u starts with " + "
             paste0("  }")
@@ -1333,7 +1519,44 @@ because_model <- function(
             tau_u <- paste0("tau_u_", response, suffix, s_suffix)
 
             n_groups <- paste0("N_", r_name)
-            group_idx <- paste0("group_", r_name)
+
+            # Smart Group Index Logic for Hierarchy
+            group_idx <- paste0("group_", r_name, "[i]")
+            if (!is.null(hierarchical_info)) {
+              resp_bound <- get_loop_bound(response, hierarchical_info)
+              grp_bound <- get_loop_bound(r_name, hierarchical_info)
+
+              # Strip N_ prefix
+              resp_lvl <- sub("^N_", "", resp_bound)
+              grp_lvl <- sub("^N_", "", grp_bound)
+
+              # Resolve "N" to finest level name
+              finest_lvl <- trimws(strsplit(hierarchical_info$hierarchy, ">")[[
+                1
+              ]])
+              finest_lvl <- finest_lvl[length(finest_lvl)]
+
+              if (resp_lvl == "N") {
+                resp_lvl <- finest_lvl
+              }
+              if (grp_lvl == "N") {
+                grp_lvl <- finest_lvl
+              }
+
+              # If levels differ, use nested transitive index
+              # This creates u[ group_var[ bridge_idx[i] ] ]
+              if (resp_lvl != grp_lvl) {
+                group_idx <- paste0(
+                  "group_",
+                  r_name,
+                  "[",
+                  grp_lvl,
+                  "_idx_",
+                  resp_lvl,
+                  "[i]]"
+                )
+              }
+            }
             prec_name <- paste0("Prec_", r_name)
             zeros_name <- paste0("zeros_", r_name)
 
@@ -1369,7 +1592,7 @@ because_model <- function(
               paste0("    }")
             )
 
-            total_u <- paste0(total_u, " + ", u, "[", group_idx, "[i], k]")
+            total_u <- paste0(total_u, " + ", u, "[", group_idx, ", k]")
           }
 
           model_lines <- c(
@@ -1510,7 +1733,44 @@ because_model <- function(
             tau_u <- paste0("tau_u_", response, suffix, s_suffix)
 
             n_groups <- paste0("N_", r_name)
-            group_idx <- paste0("group_", r_name)
+
+            # Smart Group Index Logic for Hierarchy
+            group_idx <- paste0("group_", r_name, "[i]")
+            if (!is.null(hierarchical_info)) {
+              resp_bound <- get_loop_bound(response, hierarchical_info)
+              grp_bound <- get_loop_bound(r_name, hierarchical_info)
+
+              # Strip N_ prefix
+              resp_lvl <- sub("^N_", "", resp_bound)
+              grp_lvl <- sub("^N_", "", grp_bound)
+
+              # Resolve "N" to finest level name
+              finest_lvl <- trimws(strsplit(hierarchical_info$hierarchy, ">")[[
+                1
+              ]])
+              finest_lvl <- finest_lvl[length(finest_lvl)]
+
+              if (resp_lvl == "N") {
+                resp_lvl <- finest_lvl
+              }
+              if (grp_lvl == "N") {
+                grp_lvl <- finest_lvl
+              }
+
+              # If levels differ, use nested transitive index
+              # This creates u[ group_var[ bridge_idx[i] ] ]
+              if (resp_lvl != grp_lvl) {
+                group_idx <- paste0(
+                  "group_",
+                  r_name,
+                  "[",
+                  grp_lvl,
+                  "_idx_",
+                  resp_lvl,
+                  "[i]]"
+                )
+              }
+            }
             prec_name <- paste0("Prec_", r_name)
             zeros_name <- paste0("zeros_", r_name)
 
@@ -1537,7 +1797,7 @@ because_model <- function(
               paste0("    ", u, "[g] <- ", u_std, "[g] / sqrt(", tau_u, ")"),
               paste0("  }")
             )
-            total_u <- paste0(total_u, " + ", u, "[", group_idx, "[i]]")
+            total_u <- paste0(total_u, " + ", u, "[", group_idx, "]")
           }
 
           # Handle multi-tree with generic structure naming
@@ -1690,7 +1950,44 @@ because_model <- function(
             tau_u <- paste0("tau_u_", response, suffix, s_suffix)
 
             n_groups <- paste0("N_", r_name)
-            group_idx <- paste0("group_", r_name)
+
+            # Smart Group Index Logic for Hierarchy
+            group_idx <- paste0("group_", r_name, "[i]")
+            if (!is.null(hierarchical_info)) {
+              resp_bound <- get_loop_bound(response, hierarchical_info)
+              grp_bound <- get_loop_bound(r_name, hierarchical_info)
+
+              # Strip N_ prefix
+              resp_lvl <- sub("^N_", "", resp_bound)
+              grp_lvl <- sub("^N_", "", grp_bound)
+
+              # Resolve "N" to finest level name
+              finest_lvl <- trimws(strsplit(hierarchical_info$hierarchy, ">")[[
+                1
+              ]])
+              finest_lvl <- finest_lvl[length(finest_lvl)]
+
+              if (resp_lvl == "N") {
+                resp_lvl <- finest_lvl
+              }
+              if (grp_lvl == "N") {
+                grp_lvl <- finest_lvl
+              }
+
+              # If levels differ, use nested transitive index
+              # This creates u[ group_var[ bridge_idx[i] ] ]
+              if (resp_lvl != grp_lvl) {
+                group_idx <- paste0(
+                  "group_",
+                  r_name,
+                  "[",
+                  grp_lvl,
+                  "_idx_",
+                  resp_lvl,
+                  "[i]]"
+                )
+              }
+            }
             prec_name <- paste0("Prec_", r_name)
             zeros_name <- paste0("zeros_", r_name)
 
@@ -1717,7 +2014,7 @@ because_model <- function(
               paste0("    ", u, "[g] <- ", u_std, "[g] / sqrt(", tau_u, ")"),
               paste0("  }")
             )
-            total_u <- paste0(total_u, " + ", u, "[", group_idx, "[i]]")
+            total_u <- paste0(total_u, " + ", u, "[", group_idx, "]")
           }
 
           # For Negative Binomial / ZINB, we do NOT add an independent residual error (epsilon)
@@ -1837,9 +2134,11 @@ because_model <- function(
       )
 
       # Generate correlated error terms from MVN
+      # Use dynamic loop bound based on variable hierarchy
+      loop_bound <- get_loop_bound(var1, hierarchical_info)
       model_lines <- c(
         model_lines,
-        paste0("  for (i in 1:N) {"),
+        paste0("  for (i in 1:", loop_bound, ") {"),
         paste0(
           "    ",
           res_err,
@@ -1866,6 +2165,7 @@ because_model <- function(
     for (var in names(vars_error_terms)) {
       err_terms <- vars_error_terms[[var]]
       suffix <- if ((response_counter[[var]] %||% 0) > 1) "1" else ""
+      loop_bound <- get_loop_bound(var, hierarchical_info)
 
       # Define Structure Error (if structure exists)
       phylo_term <- ""
@@ -1878,9 +2178,9 @@ because_model <- function(
         if (optimise) {
           # Optimised: use Prec_<structure> (for MAG/induced correlations)
           prec_index <- if (is_multi_structure) {
-            paste0(prec_name, "[1:N, 1:N, K]")
+            paste0(prec_name, "[1:", loop_bound, ", 1:", loop_bound, ", K]")
           } else {
-            paste0(prec_name, "[1:N, 1:N]")
+            paste0(prec_name, "[1:", loop_bound, ", 1:", loop_bound, "]")
           }
 
           model_lines <- c(
@@ -1889,7 +2189,13 @@ because_model <- function(
             paste0(
               "  ",
               err_phylo,
-              "[1:N] ~ dmnorm(zero_vec[], ",
+              "[1:",
+              loop_bound,
+              "] ~ dmnorm(zero_vec[1:", # Assume zero_vec is large enough or make new one?
+              # Actually zero_vec is created as 1:N.
+              # If loop_bound < N, zero_vec[1:loop_bound] is valid.
+              loop_bound,
+              "], ",
               "tau_",
               s_name,
               "_",
@@ -1902,9 +2208,9 @@ because_model <- function(
         } else {
           # Non-optimised: use Prec_<structure> directly
           prec_index <- if (is_multi_structure) {
-            paste0(prec_name, "[1:N, 1:N, K]")
+            paste0(prec_name, "[1:", loop_bound, ", 1:", loop_bound, ", K]")
           } else {
-            paste0(prec_name, "[1:N, 1:N]")
+            paste0(prec_name, "[1:", loop_bound, ", 1:", loop_bound, "]")
           }
 
           model_lines <- c(
@@ -1913,7 +2219,11 @@ because_model <- function(
             paste0(
               "  ",
               err_phylo,
-              "[1:N] ~ dmnorm(zero_vec[], ",
+              "[1:",
+              loop_bound,
+              "] ~ dmnorm(zero_vec[1:",
+              loop_bound,
+              "], ",
               "tau_",
               s_name,
               "_",
@@ -1943,11 +2253,11 @@ because_model <- function(
 
       model_lines <- c(
         model_lines,
-        paste0("  for (i in 1:N) {"),
+        paste0("  for (i in 1:", loop_bound, ") {"),
         paste0(
           "    ",
           var,
-          "[i] ~ dnorm(mu",
+          "[i] ~ dnorm(mu_",
           var,
           suffix,
           "[i]",
@@ -1967,7 +2277,7 @@ because_model <- function(
           suffix,
           "[i] <- logdensity.norm(",
           var,
-          "[i], mu",
+          "[i], mu_",
           var,
           suffix,
           "[i]",
@@ -2676,7 +2986,10 @@ because_model <- function(
 
   # Priors for correlated vars alphas (intercepts)
   for (var in correlated_vars) {
-    model_lines <- c(model_lines, paste0("  alpha", var, " ~ dnorm(0, 1.0E-6)"))
+    model_lines <- c(
+      model_lines,
+      paste0("  alpha_", var, " ~ dnorm(0, 1.0E-6)")
+    )
   }
 
   # Priors for Zero-Inflation parameters (psi)

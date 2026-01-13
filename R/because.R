@@ -608,7 +608,51 @@ because <- function(
       eq_vars <- setdiff(eq_vars, derived_poly_vars)
     }
 
+    # Identify predictor variables (RHS) to generate dummies only for them
+    rhs_vars <- unique(unlist(lapply(equations, function(eq) {
+      if (length(eq) == 3) {
+        all.vars(eq[[3]])
+      } else {
+        character(0)
+      }
+    })))
+
+    # Preprocess categorical variables in hierarchical data
+    if (!is.null(hierarchical_info)) {
+      hierarchical_info$data <- preprocess_categorical_vars(
+        hierarchical_info$data,
+        dummy_vars = rhs_vars,
+        quiet = quiet
+      )
+
+      # Update 'data' variable if it's a list, so subsequent logic sees the attributes
+      if (is.list(data) && !is.data.frame(data)) {
+        data <- hierarchical_info$data
+      }
+    }
+
     if (optimise && is_hierarchical) {
+      # Include dummy variables in eq_vars so they are extracted by prepare_hierarchical_jags_data
+      if (!is.null(attr(data, "categorical_vars"))) {
+        cat_vars <- attr(data, "categorical_vars")
+        # Extract RHS variables to identify which categorical vars are used as predictors
+        rhs_vars <- unique(unlist(lapply(equations, function(eq) {
+          if (length(eq) == 3) {
+            all.vars(eq[[3]])
+          } else {
+            character(0)
+          }
+        })))
+
+        for (cv_name in names(cat_vars)) {
+          if (cv_name %in% rhs_vars) {
+            # Add dummies to eq_vars
+            eq_vars <- c(eq_vars, cat_vars[[cv_name]]$dummies)
+          }
+        }
+        eq_vars <- unique(eq_vars)
+      }
+
       # NEW PATH: Fully Hierarchical (Separate Loops)
       # Do NOT flatten. Prepare separate vectors and indices.
 
@@ -665,8 +709,8 @@ because <- function(
       optimise <- TRUE
     }
 
-    if (is_hierarchical && !is.data.frame(data)) {
-      # Should not happen if assembly worked, but safety check
+    if (is_hierarchical && !is.data.frame(data) && !optimise) {
+      # Should not happen if assembly worked, but safety check for flattened path
       stop("Failed to assemble hierarchical data frame for random effects.")
     }
 
@@ -760,7 +804,10 @@ because <- function(
     }
   }
 
-  if (is.data.frame(data) || (is.list(data) && !is.data.frame(data))) {
+  if (
+    (is.data.frame(data) || (is.list(data) && !is.data.frame(data))) &&
+      !(is_hierarchical && optimise)
+  ) {
     # Extract all variable names from fixed equations
     eq_vars <- unique(unlist(lapply(equations, all.vars)))
 
@@ -903,10 +950,34 @@ because <- function(
       )
     }
   } else {
-    # Ensure data is a list (crucial for adding matrices like VCV)
-    # Preserve attributes (like categorical_vars) which are lost during as.list()
-    data_attrs <- attributes(data)
-    data <- as.list(data)
+    # If optimized hierarchical path was taken, we skipped the big block above.
+    # We MUST merge random data updates (Prec matrices) now.
+    if (optimise && is_hierarchical) {
+      if (length(random_data_updates) > 0) {
+        for (nm in names(random_data_updates)) {
+          if (!is.null(nm) && nm != "") {
+            data[[nm]] <- random_data_updates[[nm]]
+          }
+        }
+      }
+      # Restore attributes (categorical_vars) needed for model generation
+      if (
+        !is.null(hierarchical_info) &&
+          !is.null(attr(hierarchical_info$data, "categorical_vars"))
+      ) {
+        attr(data, "categorical_vars") <- attr(
+          hierarchical_info$data,
+          "categorical_vars"
+        )
+      }
+      data_attrs <- list()
+    } else {
+      # Standard Fallback
+      # Ensure data is a list (crucial for adding matrices like VCV)
+      # Preserve attributes (like categorical_vars) which are lost during as.list()
+      data_attrs <- attributes(data)
+      data <- as.list(data)
+    }
   }
 
   # Compute polynomial values
@@ -1112,7 +1183,8 @@ because <- function(
   }
 
   # ID is currently unused in model templates, removing to avoid JAGS warnings
-  # ID2 is also unused in current correlation templates
+  # ID2 is used for pairwise induced correlations (Wishart priors)
+  data$ID2 <- diag(2)
 
   # Handle multinomial and ordinal data
   if (!is.null(family)) {
@@ -2715,6 +2787,14 @@ because <- function(
   }
 
   # Run MCMC chains (parallel or sequential)
+  if (!quiet) {
+    cat("--- JAGS Model Code (Main) ---\n")
+    lines <- strsplit(model_output$model, "\n")[[1]]
+    for (i in seq_along(lines)) {
+      cat(sprintf("%4d: %s\n", i, lines[i]))
+    }
+    cat("------------------------------\n")
+  }
   if (parallel && n.cores > 1 && n.chains > 1) {
     # Parallel execution
     message(sprintf(
@@ -2757,6 +2837,15 @@ because <- function(
           .RNG.seed = 12345 + chain_id
         )
       )
+
+      if (!quiet) {
+        cat("--- JAGS Model Code ---\n")
+        lines <- strsplit(model_file, "\n")[[1]]
+        for (i in seq_along(lines)) {
+          cat(sprintf("%4d: %s\n", i, lines[i]))
+        }
+        cat("-----------------------\n")
+      }
 
       model <- rjags::jags.model(
         model_file,
