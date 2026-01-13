@@ -59,6 +59,27 @@ fit_default <- because(
     data = df
 )
 #> Converted data.frame to list with 2 variables: Growth_g_day, Temp_Centered
+#> --- JAGS Model Code (Main) ---
+#>    1: model {
+#>    2:   # Structural equations
+#>    3: 
+#>    4:   for (i in 1:N) {
+#>    5:     mu_Growth_g_day[i] <- alpha_Growth_g_day + beta_Growth_g_day_Temp_Centered*Temp_Centered[i]
+#>    6:   }
+#>    7:   # Multivariate normal likelihoods
+#>    8:   for (i in 1:N) {
+#>    9:     Growth_g_day[i] ~ dnorm(mu_Growth_g_day[i], tau_e_Growth_g_day)
+#>   10:     log_lik_Growth_g_day[i] <- logdensity.norm(Growth_g_day[i], mu_Growth_g_day[i], tau_e_Growth_g_day)
+#>   11:   }
+#>   12:   # Priors for structural parameters
+#>   13:   alpha_Growth_g_day ~ dnorm(0, 1.0E-6)
+#>   14:   tau_e_Growth_g_day ~ dgamma(1, 1)
+#>   15:   sigmaGrowth_g_day <- 1/sqrt(tau_e_Growth_g_day)
+#>   16:   beta_Growth_g_day_Temp_Centered ~ dnorm(0, 1.0E-6)
+#>   17: }
+#> ------------------------------
+#> Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :
+#> Unused variable "ID2" in data
 #> Compiling model graph
 #>    Resolving undeclared variables
 #>    Allocating nodes
@@ -118,6 +139,27 @@ fit_custom <- because(
     priors = my_priors
 )
 #> Converted data.frame to list with 2 variables: Growth_g_day, Temp_Centered
+#> --- JAGS Model Code (Main) ---
+#>    1: model {
+#>    2:   # Structural equations
+#>    3: 
+#>    4:   for (i in 1:N) {
+#>    5:     mu_Growth_g_day[i] <- alpha_Growth_g_day + beta_Growth_g_day_Temp_Centered*Temp_Centered[i]
+#>    6:   }
+#>    7:   # Multivariate normal likelihoods
+#>    8:   for (i in 1:N) {
+#>    9:     Growth_g_day[i] ~ dnorm(mu_Growth_g_day[i], tau_e_Growth_g_day)
+#>   10:     log_lik_Growth_g_day[i] <- logdensity.norm(Growth_g_day[i], mu_Growth_g_day[i], tau_e_Growth_g_day)
+#>   11:   }
+#>   12:   # Priors for structural parameters
+#>   13:   alpha_Growth_g_day ~ dnorm(0, 1.0E-6)
+#>   14:   tau_e_Growth_g_day ~ dgamma(1, 1)
+#>   15:   sigmaGrowth_g_day <- 1/sqrt(tau_e_Growth_g_day)
+#>   16:   beta_Growth_g_day_Temp_Centered ~ dnorm(0.5, 400)
+#>   17: }
+#> ------------------------------
+#> Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :
+#> Unused variable "ID2" in data
 #> Compiling model graph
 #>    Resolving undeclared variables
 #>    Allocating nodes
@@ -205,6 +247,27 @@ fit_default_kleiber <- because(
     data = df_kleiber
 )
 #> Converted data.frame to list with 2 variables: Log_MR, Log_Mass
+#> --- JAGS Model Code (Main) ---
+#>    1: model {
+#>    2:   # Structural equations
+#>    3: 
+#>    4:   for (i in 1:N) {
+#>    5:     mu_Log_MR[i] <- alpha_Log_MR + beta_Log_MR_Log_Mass*Log_Mass[i]
+#>    6:   }
+#>    7:   # Multivariate normal likelihoods
+#>    8:   for (i in 1:N) {
+#>    9:     Log_MR[i] ~ dnorm(mu_Log_MR[i], tau_e_Log_MR)
+#>   10:     log_lik_Log_MR[i] <- logdensity.norm(Log_MR[i], mu_Log_MR[i], tau_e_Log_MR)
+#>   11:   }
+#>   12:   # Priors for structural parameters
+#>   13:   alpha_Log_MR ~ dnorm(0, 1.0E-6)
+#>   14:   tau_e_Log_MR ~ dgamma(1, 1)
+#>   15:   sigmaLog_MR <- 1/sqrt(tau_e_Log_MR)
+#>   16:   beta_Log_MR_Log_Mass ~ dnorm(0, 1.0E-6)
+#>   17: }
+#> ------------------------------
+#> Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :
+#> Unused variable "ID2" in data
 #> Compiling model graph
 #>    Resolving undeclared variables
 #>    Allocating nodes
@@ -222,6 +285,27 @@ fit_mech_kleiber <- because(
     priors = positive_prior
 )
 #> Converted data.frame to list with 2 variables: Log_MR, Log_Mass
+#> --- JAGS Model Code (Main) ---
+#>    1: model {
+#>    2:   # Structural equations
+#>    3: 
+#>    4:   for (i in 1:N) {
+#>    5:     mu_Log_MR[i] <- alpha_Log_MR + beta_Log_MR_Log_Mass*Log_Mass[i]
+#>    6:   }
+#>    7:   # Multivariate normal likelihoods
+#>    8:   for (i in 1:N) {
+#>    9:     Log_MR[i] ~ dnorm(mu_Log_MR[i], tau_e_Log_MR)
+#>   10:     log_lik_Log_MR[i] <- logdensity.norm(Log_MR[i], mu_Log_MR[i], tau_e_Log_MR)
+#>   11:   }
+#>   12:   # Priors for structural parameters
+#>   13:   alpha_Log_MR ~ dnorm(0, 1.0E-6)
+#>   14:   tau_e_Log_MR ~ dgamma(1, 1)
+#>   15:   sigmaLog_MR <- 1/sqrt(tau_e_Log_MR)
+#>   16:   beta_Log_MR_Log_Mass ~ dnorm(0, 1) T(0, )
+#>   17: }
+#> ------------------------------
+#> Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :
+#> Unused variable "ID2" in data
 #> Compiling model graph
 #>    Resolving undeclared variables
 #>    Allocating nodes
@@ -309,6 +393,8 @@ fit_default_var <- because(
     data = df_small,
     quiet = TRUE
 )
+#> Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :
+#> Unused variable "ID2" in data
 
 # 2. Constrained Model (Strong Prior)
 # Suppose we have theoretical reasons to believe residual SD should be small (~1.0).
@@ -324,6 +410,8 @@ fit_constrained_var <- because(
     priors = variance_prior,
     quiet = TRUE
 )
+#> Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :
+#> Unused variable "ID2" in data
 
 # Visualize: The constrained posterior will be shifted left (towards 1) and sharper
 plot_posterior(
@@ -379,6 +467,8 @@ fit_check <- because(
     data = df,
     n.iter = 0, quiet = TRUE
 )
+#> Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :
+#> Unused variable "ID2" in data
 
 # Print the JAGS model
 fit_check$model
@@ -386,8 +476,8 @@ fit_check$model
 #> 
 #> model {
 #>   # Structural equations
-#>   for (i in 1:N) {
 #> 
+#>   for (i in 1:N) {
 #>     mu_Growth_g_day[i] <- alpha_Growth_g_day + beta_Growth_g_day_Temp_Centered*Temp_Centered[i]
 #>   }
 #>   # Multivariate normal likelihoods

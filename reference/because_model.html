@@ -160,11 +160,17 @@ If FALSE, use original marginal covariance formulation.</p></dd>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu">because_model</span><span class="op">(</span><span class="va">eqs</span>, multi.tree <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">model</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> model {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   # Structural equations</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   for (i in 1:N) {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   for (i in 1:N) {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     mu_BR[i] &lt;- alpha_BR + beta_BR_BM*BM[i]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   }</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   for (i in 1:N) {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     mu_S[i] &lt;- alpha_S + beta_S_BR*BR[i]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   }</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   for (i in 1:N) {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     mu_G[i] &lt;- alpha_G + beta_G_BR*BR[i]</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   }</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   for (i in 1:N) {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     mu_L[i] &lt;- alpha_L + beta_L_BR*BR[i]</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   }</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   # Multivariate normal likelihoods</span>

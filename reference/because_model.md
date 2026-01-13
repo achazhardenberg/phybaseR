@@ -147,11 +147,17 @@ eqs <- list(BR ~ BM, S ~ BR, G ~ BR, L ~ BR)
 cat(because_model(eqs, multi.tree = TRUE)$model)
 #> model {
 #>   # Structural equations
-#>   for (i in 1:N) {
 #> 
+#>   for (i in 1:N) {
 #>     mu_BR[i] <- alpha_BR + beta_BR_BM*BM[i]
+#>   }
+#>   for (i in 1:N) {
 #>     mu_S[i] <- alpha_S + beta_S_BR*BR[i]
+#>   }
+#>   for (i in 1:N) {
 #>     mu_G[i] <- alpha_G + beta_G_BR*BR[i]
+#>   }
+#>   for (i in 1:N) {
 #>     mu_L[i] <- alpha_L + beta_L_BR*BR[i]
 #>   }
 #>   # Multivariate normal likelihoods
