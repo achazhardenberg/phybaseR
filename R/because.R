@@ -2831,14 +2831,7 @@ because <- function(
   }
 
   # Run MCMC chains (parallel or sequential)
-  if (!quiet) {
-    cat("--- JAGS Model Code (Main) ---\n")
-    lines <- strsplit(model_output$model, "\n")[[1]]
-    for (i in seq_along(lines)) {
-      cat(sprintf("%4d: %s\n", i, lines[i]))
-    }
-    cat("------------------------------\n")
-  }
+
   if (parallel && n.cores > 1 && n.chains > 1) {
     # Parallel execution
     message(sprintf(
