@@ -2743,33 +2743,11 @@ because <- function(
     ))
 
     # Remove tau_obs_* (deterministic constants, not stochastic parameters)
+    # Remove tau_obs_* (deterministic constants, not stochastic parameters)
     all_params <- all_params[!grepl("^tau_obs", all_params)]
 
     if (!is.null(monitor_mode) && monitor_mode == "interpretable") {
       # Filter to interpretable parameters only
-      # Get response variables to distinguish them from predictors
-      response_vars <- unique(sapply(equations, function(eq) {
-        all.vars(formula(eq)[[2]])
-      }))
-
-      # Get variables that have induced correlations (MAG exogenous variables)
-      # These are like auxiliary predictors - their intercepts are not interpretable
-      mag_exogenous_vars <- character(0)
-      if (!is.null(induced_cors) && length(induced_cors) > 0) {
-        mag_exogenous_vars <- unique(unlist(induced_cors))
-      }
-
-      # Include:
-      # - Alphas for RESPONSE variables only, EXCLUDING MAG exogenous variables
-      # - All betas (regression coefficients)
-      # - Lambdas for RESPONSE variables only (exclude auxiliary predictor lambdas)
-      # - Rhos (induced correlations)
-      # Exclude:
-      # - All taus (variance components)
-      # - Lambdas for predictor-only variables
-      # - Alphas for predictor-only variables (implicit X ~ 1 equations)
-      # - Alphas for MAG exogenous variables (e.g., BR, BM in BR <-> BM)
-
       monitor <- all_params[
         (grepl("^alpha", all_params) &
           gsub("^alpha_?", "", all_params) %in% response_vars &
@@ -2777,7 +2755,6 @@ because <- function(
           grepl("^beta", all_params) | # All regression coefficients
           grepl("^rho", all_params) | # Induced correlations
           grepl("^sigma", all_params) | # Variance components
-          grepl("^rho", all_params) | # Induced correlations
           grepl("^psi", all_params) | # Zero-inflation or occupancy probability
           grepl("^p_", all_params) | # Detection probability
           grepl("^z_", all_params) | # Latent state
@@ -2791,6 +2768,19 @@ because <- function(
       # monitor_mode == "all" or NULL: include everything
       monitor <- all_params
 
+      # DEBUG
+      if (!quiet) {
+        message(sprintf(
+          "DEBUG: Monitor mode 'all'. Extracted %d params.",
+          length(all_params)
+        ))
+        if (length(all_params) == 0) {
+          message("DEBUG: Model string snippet:")
+          message(paste(head(lines, 10), collapse = "\n"))
+        }
+      }
+
+      # Also include response variables (for imputation inspection)
       # Also include response variables (for imputation inspection)
       # We extract them directly from the equations (which include auto-added intercept models)
       response_vars_all <- unique(sapply(equations, function(eq) {
