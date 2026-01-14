@@ -22,36 +22,6 @@ summary.because <- function(
     show_random = FALSE,
     ...
 ) {
-    # Use stored summary if available, otherwise calculate it
-    if (!is.null(object$summary)) {
-        summ <- object$summary
-    } else {
-        summ <- summary(object$samples, ...)
-    }
-
-    # Calculate convergence diagnostics
-    n_chains <- coda::nchain(object$samples)
-
-    # Effective sample size
-    eff_size <- tryCatch(
-        coda::effectiveSize(object$samples),
-        error = function(e) return(NULL)
-    )
-
-    # Gelman-Rubin diagnostic (Rhat)
-    # Use stored Rhat if available (calculated in because)
-    rhat <- NULL
-    if ("Rhat" %in% colnames(summ$statistics)) {
-        rhat <- summ$statistics[, "Rhat"]
-        names(rhat) <- rownames(summ$statistics)
-    } else if (n_chains > 1) {
-        # Calculate if not stored
-        rhat <- tryCatch(
-            coda::gelman.diag(object$samples, multivariate = FALSE)$psrf[, 1],
-            error = function(e) return(NULL)
-        )
-    }
-
     # If this was a d-sep run, we want to format the output specifically
     if (!is.null(object$dsep) && object$dsep) {
         tests <- object$dsep_tests
@@ -79,12 +49,13 @@ summary.because <- function(
             return(invisible(NULL))
         }
 
-        for (i in seq_along(dsep_results)) {
+        # Use lapply for linear performance instead of iterative rbind
+        results_list <- lapply(seq_along(dsep_results), function(i) {
             res_i <- dsep_results[[i]]
 
             # Skip if result is available
             if (is.null(res_i)) {
-                next
+                return(NULL)
             }
 
             test_formula <- tests[[i]]
@@ -116,18 +87,37 @@ summary.because <- function(
                     "Could not find parameter for test:",
                     format(test_formula)
                 ))
-                next
+                return(NULL)
             }
 
             param_name <- param_row$parameter[1] # Take first match
 
-            # Summarize individual test samples
-            summ_i <- summary(res_i$samples)
+            # Optimize: Subset samples to ONLY the relevant parameter before summarizing
+            # This is CRITICAL for performance. Otherwise we summarize 1000s of latent nodes per test.
+            # We use distinct subsetting that works for mcmc.list
+
+            # Check if parameter exists in samples
+            if (!param_name %in% coda::varnames(res_i$samples)) {
+                warning(paste(
+                    "Parameter",
+                    param_name,
+                    "not found in samples for test",
+                    i
+                ))
+                return(NULL)
+            }
+
+            # Subset to just the parameter of interest
+            # Note: mcmc.list subsetting with [, vars] works in standard coda
+            sub_samples <- res_i$samples[, param_name, drop = FALSE]
+
+            # Summarize only this parameter
+            summ_i <- summary(sub_samples)
 
             # Handle edge case: single parameter returns vector, not matrix
             if (!is.matrix(summ_i$statistics)) {
                 # Convert to matrix format
-                param_col_name <- colnames(res_i$samples[[1]])[1]
+                param_col_name <- colnames(sub_samples[[1]])[1]
                 summ_i$statistics <- matrix(
                     summ_i$statistics,
                     nrow = 1,
@@ -148,7 +138,7 @@ summary.because <- function(
 
                 # Diagnostics (locally computed for this chain list)
                 # n.chains for this specific run
-                n_chains_i <- coda::nchain(res_i$samples)
+                n_chains_i <- coda::nchain(sub_samples)
 
                 # Rhat
                 p_rhat <- NA
@@ -157,7 +147,7 @@ summary.because <- function(
                     p_rhat <- tryCatch(
                         {
                             coda::gelman.diag(
-                                res_i$samples,
+                                sub_samples,
                                 multivariate = FALSE
                             )$psrf[param_name, 1]
                         },
@@ -169,7 +159,7 @@ summary.because <- function(
                 p_neff <- NA
                 eff_size_i <- tryCatch(
                     {
-                        coda::effectiveSize(res_i$samples)
+                        coda::effectiveSize(sub_samples)
                     },
                     error = function(e) NULL
                 )
@@ -182,7 +172,8 @@ summary.because <- function(
                 indep <- if (lower > 0 || upper < 0) "No" else "Yes"
 
                 # P(~0)
-                samples_matrix <- as.matrix(res_i$samples)
+                # Use sub_samples which already contains only the param of interest
+                samples_matrix <- as.matrix(sub_samples)
                 n_samples <- nrow(samples_matrix)
                 param_samples <- samples_matrix[, param_name]
                 n_above <- sum(param_samples > 0)
@@ -212,7 +203,7 @@ summary.because <- function(
                     }
                 )
 
-                results[nrow(results) + 1, ] <- list(
+                return(data.frame(
                     Test = test_str,
                     Parameter = param_name,
                     Estimate = round(est, 3),
@@ -221,10 +212,15 @@ summary.because <- function(
                     Indep = indep,
                     P = round(p_approx_0, 3), # Renamed from P_approx_0
                     Rhat = round(p_rhat, 3),
-                    n.eff = round(p_neff, 0)
-                )
+                    n.eff = round(p_neff, 0),
+                    stringsAsFactors = FALSE
+                ))
             }
-        }
+            return(NULL)
+        })
+
+        # Bind all results efficiently
+        results <- do.call(rbind, results_list)
 
         # Store components in list instead of printing
         out <- list(
@@ -235,6 +231,38 @@ summary.because <- function(
         return(out)
     } else {
         # Standard summary
+        # Use stored summary if available, otherwise calculate it
+        if (!is.null(object$summary)) {
+            summ <- object$summary
+        } else {
+            summ <- summary(object$samples, ...)
+        }
+
+        # Calculate convergence diagnostics
+        n_chains <- coda::nchain(object$samples)
+
+        # Effective sample size
+        eff_size <- tryCatch(
+            coda::effectiveSize(object$samples),
+            error = function(e) return(NULL)
+        )
+
+        # Gelman-Rubin diagnostic (Rhat)
+        # Use stored Rhat if available (calculated in because)
+        rhat <- NULL
+        if ("Rhat" %in% colnames(summ$statistics)) {
+            rhat <- summ$statistics[, "Rhat"]
+            names(rhat) <- rownames(summ$statistics)
+        } else if (n_chains > 1) {
+            # Calculate if not stored
+            rhat <- tryCatch(
+                coda::gelman.diag(object$samples, multivariate = FALSE)$psrf[,
+                    1
+                ],
+                error = function(e) return(NULL)
+            )
+        }
+
         # Combine statistics with diagnostics
         stats_table <- summ$statistics[,
             c("Mean", "SD", "Naive SE", "Time-series SE"),

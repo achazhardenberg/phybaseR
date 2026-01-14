@@ -1894,21 +1894,27 @@ because <- function(
           test_vars <- unique(c(test_vars, random_groups))
         }
 
-        # [FIX] Add dummy variables for categorical predictors
-        # Because original_data is already pre-processed, 'sex' is integer and 'sex_m' exists.
-        # We must explicitly fetch 'sex_m' and restore attributes so the sub-model knows to use it.
+        # [FIX] Handle categorical dummy variables
+        # We need their PARENT variables to fetch the data, then recreate dummies manually.
+        dummies_to_create <- list()
+
         if (!is.null(attr(original_data, "categorical_vars"))) {
           cat_vars <- attr(original_data, "categorical_vars")
-          vars_to_check <- test_vars
-          for (v in vars_to_check) {
-            if (v %in% names(cat_vars)) {
-              dummies <- cat_vars[[v]]$dummies
-              test_vars <- unique(c(test_vars, dummies))
+
+          # Check all cat vars to see if their dummies are needed (or if parent is needed)
+          current_vars <- test_vars
+
+          for (parent_var in names(cat_vars)) {
+            dummies <- cat_vars[[parent_var]]$dummies
+
+            # If parent variable is in the test variables, we need to ensure we can recreate expected dummies
+            if (parent_var %in% current_vars) {
+              dummies_to_create[[parent_var]] <- dummies
             }
           }
         }
 
-        # Get appropriate dataset for these variables
+        # Get appropriate dataset for these variables (dummies NOT included in request)
         test_data <- get_data_for_variables(
           test_vars,
           hierarchical_info$data,
@@ -1916,6 +1922,33 @@ because <- function(
           hierarchical_info$hierarchy,
           hierarchical_info$link_vars
         )
+
+        # [FIX] Recreate dummy variables in test_data
+        for (parent_var in names(dummies_to_create)) {
+          if (parent_var %in% names(test_data)) {
+            dummies <- dummies_to_create[[parent_var]]
+            vals <- test_data[[parent_var]]
+
+            # Recreate dummies: sex_m = as.integer(sex == 2) etc.
+            levels_map <- attr(original_data, "categorical_vars")[[
+              parent_var
+            ]]$levels
+
+            for (k in 2:length(levels_map)) {
+              # The dummies list generally corresponds to k=2..N
+              expected_dummy <- dummies[k - 1]
+
+              # Robust check matching preprocess_categorical_vars logic
+              is_match <- if (is.numeric(vals)) {
+                vals == k
+              } else {
+                vals == levels_map[k]
+              }
+
+              test_data[[expected_dummy]] <- as.integer(is_match)
+            }
+          }
+        }
 
         # [FIX] Restore categorical_vars attribute dropped by merge/get_data
         if (!is.null(attr(original_data, "categorical_vars"))) {
@@ -2171,158 +2204,32 @@ because <- function(
         )
 
         # Run tests in parallel
-        results <- parallel::parLapply(
+        # Only run the necessary tests
+        par_results <- parallel::parLapply(
           cl,
-          seq_along(dsep_tests),
+          tests_to_run_indices,
           function(i) {
             test_eq <- dsep_tests[[i]]
 
-            # DEBUG
-            message(sprintf(
-              "Worker processing test %d: %s",
-              i,
-              paste(deparse(test_eq), collapse = " ")
-            ))
+            # Use "interpretable" monitoring mode.
+            current_monitor <- "interpretable"
 
-            # Monitor betas for ALL predictors in the d-sep equation
-            # We must exclude random effects grouping variables (which are not fixed predictors)
-            parsed_test_eq <- extract_random_effects(list(test_eq))
-            fixed_test_eq <- parsed_test_eq$fixed_equations[[1]]
-
-            test_vars <- all.vars(fixed_test_eq)
-            response <- as.character(fixed_test_eq)[2]
-            predictors <- test_vars[test_vars != response]
-
-            # DEBUG
-            message(sprintf(
-              "  Predictors: %s",
-              paste(predictors, collapse = ", ")
-            ))
-            has_cats <- !is.null(attr(original_data, "categorical_vars"))
-            message(sprintf("  Original Data has cat vars: %s", has_cats))
-            if (has_cats && length(predictors) > 0) {
-              cat_vars <- attr(original_data, "categorical_vars")
-              message(sprintf(
-                "  Cat vars present: %s",
-                paste(intersect(predictors, names(cat_vars)), collapse = ", ")
-              ))
-            }
-
-            params_to_monitor <- character(0)
-
-            for (predictor in predictors) {
-              # Check if predictor is categorical
-              is_categorical <- FALSE
-              if (!is.null(attr(original_data, "categorical_vars"))) {
-                cat_vars <- attr(original_data, "categorical_vars")
-                if (predictor %in% names(cat_vars)) {
-                  is_categorical <- TRUE
-                  dummies <- cat_vars[[predictor]]$dummies
-                  # Monitor all dummy betas
-                  # For Gaussian: beta_Response_Predictor format
-                  # Note: 'dummies' are like 'sex_m'
-                  params_to_monitor <- c(
-                    params_to_monitor,
-                    paste0("beta_", response, "_", dummies)
-                  )
-                }
-              }
-
-              if (!is_categorical) {
-                # Standard continuous predictor
-                params_to_monitor <- c(
-                  params_to_monitor,
-                  paste0("beta_", response, "_", predictor)
-                )
-              }
-            }
-
-            current_monitor <- c(monitor, params_to_monitor) # Combine with global monitor
-
-            # Remove "all" keyword if present, as it causes warnings in d-sep (rjags doesn't support it here)
-            if ("all" %in% current_monitor) {
-              current_monitor <- setdiff(current_monitor, "all")
-            }
-            # Remove "interpretable" keyword if present
-            if ("interpretable" %in% current_monitor) {
-              current_monitor <- setdiff(current_monitor, "interpretable")
-            }
-
-            # Fallback: If monitor list is empty (e.g. intercept-only or all explicit monitors removed),
-            # set to "all" to trigger comprehensive monitoring (avoids filtering out alphas in MAG models).
-            if (length(current_monitor) == 0) {
-              current_monitor <- "all"
-            }
-
-            # Run model for this d-sep test
-            if (!quiet) {
-              message(sprintf("  Testing: %s", deparse(test_eq)))
-              message(sprintf(
-                "    Monitoring: %s",
-                paste(params_to_monitor, collapse = ", ")
-              ))
-            }
             run_single_dsep_test(i, test_eq, current_monitor) # Pass current_monitor
           }
         )
+
+        # Merge parallel results into new_results_list
+        for (j in seq_along(tests_to_run_indices)) {
+          idx <- tests_to_run_indices[j]
+          new_results_list[[idx]] <- par_results[[j]]
+        }
       } else {
         # Sequential execution
         # Loop over only the needed indices
         seq_results <- lapply(tests_to_run_indices, function(i) {
           test_eq <- dsep_tests[[i]]
           # Monitor betas for ALL predictors in the d-sep equation
-          parsed_test_eq <- extract_random_effects(list(test_eq))
-          fixed_test_eq <- parsed_test_eq$fixed_equations[[1]]
-
-          test_vars <- all.vars(fixed_test_eq)
-          response <- as.character(fixed_test_eq)[2]
-          predictors <- test_vars[test_vars != response]
-
-          params_to_monitor <- character(0)
-
-          for (predictor in predictors) {
-            # Check if predictor is categorical
-            is_categorical <- FALSE
-            if (!is.null(attr(original_data, "categorical_vars"))) {
-              cat_vars <- attr(original_data, "categorical_vars")
-              if (predictor %in% names(cat_vars)) {
-                is_categorical <- TRUE
-                dummies <- cat_vars[[predictor]]$dummies
-                # Monitor all dummy betas
-                # For Gaussian: beta_Response_Predictor format
-                # Note: 'dummies' are like 'sex_m'
-                params_to_monitor <- c(
-                  params_to_monitor,
-                  paste0("beta_", response, "_", dummies)
-                )
-              }
-            }
-
-            if (!is_categorical) {
-              # Standard continuous predictor
-              params_to_monitor <- c(
-                params_to_monitor,
-                paste0("beta_", response, "_", predictor)
-              )
-            }
-          }
-
-          current_monitor <- c(monitor, params_to_monitor) # Combine with global monitor
-
-          # Remove "all" keyword if present (sequential mode)
-          if ("all" %in% current_monitor) {
-            current_monitor <- setdiff(current_monitor, "all")
-          }
-          # Remove "interpretable" keyword if present
-          if ("interpretable" %in% current_monitor) {
-            current_monitor <- setdiff(current_monitor, "interpretable")
-          }
-
-          # Fallback: If monitor list is empty (e.g. intercept-only or all explicit monitors removed),
-          # set to "all" to trigger comprehensive monitoring (avoids filtering out alphas in MAG models).
-          if (length(current_monitor) == 0) {
-            current_monitor <- "all"
-          }
+          current_monitor <- "interpretable"
 
           if (!quiet) {
             message(sprintf(
@@ -2330,10 +2237,6 @@ because <- function(
               i,
               length(dsep_tests),
               deparse(test_eq)
-            ))
-            message(sprintf(
-              "    Monitoring: %s",
-              paste(params_to_monitor, collapse = ", ")
             ))
           }
           run_single_dsep_test(i, test_eq, current_monitor) # Pass current_monitor
@@ -2714,21 +2617,6 @@ because <- function(
     extract_names <- function(pattern) {
       out <- grep(pattern, lines, value = TRUE)
       out <- grep("(<-|~)", out, value = TRUE)
-      # Extract parameter name, ignoring array indices like [k]
-      # This regex captures only the base variable name
-      # Handle standard assignment: var <- ... or var ~ ...
-      # AND assignment inside link function: logit(var) <- ...
-      # Regex:
-      # 1. Optional link function: (?:logit|log|cloglog|probit)?
-      # 2. Optional opening paren: \(?
-      # 3. Capture Group 1 (Variable Name): (\w+)
-      # 4. Optional array index: (?:\[.*\])?
-      # 5. Optional closing paren: \)?
-      # 6. Assignment op: \s*(<-|~)
-
-      # We extract the first capture group.
-
-      # Clean line to just the LHS part implies
       matches <- regmatches(
         out,
         regexec(
@@ -2737,16 +2625,12 @@ because <- function(
         )
       )
 
-      # Create vector of matches
       res <- sapply(matches, function(m) {
         if (length(m) >= 2) m[2] else NA
       })
 
-      # Ensure it's a character vector (remove NAs and unlist if needed)
-      if (length(res) == 0) {
-        return(character(0))
-      }
-      return(as.character(na.omit(res)))
+      found_params <- as.character(na.omit(res))
+      return(found_params)
     }
 
     # Extract all parameters
@@ -2763,6 +2647,11 @@ because <- function(
       extract_names("^\\s*r_"),
       extract_names("^\\s*cutpoint")
     ))
+
+    # Ensure mag_exogenous_vars is defined (defaults to empty)
+    if (!exists("mag_exogenous_vars")) {
+      mag_exogenous_vars <- character(0)
+    }
 
     # Remove tau_obs_* (deterministic constants, not stochastic parameters)
     # Remove tau_obs_* (deterministic constants, not stochastic parameters)
@@ -2789,18 +2678,6 @@ because <- function(
     } else {
       # monitor_mode == "all" or NULL: include everything
       monitor <- all_params
-
-      # DEBUG
-      if (!quiet) {
-        message(sprintf(
-          "DEBUG: Monitor mode 'all'. Extracted %d params.",
-          length(all_params)
-        ))
-        if (length(all_params) == 0) {
-          message("DEBUG: Model string snippet:")
-          message(paste(head(lines, 10), collapse = "\n"))
-        }
-      }
 
       # Also include response variables (for imputation inspection)
       # Also include response variables (for imputation inspection)
