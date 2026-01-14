@@ -2133,7 +2133,16 @@ because <- function(
             "family",
             "latent",
             "latent_method",
-            "ic_recompile"
+            "ic_recompile",
+            "equations",
+            "random_terms",
+            "hierarchical_info",
+            "levels",
+            "hierarchy",
+            "link_vars",
+            "fix_residual_variance",
+            "run_single_dsep_test",
+            "dsep_tests"
           ),
           envir = environment()
         )
@@ -2158,8 +2167,8 @@ because <- function(
             for (predictor in predictors) {
               # Check if predictor is categorical
               is_categorical <- FALSE
-              if (!is.null(attr(data, "categorical_vars"))) {
-                cat_vars <- attr(data, "categorical_vars")
+              if (!is.null(attr(original_data, "categorical_vars"))) {
+                cat_vars <- attr(original_data, "categorical_vars")
                 if (predictor %in% names(cat_vars)) {
                   is_categorical <- TRUE
                   dummies <- cat_vars[[predictor]]$dummies
@@ -2222,8 +2231,8 @@ because <- function(
           for (predictor in predictors) {
             # Check if predictor is categorical
             is_categorical <- FALSE
-            if (!is.null(attr(data, "categorical_vars"))) {
-              cat_vars <- attr(data, "categorical_vars")
+            if (!is.null(attr(original_data, "categorical_vars"))) {
+              cat_vars <- attr(original_data, "categorical_vars")
               if (predictor %in% names(cat_vars)) {
                 is_categorical <- TRUE
                 dummies <- cat_vars[[predictor]]$dummies
