@@ -134,7 +134,7 @@
 #'   Example: \code{list(alpha_Response = "dnorm(0, 0.001)", beta_Response_Predictor = "dnorm(1, 10)")}.
 #' @param reuse_models List of previously fitted 'because' models to scan for reusable d-separation test results.
 #'   If a test in the current run matches a test in a reused model (same formula), the result is copied
-#'   instead of re-running JAGS. **Note**: Computing standard is consistent data is the user's responsibility.
+#'   instead of re-running JAGS. **Note**: Ensuring that the data is consistent is the user's responsibility.
 #'
 #' @return An object of class \code{"because"} containing:
 #'   \item{samples}{MCMC samples (mcmc.list).}
@@ -2142,7 +2142,8 @@ because <- function(
             "link_vars",
             "fix_residual_variance",
             "run_single_dsep_test",
-            "dsep_tests"
+            "dsep_tests",
+            "extract_random_effects"
           ),
           envir = environment()
         )
@@ -2153,6 +2154,14 @@ because <- function(
           seq_along(dsep_tests),
           function(i) {
             test_eq <- dsep_tests[[i]]
+
+            # DEBUG
+            message(sprintf(
+              "Worker processing test %d: %s",
+              i,
+              paste(deparse(test_eq), collapse = " ")
+            ))
+
             # Monitor betas for ALL predictors in the d-sep equation
             # We must exclude random effects grouping variables (which are not fixed predictors)
             parsed_test_eq <- extract_random_effects(list(test_eq))
@@ -2161,6 +2170,21 @@ because <- function(
             test_vars <- all.vars(fixed_test_eq)
             response <- as.character(fixed_test_eq)[2]
             predictors <- test_vars[test_vars != response]
+
+            # DEBUG
+            message(sprintf(
+              "  Predictors: %s",
+              paste(predictors, collapse = ", ")
+            ))
+            has_cats <- !is.null(attr(original_data, "categorical_vars"))
+            message(sprintf("  Original Data has cat vars: %s", has_cats))
+            if (has_cats && length(predictors) > 0) {
+              cat_vars <- attr(original_data, "categorical_vars")
+              message(sprintf(
+                "  Cat vars present: %s",
+                paste(intersect(predictors, names(cat_vars)), collapse = ", ")
+              ))
+            }
 
             params_to_monitor <- character(0)
 
