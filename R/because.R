@@ -2226,6 +2226,12 @@ because <- function(
               current_monitor <- setdiff(current_monitor, "interpretable")
             }
 
+            # Fallback: If monitor list is empty (e.g. intercept-only or all explicit monitors removed),
+            # set to NULL to trigger auto-detection in because().
+            if (length(current_monitor) == 0) {
+              current_monitor <- NULL
+            }
+
             # Run model for this d-sep test
             if (!quiet) {
               message(sprintf("  Testing: %s", deparse(test_eq)))
@@ -2288,6 +2294,12 @@ because <- function(
           # Remove "interpretable" keyword if present
           if ("interpretable" %in% current_monitor) {
             current_monitor <- setdiff(current_monitor, "interpretable")
+          }
+
+          # Fallback: If monitor list is empty (e.g. intercept-only or all explicit monitors removed),
+          # set to NULL to trigger auto-detection in because().
+          if (length(current_monitor) == 0) {
+            current_monitor <- NULL
           }
 
           if (!quiet) {
