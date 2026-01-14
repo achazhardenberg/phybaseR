@@ -311,8 +311,8 @@ because(
   List of previously fitted 'because' models to scan for reusable
   d-separation test results. If a test in the current run matches a test
   in a reused model (same formula), the result is copied instead of
-  re-running JAGS. **Note**: Computing standard is consistent data is
-  the user's responsibility.
+  re-running JAGS. **Note**: Ensuring that the data is consistent is the
+  user's responsibility.
 
 ## Value
 
