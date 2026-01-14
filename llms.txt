@@ -51,10 +51,10 @@ standard R formulas. Key features include:
 
 ## Installation
 
-To install the **stable release** (`v0.9.8`), run:
+To install the **stable release** (`v0.9.9`), run:
 
 ``` r
-remotes::install_github("because-pkg/because@v0.9.8", build_vignettes = TRUE)
+remotes::install_github("because-pkg/because@v0.9.9", build_vignettes = TRUE)
 ```
 
 To install the **latest development version** (unstable), run:
