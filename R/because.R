@@ -2227,9 +2227,9 @@ because <- function(
             }
 
             # Fallback: If monitor list is empty (e.g. intercept-only or all explicit monitors removed),
-            # set to NULL to trigger auto-detection in because().
+            # set to "all" to trigger comprehensive monitoring (avoids filtering out alphas in MAG models).
             if (length(current_monitor) == 0) {
-              current_monitor <- NULL
+              current_monitor <- "all"
             }
 
             # Run model for this d-sep test
@@ -2297,9 +2297,9 @@ because <- function(
           }
 
           # Fallback: If monitor list is empty (e.g. intercept-only or all explicit monitors removed),
-          # set to NULL to trigger auto-detection in because().
+          # set to "all" to trigger comprehensive monitoring (avoids filtering out alphas in MAG models).
           if (length(current_monitor) == 0) {
-            current_monitor <- NULL
+            current_monitor <- "all"
           }
 
           if (!quiet) {
