@@ -1894,6 +1894,20 @@ because <- function(
           test_vars <- unique(c(test_vars, random_groups))
         }
 
+        # [FIX] Add dummy variables for categorical predictors
+        # Because original_data is already pre-processed, 'sex' is integer and 'sex_m' exists.
+        # We must explicitly fetch 'sex_m' and restore attributes so the sub-model knows to use it.
+        if (!is.null(attr(original_data, "categorical_vars"))) {
+          cat_vars <- attr(original_data, "categorical_vars")
+          vars_to_check <- test_vars
+          for (v in vars_to_check) {
+            if (v %in% names(cat_vars)) {
+              dummies <- cat_vars[[v]]$dummies
+              test_vars <- unique(c(test_vars, dummies))
+            }
+          }
+        }
+
         # Get appropriate dataset for these variables
         test_data <- get_data_for_variables(
           test_vars,
@@ -1902,6 +1916,14 @@ because <- function(
           hierarchical_info$hierarchy,
           hierarchical_info$link_vars
         )
+
+        # [FIX] Restore categorical_vars attribute dropped by merge/get_data
+        if (!is.null(attr(original_data, "categorical_vars"))) {
+          attr(test_data, "categorical_vars") <- attr(
+            original_data,
+            "categorical_vars"
+          )
+        }
 
         if (!quiet) {
           message(
