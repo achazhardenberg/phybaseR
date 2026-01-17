@@ -97,7 +97,6 @@ fit_logic <- because(
 # The model recovers the effect of the threshold
 # Parameter: "beta_Mating_Age_gt_2" where "gt" means "greater than"
 summary(fit_logic)
-
 ```
 
 ## Example 3: Multi-Class Definitions
@@ -174,7 +173,7 @@ comparison_df
 
 You can also use mathematical transformations directly in the formula.
 
-```{r ex3}
+```{r ex4}
 Mass <- runif(N, 1, 100) # Ensure positive for log
 Metabolism <- 0.75 * log(Mass) + rnorm(N, sd = 0.1)
 
@@ -288,7 +287,7 @@ fit_multi_dsep <- because(
         ),
         Rank ~ AgeClass
     ),
-    data = list_multi,
+    data = data_multi,
     n.iter = 1000,
     dsep = TRUE,
     quiet = TRUE
