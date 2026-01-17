@@ -10,7 +10,6 @@
   Constraints](https://because-pkg.github.io/because/articles/03_custom_priors.md):
 - [Mediation
   Analysis](https://because-pkg.github.io/because/articles/04_mediation.md):
-- [Deterministic Nodes: Interactions, Tresholds and mathematical
-  transformations in
-  because](https://because-pkg.github.io/because/articles/05_deterministic_nodes.md):
+- [Deterministic Nodes: Interactions, tresholds and mathematical
+  transformations](https://because-pkg.github.io/because/articles/05_deterministic_nodes.md):
 - [Extensions](https://because-pkg.github.io/because/articles/extensions.md):

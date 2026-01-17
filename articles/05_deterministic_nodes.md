@@ -1,4 +1,4 @@
-# Deterministic Nodes: Interactions, Tresholds and mathematical transformations in because
+# Deterministic Nodes: Interactions, tresholds and mathematical transformations
 
 In standard Bayesian regression, variables are typically modeled as
 **Stochastic Nodes**:
