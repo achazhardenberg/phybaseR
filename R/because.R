@@ -2769,7 +2769,7 @@ because <- function(
   vars_to_remove <- character(0)
 
   # Always keep these structural/special variables
-  keep_vars <- c("ID2", "zeros")
+  keep_vars <- c("zeros")
 
   for (v in names(data)) {
     if (v %in% keep_vars) {
