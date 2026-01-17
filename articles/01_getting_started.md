@@ -20,6 +20,9 @@ autocorrelation, genetic relatedness etc.).
 - [Mediation
   Analysis](https://because-pkg.github.io/because/articles/04_mediation.md):
   Decomposing effects into direct and indirect components.
+  [Deterministic
+  Nodes](https://because-pkg.github.io/because/articles/05_deterministic_nodes.md):
+  Interactions, Tresholds and mathematical transformations.
   - *Phylogenetic Path Analysis*: Using the Phylogenetic Bayesian
     Structural Equation Model approach (PhyBaSE, von Hardenberg &
     Gonzalez-Voyer, 2025)(through the `because.phybase` module)
@@ -36,8 +39,8 @@ autocorrelation, genetic relatedness etc.).
   - Negative Binomial (overdispersed count data
   - Zero inflated Poissson (ZIP) and negative binomial (ZINB)
 - *Advanced Model Specifications:* random effects (mixed models, nested
-  designs), polynomial terms, interaction terms,categorical predictors,
-  measurement error, missing data, phylogenetic uncertainty.
+  designs), polynomial terms, categorical predictors, measurement error,
+  missing data.
 - *Hierarchical Data:* Multi-level data with variables at different
   hierarchical levels.
 - *Latent Variables and MAG:* Measurement error models and causal
