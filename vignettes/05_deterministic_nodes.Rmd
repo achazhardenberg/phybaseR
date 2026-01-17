@@ -1,5 +1,5 @@
 ---
-title: "Deterministic Nodes: Interactions, Tresholds and mathematical transformations in because"
+title: "Deterministic Nodes: Interactions, tresholds and mathematical transformations"
 author: "Achaz von Hardenberg"
 output: rmarkdown::html_vignette
 vignette: >
