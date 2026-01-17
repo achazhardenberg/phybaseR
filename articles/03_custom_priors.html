@@ -139,8 +139,6 @@ Gamma priors (<code>dgamma(1, 1)</code>) to precisions
 <span>    data <span class="op">=</span> <span class="va">df</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Converted data.frame to list with 2 variables: Growth_g_day, Temp_Centered</span></span>
-<span><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :</span></span>
-<span><span class="co">#&gt; Unused variable "ID2" in data</span></span>
 <span><span class="co">#&gt; Compiling model graph</span></span>
 <span><span class="co">#&gt;    Resolving undeclared variables</span></span>
 <span><span class="co">#&gt;    Allocating nodes</span></span>
@@ -197,8 +195,6 @@ around <strong>0.5 g/day/°C</strong>.</p>
 <span>    priors <span class="op">=</span> <span class="va">my_priors</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Converted data.frame to list with 2 variables: Growth_g_day, Temp_Centered</span></span>
-<span><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :</span></span>
-<span><span class="co">#&gt; Unused variable "ID2" in data</span></span>
 <span><span class="co">#&gt; Compiling model graph</span></span>
 <span><span class="co">#&gt;    Resolving undeclared variables</span></span>
 <span><span class="co">#&gt;    Allocating nodes</span></span>
@@ -282,8 +278,6 @@ enforcing a positive prior.</p>
 <span>    data <span class="op">=</span> <span class="va">df_kleiber</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Converted data.frame to list with 2 variables: Log_MR, Log_Mass</span></span>
-<span><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :</span></span>
-<span><span class="co">#&gt; Unused variable "ID2" in data</span></span>
 <span><span class="co">#&gt; Compiling model graph</span></span>
 <span><span class="co">#&gt;    Resolving undeclared variables</span></span>
 <span><span class="co">#&gt;    Allocating nodes</span></span>
@@ -301,8 +295,6 @@ enforcing a positive prior.</p>
 <span>    priors <span class="op">=</span> <span class="va">positive_prior</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Converted data.frame to list with 2 variables: Log_MR, Log_Mass</span></span>
-<span><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :</span></span>
-<span><span class="co">#&gt; Unused variable "ID2" in data</span></span>
 <span><span class="co">#&gt; Compiling model graph</span></span>
 <span><span class="co">#&gt;    Resolving undeclared variables</span></span>
 <span><span class="co">#&gt;    Allocating nodes</span></span>
@@ -387,8 +379,6 @@ this gives you a strong expectation for the residual standard deviation
 <span>    data <span class="op">=</span> <span class="va">df_small</span>,</span>
 <span>    quiet <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :</span></span>
-<span><span class="co">#&gt; Unused variable "ID2" in data</span></span>
 <span></span>
 <span><span class="co"># 2. Constrained Model (Strong Prior)</span></span>
 <span><span class="co"># Suppose we have theoretical reasons to believe residual SD should be small (~1.0).</span></span>
@@ -404,8 +394,6 @@ this gives you a strong expectation for the residual standard deviation
 <span>    priors <span class="op">=</span> <span class="va">variance_prior</span>,</span>
 <span>    quiet <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :</span></span>
-<span><span class="co">#&gt; Unused variable "ID2" in data</span></span>
 <span></span>
 <span><span class="co"># Visualize: The constrained posterior will be shifted left (towards 1) and sharper</span></span>
 <span><span class="fu"><a href="../reference/plot_posterior.html">plot_posterior</a></span><span class="op">(</span></span>
@@ -523,8 +511,6 @@ generated model code:</p>
 <span>    data <span class="op">=</span> <span class="va">df</span>,</span>
 <span>    n.iter <span class="op">=</span> <span class="fl">0</span>, quiet <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :</span></span>
-<span><span class="co">#&gt; Unused variable "ID2" in data</span></span>
 <span></span>
 <span><span class="co"># Print the JAGS model</span></span>
 <span><span class="va">fit_check</span><span class="op">$</span><span class="va">model</span></span>

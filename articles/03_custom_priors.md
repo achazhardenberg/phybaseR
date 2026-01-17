@@ -59,8 +59,6 @@ fit_default <- because(
     data = df
 )
 #> Converted data.frame to list with 2 variables: Growth_g_day, Temp_Centered
-#> Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :
-#> Unused variable "ID2" in data
 #> Compiling model graph
 #>    Resolving undeclared variables
 #>    Allocating nodes
@@ -120,8 +118,6 @@ fit_custom <- because(
     priors = my_priors
 )
 #> Converted data.frame to list with 2 variables: Growth_g_day, Temp_Centered
-#> Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :
-#> Unused variable "ID2" in data
 #> Compiling model graph
 #>    Resolving undeclared variables
 #>    Allocating nodes
@@ -209,8 +205,6 @@ fit_default_kleiber <- because(
     data = df_kleiber
 )
 #> Converted data.frame to list with 2 variables: Log_MR, Log_Mass
-#> Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :
-#> Unused variable "ID2" in data
 #> Compiling model graph
 #>    Resolving undeclared variables
 #>    Allocating nodes
@@ -228,8 +222,6 @@ fit_mech_kleiber <- because(
     priors = positive_prior
 )
 #> Converted data.frame to list with 2 variables: Log_MR, Log_Mass
-#> Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :
-#> Unused variable "ID2" in data
 #> Compiling model graph
 #>    Resolving undeclared variables
 #>    Allocating nodes
@@ -317,8 +309,6 @@ fit_default_var <- because(
     data = df_small,
     quiet = TRUE
 )
-#> Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :
-#> Unused variable "ID2" in data
 
 # 2. Constrained Model (Strong Prior)
 # Suppose we have theoretical reasons to believe residual SD should be small (~1.0).
@@ -334,8 +324,6 @@ fit_constrained_var <- because(
     priors = variance_prior,
     quiet = TRUE
 )
-#> Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :
-#> Unused variable "ID2" in data
 
 # Visualize: The constrained posterior will be shifted left (towards 1) and sharper
 plot_posterior(
@@ -391,8 +379,6 @@ fit_check <- because(
     data = df,
     n.iter = 0, quiet = TRUE
 )
-#> Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :
-#> Unused variable "ID2" in data
 
 # Print the JAGS model
 fit_check$model

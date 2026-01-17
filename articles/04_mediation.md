@@ -120,8 +120,6 @@ fit <- because(
   n.iter = 2000
 )
 #> Converted data.frame to list with 4 variables: Temp, Elevation, Moisture, Abundance
-#> Warning in rjags::jags.model(model_file, data = data, inits = inits_list, :
-#> Unused variable "ID2" in data
 #> Compiling model graph
 #>    Resolving undeclared variables
 #>    Allocating nodes
