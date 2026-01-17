@@ -241,6 +241,13 @@ term_to_jags_expression <- function(term) {
         )
     }
 
+    # Handle logical operators
+    # R uses & and | for element-wise logic, JAGS uses && and || (scalar logic)
+    # We assume the user intends logic within the node formula
+    # Replace runs of & with && and | with ||
+    expression <- gsub("&+", "&&", expression)
+    expression <- gsub("\\|+", "||", expression)
+
     return(expression)
 }
 
