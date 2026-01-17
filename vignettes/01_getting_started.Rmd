@@ -36,6 +36,8 @@ autocorrelation, genetic relatedness etc.).
      Incorporating prior knowledge and mechanistic constraints.
 -   [Mediation Analysis](04_mediation.html):
      Decomposing effects into direct and indirect components.
+     [Deterministic Nodes](05_deterministic_nodes.html):
+     Interactions, Tresholds and mathematical transformations.
      - *Phylogenetic Path Analysis*: Using the Phylogenetic Bayesian Structural Equation Model approach
      (PhyBaSE, von Hardenberg & Gonzalez-Voyer, 2025)(through the `because.phybase` module)
 -   * Phylogenetic Missing Data Imputation*:
@@ -53,7 +55,7 @@ autocorrelation, genetic relatedness etc.).
     -   Zero inflated Poissson (ZIP) and negative binomial (ZINB)
 -   *Advanced Model Specifications:* random
     effects (mixed models, nested designs), polynomial terms,
-    interaction terms,categorical predictors, measurement error,           missing data, phylogenetic uncertainty. 
+    categorical predictors, measurement error, missing data.
 -   *Hierarchical Data:* Multi-level data with variables at
     different hierarchical levels.
 -   *Latent Variables and MAG:* Measurement

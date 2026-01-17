@@ -87,13 +87,7 @@ sanitize_term_name <- function(term) {
     out <- gsub("_$", "", out)
 
     # Check if name is complex (arbitrary heuristic: > 20 chars or contains 'times'/'plus')
-    if (
-        nchar(out) > 20 ||
-            grepl("_times_", out) ||
-            grepl("_plus_", out) ||
-            grepl("_gt_", out)
-    ) {
-
+    if (nchar(out) > 32) {
         # Extract vars safely
         vars <- tryCatch(all.vars(parse(text = term)), error = function(e) {
             character(0)
@@ -115,7 +109,6 @@ sanitize_term_name <- function(term) {
                 checksum <- sprintf("%x", sum(utf8ToInt(out)))
                 out <- paste0(substr(out, 1, 25), "_", checksum)
             }
-
 
             if (grepl("^[0-9]", out)) {
                 out <- paste0("det_", out)
@@ -183,7 +176,7 @@ term_to_jags_expression <- function(term) {
 
     if (grepl("==", expression)) {
         # Simple regex for A == B -> equals(A, B)
-    expression <- gsub(
+        expression <- gsub(
             "([^[:space:]()=]+)[[:space:]]*==[[:space:]]*([^[:space:]()=]+)",
             "equals(\\1, \\2)",
             expression
