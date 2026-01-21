@@ -1408,11 +1408,6 @@ because <- function(
   }
 
   # For variables with missing data, we'll use the GLMM (Latent Variable) approach
-  if (length(response_vars_with_na) > 0 && !quiet) {
-    message(
-      "Note: Using Latent Variable (GLMM) approach for variables with missing data to preserve phylogenetic signal."
-    )
-  }
 
   # Auto-detect variability from data column names (user-friendly)
   # Look for patterns: X_se, X_obs or matrix columns
